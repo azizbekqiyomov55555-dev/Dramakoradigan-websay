@@ -12,8 +12,8 @@
 
     <style>
         :root { --bg: #000; --accent: #00ff73; --border: #222; }
-        body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; padding-bottom: 90px; overflow-x: hidden; }
-        .tap-active:active { transform: scale(0.95); opacity: 0.8; }
+        body { background: var(--bg); color: white; font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 90px; overflow-x: hidden; }
+        .tap-active:active { transform: scale(0.95); opacity: 0.8; transition: 0.1s; }
         
         /* NAV BAR */
         .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 75px; background: rgba(10,10,10,0.9); backdrop-filter: blur(20px); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid var(--border); z-index: 1000; }
@@ -25,7 +25,7 @@
         /* PAGES */
         .page { display: none; padding: 15px 5%; animation: fadeIn 0.4s ease; }
         .page.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         /* MOVIE CARDS */
         .movie-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
@@ -36,17 +36,17 @@
         /* MODALS */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 2500; overflow-y: auto; }
         .modal-content { background: #111; border-radius: 30px; padding: 25px; margin: 30px 15px; border: 1px solid var(--border); }
-        input, select { width: 100%; padding: 15px; background: #1a1a1a; border: 1px solid #333; color: white; border-radius: 12px; margin-bottom: 12px; font-size: 16px; }
+        input, select { width: 100%; padding: 15px; background: #1a1a1a; border: 1px solid #333; color: white; border-radius: 12px; margin-bottom: 12px; font-size: 16px; box-sizing: border-box; }
         .btn-adm { background: var(--accent); color: #000; width: 100%; padding: 16px; border-radius: 12px; font-weight: 900; border: none; margin-bottom: 10px; cursor: pointer; }
 
         /* PLAYER & DETAIL */
         .detail-page { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 2000; display: none; overflow-y: auto; }
         .detail-hero { position: relative; width: 100%; height: 450px; }
-        .detail-hero img { width: 100%; height: 100%; object-fit: cover; }
+        .detail-hero img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.7); }
         .detail-overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(0deg, #000 20%, transparent 80%); display: flex; flex-direction: column; justify-content: flex-end; padding: 30px 20px; box-sizing: border-box; }
         .part-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 15px 0; }
-        .part-btn { background: #222; border: 1px solid #444; color: white; padding: 12px; border-radius: 10px; text-align: center; }
-        .part-btn.selected { background: var(--accent); color: #000; }
+        .part-btn { background: #222; border: 1px solid #444; color: white; padding: 12px; border-radius: 10px; text-align: center; font-size: 13px; font-weight: bold; }
+        .part-btn.selected { background: var(--accent); color: #000; border-color: var(--accent); }
         #player { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; }
         
         .history-card { background: #111; padding: 15px; border-radius: 15px; margin-bottom: 10px; border-left: 4px solid var(--accent); }
@@ -54,50 +54,50 @@
         .swiper-slide { width: 85% !important; border-radius: 25px; overflow: hidden; transform: scale(0.9); transition: 0.3s; }
         .swiper-slide-active { transform: scale(1); }
         .hero-img { width: 100%; height: 100%; object-fit: cover; }
-        .del-item { display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; padding: 10px; margin-bottom: 8px; border-radius: 10px; }
+        .del-item { display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; padding: 12px; margin-bottom: 8px; border-radius: 12px; border: 1px solid #333; }
     </style>
 </head>
 <body>
 
-    <!-- ASOSIY SAHIFA -->
+    <!-- HOME PAGE -->
     <div id="home" class="page active">
         <div class="swiper hero-swiper"><div class="swiper-wrapper" id="heroList"></div></div>
-        <div style="font-weight: 900; font-size: 20px; border-left: 5px solid var(--accent); padding-left: 15px; margin-bottom: 15px;">Kinolar</div>
+        <div style="font-weight: 900; font-size: 20px; border-left: 5px solid var(--accent); padding-left: 15px; margin-bottom: 15px;">Eng so'nggi kinolar</div>
         <div class="movie-grid" id="normalList"></div>
     </div>
 
-    <!-- QIDIRUV -->
+    <!-- SEARCH PAGE -->
     <div id="search" class="page">
-        <input type="text" id="searchInput" placeholder="Kino nomini yozing..." oninput="searchMovie()" style="margin-top:20px;">
+        <input type="text" id="searchInput" placeholder="Kino nomini qidiring..." oninput="searchMovie()" style="margin-top:20px;">
         <div class="movie-grid" id="searchResult"></div>
     </div>
 
-    <!-- MENING -->
+    <!-- HISTORY PAGE -->
     <div id="mening" class="page">
-        <h3>Ko'rilganlar</h3>
+        <h3>Ko'rishda davom eting</h3>
         <div id="historyList" style="display:flex; gap:12px; overflow-x:auto; padding-bottom:15px;"></div>
-        <h3>To'lovlar</h3>
+        <h3>Tranzaksiyalar</h3>
         <div id="trxList"></div>
     </div>
 
-    <!-- PROFIL (SIZ) -->
+    <!-- PROFILE PAGE -->
     <div id="siz" class="page">
         <div style="display: flex; align-items: center; gap: 20px; padding: 30px 0;">
-            <img src="" id="mainAvatar" style="width:70px; height:70px; border-radius:50%; border:2px solid var(--accent);">
+            <img src="" id="mainAvatar" style="width:75px; height:75px; border-radius:50%; border:2px solid var(--accent);">
             <div>
-                <h2 id="tgName" style="margin:0;">Yuklanmoqda...</h2>
-                <div id="premTimer" style="font-size: 13px; color: var(--accent); margin-top: 5px;"></div>
+                <h2 id="tgName" style="margin:0;">Foydalanuvchi</h2>
+                <div id="premTimer" style="font-size: 13px; color: var(--accent); font-weight: bold; margin-top: 5px;">Premium: Faol emas</div>
             </div>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-            <div class="tap-active" onclick="openPremModal()" style="background:#111; padding:20px; border-radius:20px; border:1px solid #333;">
-                <span style="color:red; font-size:11px;">PREMIUM</span><br><strong>Sotib olish</strong>
+            <div class="tap-active" onclick="openPremModal()" style="background:#111; padding:20px; border-radius:20px; border:1px solid #333; text-align: center;">
+                <span style="color:#ff453a; font-size:11px; font-weight: 900;">PREMIUM</span><br><strong style="font-size: 16px;">Sotib olish</strong>
             </div>
-            <div class="tap-active" onclick="openDepModal()" style="background:#111; padding:20px; border-radius:20px; border:1px solid #333;">
-                <span style="color:#888; font-size:11px;">BALANS</span><br><strong id="userBalance">0 so'm</strong>
+            <div class="tap-active" onclick="openDepModal()" style="background:#111; padding:20px; border-radius:20px; border:1px solid #333; text-align: center;">
+                <span style="color:#888; font-size:11px; font-weight: 900;">HISOBINGIZ</span><br><strong id="userBalance" style="font-size: 16px;">0 so'm</strong>
             </div>
         </div>
-        <div style="margin-top:20px; background:#111; border-radius:15px; overflow:hidden;">
+        <div style="margin-top:25px; background:#111; border-radius:15px; overflow:hidden;">
             <div class="tap-active" style="padding:18px; border-bottom:1px solid #222;" onclick="showAdminLogin()"><i class="fa fa-user-shield" style="margin-right:15px; color:var(--accent);"></i> Admin Panel</div>
         </div>
     </div>
@@ -105,59 +105,88 @@
     <!-- ADMIN PANEL -->
     <div id="adminPanel" class="modal">
         <div style="padding:20px;">
-            <h2 style="display:flex; justify-content:space-between;">Admin <span onclick="closeModal('adminPanel')">&times;</span></h2>
+            <h2 style="display:flex; justify-content:space-between; align-items: center;">Admin Panel <span onclick="closeModal('adminPanel')" style="font-size: 30px;">&times;</span></h2>
             
+            <!-- Settings -->
             <div class="modal-content">
-                <h3>Sozlamalar</h3>
+                <h3>Bot va Karta</h3>
                 <input type="text" id="setToken" placeholder="Bot Token">
                 <input type="text" id="setAdminId" placeholder="Admin Chat ID">
-                <input type="text" id="setCard" placeholder="Karta raqami">
+                <input type="text" id="setCard" placeholder="Karta raqami (8600...)">
                 <button class="btn-adm" onclick="saveSettings()">SOZLAMALARNI SAQLASH</button>
             </div>
 
+            <!-- Premium Plans -->
             <div class="modal-content">
-                <h3>Kino Joylash</h3>
+                <h3>Premium Tarif Qo'shish</h3>
+                <input type="text" id="pName" placeholder="Tarif nomi">
+                <input type="number" id="pTime" placeholder="Vaqt miqdori">
+                <select id="pUnit">
+                    <option value="hour">Soat</option>
+                    <option value="day">Kun</option>
+                    <option value="month">Oy</option>
+                </select>
+                <input type="number" id="pPrice" placeholder="Narxi">
+                <button class="btn-adm" onclick="addPlan()">TARIFNI QO'SHISH</button>
+            </div>
+
+            <!-- Movie Upload -->
+            <div class="modal-content">
+                <h3>Yangi Kino Joylash</h3>
                 <input type="text" id="kTitle" placeholder="Kino nomi">
-                <input type="text" id="kGenre" placeholder="Janr">
-                <input type="number" id="kPrice" placeholder="Narxi">
+                <input type="text" id="kGenre" placeholder="Janri">
+                <input type="number" id="kPrice" placeholder="Narxi (0 bo'lsa tekin)">
                 <small>Poster rasm:</small><input type="file" id="kPoster" accept="image/*">
                 <div id="vFields"><div style="border:1px dashed #444; padding:10px; margin-bottom:10px;"><input type="file" class="vInps" accept="video/*"></div></div>
-                <button class="btn-adm" style="background:#333; color:white;" onclick="addVField()">+ Qism qo'shish</button>
-                <button class="btn-adm" onclick="saveKino()">YUKLASH</button>
+                <button class="btn-adm" style="background:#333; color:white;" onclick="addVField()">+ Yana qism qo'shish</button>
+                <button class="btn-adm" onclick="saveKino()">KINONI SAYTGA JOYLASH</button>
             </div>
 
+            <!-- Manage Balance -->
             <div class="modal-content">
-                <h3>Foydalanuvchi Balansi</h3>
-                <input type="number" id="admUserId" placeholder="Foydalanuvchi ID (Botdan oling)">
-                <input type="number" id="admSum" placeholder="Qo'shiladigan summa">
-                <button class="btn-adm" onclick="addBalanceManual()">BALANSNI TO'LDIRISH</button>
+                <h3>To'lovlarni tasdiqlash (Balans qo'shish)</h3>
+                <input type="number" id="admUserId" placeholder="Foydalanuvchi ID">
+                <input type="number" id="admSum" placeholder="Summa">
+                <button class="btn-adm" onclick="confirmPaymentManual()">TASDIQLASH VA PUL QO'SHISH</button>
             </div>
 
+            <!-- Delete Movies -->
             <div class="modal-content">
-                <h3>Kinolarni boshqarish</h3>
+                <h3>Kinolarni o'chirish</h3>
                 <div id="adminMovies"></div>
             </div>
         </div>
     </div>
 
-    <!-- MODALLAR -->
+    <!-- MODALS -->
     <div id="loginModal" class="modal"><div class="modal-content" style="max-width:300px; margin:150px auto;"><h3>Admin Parol</h3><input type="password" id="admPass"><button class="btn-adm" onclick="checkAdmin()">KIRISH</button></div></div>
-    <div id="depModal" class="modal"><div class="modal-content"><h2>To'ldirish</h2><div id="cardText" style="background:var(--accent); color:#000; padding:20px; border-radius:15px; font-weight:900; margin-bottom:15px;" onclick="copyCard()">...</div><input type="number" id="dSum" placeholder="Summa"><input type="file" id="dImg" accept="image/*"><button class="btn-adm" onclick="sendDep()">TASDIQLASHGA YUBORISH</button></div></div>
-    <div id="premModal" class="modal"><div class="modal-content"><h2>Tariflar</h2><div id="pList"></div><button class="btn-adm" onclick="closeModal('premModal')">YOPISH</button></div></div>
+    
+    <div id="depModal" class="modal">
+        <div class="modal-content">
+            <h2>Balansni to'ldirish</h2>
+            <div id="cardText" style="background:var(--accent); color:#000; padding:20px; border-radius:15px; font-weight:900; margin-bottom:15px; text-align: center;" onclick="copyCard()">Karta yuklanmoqda...</div>
+            <input type="number" id="dSum" placeholder="To'lov summasi">
+            <input type="file" id="dImg" accept="image/*">
+            <button class="btn-adm" onclick="sendDep()">TASDIQLASHGA YUBORISH</button>
+            <button class="btn-adm" style="background:none; color:white;" onclick="closeModal('depModal')">YOPISH</button>
+        </div>
+    </div>
 
-    <!-- DETAIL SAHIFA -->
+    <div id="premModal" class="modal"><div class="modal-content"><h2>Premium Tariflar</h2><div id="pList"></div><button class="btn-adm" style="background:none; color:white;" onclick="closeModal('premModal')">YOPISH</button></div></div>
+
+    <!-- DETAIL PAGE -->
     <div id="detailPage" class="detail-page">
         <i class="fa fa-arrow-left" onclick="closeDetail()" style="position:fixed; top:25px; left:20px; z-index:2100; font-size:22px;"></i>
         <div id="detailContent"></div>
     </div>
 
-    <!-- VIDEO PLAYER -->
+    <!-- PLAYER -->
     <div id="player">
         <i class="fa fa-arrow-left" onclick="closePlayer()" style="position:absolute; top:25px; left:20px; z-index:3020; font-size:22px;"></i>
         <video id="mainVideo" style="width:100%; height:100%;" playsinline controls></video>
     </div>
 
-    <!-- BOTTOM NAVIGATION -->
+    <!-- NAV -->
     <div class="bottom-nav">
         <div class="nav-item active tap-active" onclick="showPage('home', this)"><i class="fa fa-home"></i><br>Asosiy</div>
         <div class="nav-item tap-active" onclick="showPage('search', this)"><i class="fa fa-search"></i><br>Qidiruv</div>
@@ -167,7 +196,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script>
-        const db = new Dexie("KinoDrama_vFinal");
+        const db = new Dexie("KinoDrama_HamaNarsasi_DB");
         db.version(1).stores({
             movies: "++id, title, genre, price",
             profile: "key, value",
@@ -178,6 +207,7 @@
         });
 
         const tg = window.Telegram.WebApp;
+        let activePart = 0;
         let currentUserId = 0;
 
         async function init() {
@@ -189,7 +219,8 @@
             if(!(await db.profile.get('balance'))) await db.profile.put({key:'balance', value: 0});
             if(!(await db.profile.get('expiry'))) await db.profile.put({key:'expiry', value: 0});
             
-            loadUI(); loadContent(); loadAdminSettings(); tg.expand();
+            await loadAdminSettings();
+            loadUI(); loadContent(); loadMening(); tg.expand();
             setInterval(updateCountdown, 1000);
         }
 
@@ -209,26 +240,35 @@
             await db.settings.put({key:'token', value: document.getElementById('setToken').value});
             await db.settings.put({key:'admin_id', value: document.getElementById('setAdminId').value});
             await db.settings.put({key:'card', value: document.getElementById('setCard').value});
-            alert("Saqlandi!"); loadAdminSettings();
+            alert("Sozlamalar saqlandi!"); loadAdminSettings();
+        }
+
+        async function addPlan() {
+            const name = document.getElementById('pName').value;
+            const time = parseInt(document.getElementById('pTime').value);
+            const unit = document.getElementById('pUnit').value;
+            const price = parseInt(document.getElementById('pPrice').value);
+            if(!name || !time || !price) return alert("Hamma joyni to'ldiring!");
+            await db.plans.add({name, time, unit, price});
+            alert("Premium tarif qo'shildi!");
+            document.getElementById('pName').value=''; document.getElementById('pTime').value=''; document.getElementById('pPrice').value='';
         }
 
         async function saveKino() {
             const title = document.getElementById('kTitle').value, genre = document.getElementById('kGenre').value, price = parseInt(document.getElementById('kPrice').value)||0, poster = document.getElementById('kPoster').files[0];
             let videos = []; document.querySelectorAll('.vInps').forEach(i => { if(i.files[0]) videos.push(i.files[0]); });
-            if(!title || !poster || videos.length==0) return alert("Barcha maydonlar shart!");
+            if(!title || !poster || videos.length==0) return alert("Kino ma'lumotlari chala!");
             await db.movies.add({title, genre, price, poster, videos});
-            alert("Kino joylandi!");
-            // Formani tozalash
+            alert("Kino saytga muvaffaqiyatli joylandi!");
             document.getElementById('kTitle').value=''; document.getElementById('kGenre').value=''; document.getElementById('kPrice').value=''; document.getElementById('kPoster').value='';
-            document.getElementById('vFields').innerHTML = '<div border:1px dashed #444; padding:10px; margin-bottom:10px;"><input type="file" class="vInps" accept="video/*"></div>';
+            document.getElementById('vFields').innerHTML = '<div style="border:1px dashed #444; padding:10px; margin-bottom:10px;"><input type="file" class="vInps" accept="video/*"></div>';
             loadContent();
         }
 
         async function deleteMovie(id) {
-            if(confirm("O'chirilsinmi?")) { await db.movies.delete(id); loadContent(); }
+            if(confirm("Haqiqatdan o'chirmoqchimisiz?")) { await db.movies.delete(id); loadContent(); }
         }
 
-        // QIDIRUV
         async function searchMovie() {
             const query = document.getElementById('searchInput').value.toLowerCase();
             const ms = await db.movies.toArray();
@@ -240,36 +280,30 @@
             });
         }
 
-        // BOTGA TUGMALAR BILAN XABAR YUBORISH
         async function sendDep() {
             const sum = document.getElementById('dSum').value;
             const token = (await db.settings.get('token'))?.value;
             const adminId = (await db.settings.get('admin_id'))?.value;
             const user = (await db.profile.get('user_info'))?.value;
-            if(!sum || !token || !adminId) return alert("Bot sozlamalari xato!");
+            if(!sum || !token) return alert("Summa yoki bot tokeni yo'q!");
 
-            const text = `💰 TO'LOV XABARI\n👤 Foydalanuvchi: ${user.name}\n🆔 ID: ${user.id}\n💵 Summa: ${sum} so'm`;
-            const keyboard = {
-                inline_keyboard: [
-                    [{ text: "✅ Tasdiqlash", callback_data: `confirm_${user.id}_${sum}` }],
-                    [{ text: "❌ Bekor qilish", callback_data: `reject_${user.id}` }]
-                ]
-            };
+            const text = `💰 YANGI TO'LOV\n👤 Foydalanuvchi: ${user.name}\n🆔 ID: ${user.id}\n💵 Summa: ${sum} so'm\n\nTo'lovni tasdiqlash uchun Mini App Admin paneliga kirib ID ni yozing.`;
+            const keyboard = { inline_keyboard: [[{ text: "✅ Tasdiqlash", callback_data: `confirm_${user.id}_${sum}` }, { text: "❌ Bekor qilish", callback_data: `reject` }]] };
 
             fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${adminId}&text=${encodeURIComponent(text)}&reply_markup=${JSON.stringify(keyboard)}`)
-            .then(() => { alert("Xabar botga yuborildi!"); closeModal('depModal'); });
+            .then(() => { alert("Xabar botga yuborildi! Adminga tasdiqlashni ayting."); closeModal('depModal'); });
         }
 
-        // ADMIN PANELDA MANUAL BALANS QO'SHISH (Bot tugmasi ishlamasa ishlatish uchun)
-        async function addBalanceManual() {
-            const uId = parseInt(document.getElementById('admUserId').value);
+        async function confirmPaymentManual() {
+            const id = parseInt(document.getElementById('admUserId').value);
             const sum = parseInt(document.getElementById('admSum').value);
-            if(uId == currentUserId) {
+            if(id == currentUserId) {
                 const bal = await db.profile.get('balance');
                 await db.profile.put({key:'balance', value: bal.value + sum});
-                await db.trxs.add({type: "Balans to'ldirildi (Admin)", amount: sum, date: new Date().toLocaleString()});
-                alert("Pul qo'shildi!"); loadUI();
-            } else { alert("Bu foydalanuvchi ID topilmadi (Lokal bazada faqat o'zingizni ko'rasiz)"); }
+                await db.trxs.add({type: "Hisob to'ldirildi", amount: sum, date: new Date().toLocaleString()});
+                alert("Muvaffaqiyatli: Foydalanuvchi hisobiga pul tushdi!");
+                loadUI(); loadMening();
+            } else { alert("Bu ID topilmadi (Mini App lokal bazada faqat o'zingizni tanidi)"); }
         }
 
         async function loadContent() {
@@ -278,9 +312,10 @@
             hL.innerHTML = ''; nL.innerHTML = ''; aL.innerHTML = '';
             ms.forEach(m => {
                 const img = URL.createObjectURL(m.poster);
-                hL.innerHTML += `<div class="swiper-slide tap-active" onclick="openMovie(${m.id})"><img src="${img}" class="hero-img"></div>`;
-                nL.innerHTML += `<div class="movie-card tap-active" onclick="openMovie(${m.id})"><img src="${img}"><div style="font-weight:900;margin-top:8px;">${m.title}</div></div>`;
-                aL.innerHTML += `<div class="del-item"><span>${m.title}</span><button onclick="deleteMovie(${m.id})" style="background:red;border:none;color:white;padding:5px;border-radius:5px;">O'chirish</button></div>`;
+                const badge = m.price > 0 ? `<div class="price-badge">${m.price} so'm</div>` : '';
+                hL.innerHTML += `<div class="swiper-slide tap-active" onclick="openMovie(${m.id})">${badge}<img src="${img}" class="hero-img"></div>`;
+                nL.innerHTML += `<div class="movie-card tap-active" onclick="openMovie(${m.id})">${badge}<img src="${img}"><div style="font-weight:900;margin-top:8px;">${m.title}</div></div>`;
+                aL.innerHTML += `<div class="del-item"><span>${m.title}</span><button onclick="deleteMovie(${m.id})" style="background:red;border:none;color:white;padding:5px 10px;border-radius:8px;">O'chirish</button></div>`;
             });
             new Swiper('.hero-swiper', { slidesPerView: 'auto', centeredSlides: true, loop: true, spaceBetween: 15, autoplay: {delay:3000} });
         }
@@ -295,43 +330,54 @@
             document.getElementById('userBalance').innerText = (bal.value || 0).toLocaleString() + " so'm";
         }
 
-        // BOSHQA FUNKSIYALAR
-        function showPage(id, el) { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active')); el.classList.add('active'); }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-        function showAdminLogin() { document.getElementById('loginModal').style.display = 'block'; }
-        function checkAdmin() { if(document.getElementById('admPass').value === 'Azizbek') { closeModal('loginModal'); document.getElementById('adminPanel').style.display = 'block'; } else alert('Xato!'); }
-        function openDepModal() { document.getElementById('depModal').style.display = 'block'; }
-        function copyCard() { navigator.clipboard.writeText(document.getElementById('cardText').innerText); alert("Karta nusxalandi!"); }
-        function addVField() { const c = document.getElementById('vFields'); const d = document.createElement('div'); d.style="border:1px dashed #444; padding:10px; margin-bottom:10px;"; d.innerHTML = `<input type="file" class="vInps" accept="video/*">`; c.appendChild(d); }
-        function closePlayer() { document.getElementById('mainVideo').pause(); document.getElementById('player').style.display = 'none'; }
-        function closeDetail() { document.getElementById('detailPage').style.display = 'none'; }
-
         async function openMovie(id) {
             const m = await db.movies.get(id);
             const poster = URL.createObjectURL(m.poster);
-            let parts = m.videos.map((v, i) => `<div class="part-btn tap-active" onclick="playVideo(${id}, ${i})">${i+1}-qism</div>`).join('');
+            activePart = 0;
+            let parts = m.videos.map((v, i) => `<div class="part-btn tap-active ${i===0?'selected':''}" id="part-${i}" onclick="setPart(${i})">${i+1}-qism</div>`).join('');
             document.getElementById('detailContent').innerHTML = `
                 <div class="detail-hero"><img src="${poster}"><div class="detail-overlay">
-                <h1 style="font-size:32px;">${m.title}</h1><div style="color:#ccc;">${m.genre}</div>
-                <div class="part-grid">${parts}</div></div></div>`;
+                <h1 style="font-size:36px; margin:0;">${m.title}</h1><div style="color:#ccc; margin-bottom:15px;">Janr: ${m.genre}</div>
+                <div class="part-grid">${parts}</div>
+                <button class="btn-adm" style="background:var(--accent); color:black;" onclick="checkPlay(${m.id})"><i class="fa fa-play"></i> KO'RISH</button>
+                </div></div>`;
             document.getElementById('detailPage').style.display = 'block';
         }
 
-        async function playVideo(id, idx) {
+        function setPart(idx) { document.querySelectorAll('.part-btn').forEach(b => b.classList.remove('selected')); document.getElementById(`part-${idx}`).classList.add('selected'); activePart = idx; }
+
+        async function checkPlay(id) {
             const m = await db.movies.get(id), bal = await db.profile.get('balance'), exp = await db.profile.get('expiry');
             if(m.price == 0 || (exp && exp.value > Date.now())) {
-                const v = document.getElementById('mainVideo'); v.src = URL.createObjectURL(m.videos[idx]);
+                const v = document.getElementById('mainVideo'); v.src = URL.createObjectURL(m.videos[activePart]);
                 document.getElementById('player').style.display = 'block'; v.play();
                 db.history.add({mId: id, time: Date.now()});
             } else {
-                if(confirm(`Pullik: ${m.price} so'm. Sotib olasizmi?`)) {
+                if(confirm(`Pullik kino: ${m.price} so'm. Sotib olasizmi?`)) {
                     if(bal.value >= m.price) {
                         await db.profile.put({key:'balance', value: bal.value - m.price});
-                        await db.trxs.add({type: "Kino: "+m.title, amount: -m.price, date: new Date().toLocaleString()});
-                        loadUI(); playVideo(id, idx);
-                    } else alert("Mablag' kam!");
+                        await db.trxs.add({type: "Kino sotib olindi: "+m.title, amount: -m.price, date: new Date().toLocaleString()});
+                        loadUI(); checkPlay(id);
+                    } else alert("Mablag' yetarli emas!");
                 }
             }
+        }
+
+        async function openPremModal() {
+            const ps = await db.plans.toArray();
+            document.getElementById('pList').innerHTML = ps.map(p => `<div class="history-card tap-active" onclick="buyPlan(${p.id})"><b>${p.name}</b><br><span style="color:var(--accent);">${p.price.toLocaleString()} so'm</span></div>`).join('') || "Tariflar hali yo'q";
+            document.getElementById('premModal').style.display = 'block';
+        }
+
+        async function buyPlan(id) {
+            const p = await db.plans.get(id), bal = await db.profile.get('balance'), exp = await db.profile.get('expiry');
+            if(bal.value >= p.price) {
+                await db.profile.put({key:'balance', value: bal.value - p.price});
+                let ms = p.time; if(p.unit==='hour') ms*=3600000; else if(p.unit==='day') ms*=86400000; else ms*=2592000000;
+                await db.profile.put({key:'expiry', value: (exp.value > Date.now() ? exp.value : Date.now()) + ms});
+                await db.trxs.add({type: "Premium: "+p.name, amount: -p.price, date: new Date().toLocaleString()});
+                alert("Premium muvaffaqiyatli faollashdi!"); closeModal('premModal'); loadUI();
+            } else alert("Balansda yetarli mablag' yo'q!");
         }
 
         async function updateCountdown() {
@@ -342,7 +388,32 @@
                 let diff = exp.value - now;
                 let d = Math.floor(diff/86400000), h = Math.floor((diff%86400000)/3600000), m = Math.floor((diff%3600000)/60000), s = Math.floor((diff%60000)/1000);
                 timerEl.innerText = `Premium: ${d}k ${h}s ${m}m ${s}s qoldi`;
-            } else { timerEl.innerText = "Premium: Faol emas"; }
+                timerEl.style.color = "var(--accent)";
+            } else { timerEl.innerText = "Premium: Faol emas"; timerEl.style.color = "red"; }
+        }
+
+        function showPage(id, el) { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active')); el.classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        function showAdminLogin() { document.getElementById('loginModal').style.display = 'block'; }
+        function checkAdmin() { if(document.getElementById('admPass').value === 'Azizbek') { closeModal('loginModal'); document.getElementById('adminPanel').style.display = 'block'; } else alert('Parol xato!'); }
+        function openDepModal() { document.getElementById('depModal').style.display = 'block'; }
+        function copyCard() { navigator.clipboard.writeText(document.getElementById('cardText').innerText); alert("Karta raqami nusxalandi!"); }
+        function addVField() { const c = document.getElementById('vFields'); const d = document.createElement('div'); d.style="border:1px dashed #444; padding:10px; margin-bottom:10px;"; d.innerHTML = `<input type="file" class="vInps" accept="video/*">`; c.appendChild(d); }
+        function closePlayer() { document.getElementById('mainVideo').pause(); document.getElementById('player').style.display = 'none'; }
+        function closeDetail() { document.getElementById('detailPage').style.display = 'none'; }
+
+        async function loadMening() {
+            const hist = await db.history.orderBy('time').reverse().limit(6).toArray();
+            const hList = document.getElementById('historyList'); hList.innerHTML = '';
+            for(let h of hist) {
+                const m = await db.movies.get(h.mId);
+                if(m) {
+                    const img = URL.createObjectURL(m.poster);
+                    hList.innerHTML += `<div onclick="openMovie(${m.id})" style="min-width:130px;"><img src="${img}" style="width:130px;height:85px;border-radius:12px;object-fit:cover;"><div style="font-size:11px;font-weight:900;">${m.title}</div></div>`;
+                }
+            }
+            const trxs = await db.trxs.orderBy('id').reverse().toArray();
+            document.getElementById('trxList').innerHTML = trxs.map(t => `<div class="history-card"><b>${t.type}</b> <span style="float:right; color:${t.amount>0?'#00ff73':'#ff453a'}">${t.amount}</span><br><small>${t.date}</small></div>`).join('') || "Tarix bo'sh";
         }
 
         init();
