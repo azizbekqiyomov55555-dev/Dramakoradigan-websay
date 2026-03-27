@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KINO DRAMA PRO</title>
+    <title>KINO DRAMA PRO - To'liq Versiya</title>
     
-    <!-- Telegram WebApp Scripti (Avtomatik ma'lumot olish uchun) -->
+    <!-- Kutubxonalar -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -13,43 +13,34 @@
 
     <style>
         :root {
-            --bg: #000;
+            --bg: #000000;
             --accent: #00ff73;
             --card: #111;
             --border: #222;
+            --text-gray: #888;
         }
 
         body {
-            background: var(--bg);
+            background-color: var(--bg);
             color: white;
-            font-family: -apple-system, sans-serif;
-            margin: 0; padding-bottom: 90px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0; padding: 0;
             overflow-x: hidden;
+            padding-bottom: 90px;
         }
 
-        /* --- RASMLAR DIZAYNI (Rasmdagidek) --- */
-        .main-avatar-container {
-            width: 85px; height: 85px;
-            border-radius: 50%;
-            border: 3px solid var(--accent);
-            padding: 2px; background: var(--bg);
-        }
-        #mainAvatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-
-        .nav-avatar-img { 
-            width: 30px; height: 30px; 
-            border-radius: 50%; border: 1px solid #444; 
-            object-fit: cover; background: #222;
-        }
+        /* --- ANIMATSIYA --- */
+        .tap-active { transition: transform 0.1s ease; cursor: pointer; }
+        .tap-active:active { transform: scale(0.94); opacity: 0.8; }
 
         /* --- BOTTOM NAV --- */
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 75px;
-            background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(15px);
+            background: rgba(10, 10, 10, 0.96); backdrop-filter: blur(20px);
             display: flex; justify-content: space-around; align-items: center;
             border-top: 1px solid var(--border); z-index: 1000;
         }
-        .nav-item { text-align: center; color: #888; font-size: 11px; flex: 1; transition: 0.3s; }
+        .nav-item { text-align: center; color: var(--text-gray); font-size: 11px; flex: 1; transition: 0.3s; }
         .nav-item.active { color: var(--accent); }
         .nav-item i { font-size: 22px; display: block; margin-bottom: 4px; }
 
@@ -58,50 +49,114 @@
             background: #1a1a1a; padding: 4px 14px 4px 4px;
             border-radius: 30px; border: 1.5px solid #333;
         }
-        .nav-item.active .siz-btn-oval { border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
+        .nav-item.active .siz-btn-oval { border-color: var(--accent); box-shadow: 0 0 10px rgba(0,255,115,0.3); }
+        .nav-avatar-img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: #222; }
 
         /* --- PAGES --- */
-        .page { display: none; padding: 20px 5%; animation: fadeIn 0.4s; }
+        .page { display: none; padding-top: 10px; animation: pageIn 0.4s ease; height: calc(100vh - 75px); overflow-y: auto; }
         .page.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pageIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- CARDS --- */
-        .status-card { background: var(--card); padding: 20px; border-radius: 20px; border: 1px solid var(--border); }
-        .menu-list { background: var(--card); border-radius: 20px; margin-top: 20px; border: 1px solid var(--border); overflow: hidden; }
-        .menu-item { display: flex; align-items: center; padding: 18px; border-bottom: 1px solid #1a1a1a; }
+        /* --- HERO SLIDER --- */
+        .hero-swiper { width: 100%; height: 420px; padding: 10px 0; }
+        .swiper-slide { 
+            width: 85% !important; height: 380px; border-radius: 25px; 
+            overflow: hidden; position: relative; transform: scale(0.92); transition: 0.4s;
+        }
+        .swiper-slide-active { transform: scale(1); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .hero-img { width: 100%; height: 100%; object-fit: cover; }
+        .hero-overlay {
+            position: absolute; bottom: 0; width: 100%; height: 100%;
+            background: linear-gradient(to top, rgba(0,0,0,1) 15%, transparent 70%);
+            display: flex; flex-direction: column; justify-content: flex-end; padding: 30px 20px; box-sizing: border-box; text-align: center;
+        }
+        .hero-title { font-size: 26px; font-weight: 900; margin: 0; text-transform: uppercase; }
+        .swiper-pagination-bullet-active { background: var(--accent) !important; width: 22px !important; border-radius: 5px; }
+
+        /* --- SECTIONS --- */
+        .cat-row { display: flex; gap: 10px; padding: 10px 5%; overflow-x: auto; scrollbar-width: none; }
+        .cat-btn { background: #1c1c1e; padding: 12px 20px; border-radius: 20px; white-space: nowrap; font-size: 14px; border: 1px solid #2c2c2e; }
+
+        .section-title { padding: 25px 5% 15px; font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+        .section-title::before { content: ""; width: 4px; height: 20px; background: var(--accent); border-radius: 10px; box-shadow: 0 0 10px var(--accent); }
+
+        .movie-list { display: flex; gap: 15px; padding: 0 5% 20px; overflow-x: auto; scrollbar-width: none; }
+        .movie-card { width: 180px; flex-shrink: 0; }
+        .movie-card img { width: 100%; height: 105px; border-radius: 15px; object-fit: cover; border: 1px solid #222; }
+
+        /* --- SIZ (PROFIL) --- */
+        .profile-header { padding: 30px 5%; display: flex; align-items: center; gap: 20px; }
+        .main-avatar-img { width: 85px; height: 85px; border-radius: 50%; border: 3px solid var(--accent); padding: 2px; object-fit: cover; }
+        
+        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 0 5%; }
+        .status-box { background: var(--card); padding: 18px; border-radius: 20px; border: 1px solid var(--border); }
+        
+        .menu-list { background: var(--card); margin: 20px 5%; border-radius: 20px; border: 1px solid var(--border); overflow: hidden; }
+        .menu-item { display: flex; align-items: center; padding: 18px; border-bottom: 1px solid #222; }
         .menu-item i { width: 30px; color: var(--accent); font-size: 18px; }
 
-        .tap-active:active { transform: scale(0.95); opacity: 0.8; }
+        /* --- ADMIN PANEL --- */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 2000; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+        .admin-card { background: #0a0a0a; padding: 20px; border-radius: 20px; margin-bottom: 20px; border: 1px solid #333; }
+        input { width: 100%; padding: 15px; background: #161616; border: 1px solid #333; color: white; border-radius: 12px; margin-bottom: 12px; box-sizing: border-box; outline: none; }
+        .btn-save { width: 100%; background: var(--accent); color: black; padding: 16px; border-radius: 12px; border: none; font-weight: 900; cursor: pointer; text-transform: uppercase; }
+
+        /* PLAYER */
+        #player { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; }
+        video { width: 100%; height: 100%; }
+        .close-player { position: absolute; top: 30px; left: 20px; font-size: 24px; color: white; z-index: 10; padding: 12px; background: rgba(0,0,0,0.5); border-radius: 50%; }
     </style>
 </head>
 <body>
 
     <!-- HOME PAGE -->
     <div id="home" class="page active">
-        <h2 style="text-align:center">KINO DRAMA</h2>
-        <div style="text-align:center; margin-top:50px; color:#555">Slayder va kinolar yuklanmoqda...</div>
+        <div class="swiper hero-swiper">
+            <div class="swiper-wrapper" id="heroList"></div>
+            <div class="swiper-pagination"></div>
+        </div>
+
+        <div class="cat-row">
+            <div class="cat-btn tap-active">Barchasi <i class="fa fa-chevron-right" style="font-size: 10px;"></i></div>
+            <div class="cat-btn tap-active">Filmlar</div>
+            <div class="cat-btn tap-active">Seriallar</div>
+        </div>
+
+        <div class="section-title">Ko'rishni davom ettirish</div>
+        <div class="movie-list" id="normalList"></div>
+    </div>
+
+    <!-- MENING PAGE -->
+    <div id="mening" class="page">
+        <h2 style="text-align:center; margin-top:20px;">Mening kutubxonam</h2>
+        <div style="display:flex; justify-content:center; gap:10px; padding:0 5%;">
+            <div class="cat-btn tap-active" style="background:var(--accent); color:black; font-weight:bold;">Tanlanganlar</div>
+            <div class="cat-btn tap-active">Tarix</div>
+        </div>
+        <div style="text-align:center; margin-top:100px; opacity:0.2;">
+            <i class="fa fa-bookmark" style="font-size:80px; color:var(--accent)"></i>
+            <p>Hech narsa saqlanmagan</p>
+        </div>
     </div>
 
     <!-- SIZ (PROFIL) PAGE -->
     <div id="siz" class="page">
-        <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 30px;">
-            <div class="main-avatar-container">
-                <img src="https://via.placeholder.com/100?text=User" id="mainAvatar">
-            </div>
+        <div class="profile-header">
+            <img src="https://via.placeholder.com/100?text=User" id="mainAvatar" class="main-avatar-img">
             <div>
                 <h2 id="tgName" style="margin:0; font-size: 24px;">Mehmon</h2>
-                <p id="tgStatus" style="margin:5px 0; color:#888; font-size: 14px;">onlayn</p>
+                <p style="margin:5px 0; color:#888; font-size: 14px;">onlayn</p>
             </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-            <div class="status-card tap-active"><span style="color:#ff453a; font-size:12px; font-weight:bold;">PREMIUM</span><br><strong>Sotib olish ></strong></div>
-            <div class="status-card tap-active"><span style="color:#888; font-size:12px;">HAMYON</span><br><strong>0 so'm ></strong></div>
+        <div class="status-grid">
+            <div class="status-box tap-active"><span style="color:#ff453a; font-size:12px; font-weight:bold;">PREMIUM</span><br><strong>Sotib olish ></strong></div>
+            <div class="status-box tap-active"><span style="color:var(--text-gray); font-size:12px;">HAMYON</span><br><strong>0 so'm ></strong></div>
         </div>
 
         <div class="menu-list">
-            <div class="menu-item tap-active"><i class="fa fa-star"></i><span>Mening obunalarim</span></div>
-            <div class="menu-item tap-active"><i class="fa fa-user-shield"></i><span>Admin Panel (Aziz)</span></div>
+            <div class="menu-item tap-active"><i class="fa fa-play-circle"></i><span>Obunalarim</span></div>
+            <div class="menu-item tap-active" onclick="openAdmin()"><i class="fa fa-user-shield"></i><span>Admin Panel (Aziz)</span></div>
             <div class="menu-item tap-active"><i class="fa fa-gear"></i><span>Sozlamalar</span></div>
         </div>
     </div>
@@ -110,6 +165,7 @@
     <div class="bottom-nav">
         <div class="nav-item active tap-active" onclick="showPage('home', this)"><i class="fa fa-home"></i>Bosh sahifa</div>
         <div class="nav-item tap-active"><i class="fa fa-compass"></i>Katalog</div>
+        <div class="nav-item tap-active" onclick="showPage('mening', this)"><i class="fa fa-bookmark"></i>Mening</div>
         <div class="nav-item tap-active" onclick="showPage('siz', this)">
             <div class="siz-btn-oval">
                 <img src="https://via.placeholder.com/100?text=?" id="navAvatar" class="nav-avatar-img">
@@ -118,12 +174,59 @@
         </div>
     </div>
 
-    <script>
-        // 1. Ma'lumotlar bazasi (Keyingi safar tezroq chiqarish uchun)
-        const db = new Dexie("KinoDramaAutoDB");
-        db.version(1).stores({ settings: "key, value" });
+    <!-- ADMIN MODAL -->
+    <div id="adminPanel" class="modal">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 style="margin:0">Admin Panel</h2>
+            <i class="fa fa-times-circle" style="font-size:30px; color:#555;" onclick="closeAdmin()"></i>
+        </div>
+        <div id="loginForm">
+            <input type="text" id="admLogin" placeholder="Login">
+            <input type="password" id="admPass" placeholder="Parol">
+            <button class="btn-save" onclick="login()">KIRISH</button>
+        </div>
+        <div id="uploadForm" style="display: none;">
+            <div class="admin-card">
+                <h3 style="color:var(--accent); margin-top:0;">1. Slayder uchun</h3>
+                <input type="text" id="sTitle" placeholder="Kino nomi">
+                <label>Poster:</label><input type="file" id="sPoster" accept="image/*">
+                <label>Video:</label><input type="file" id="sVideo" accept="video/*">
+                <button class="btn-save" onclick="saveKino('slider')">SAQLASH</button>
+            </div>
+            <div class="admin-card">
+                <h3 style="color:#00ccff; margin-top:0;">2. Ro'yxat uchun</h3>
+                <input type="text" id="nTitle" placeholder="Kino nomi">
+                <label>Poster:</label><input type="file" id="nPoster" accept="image/*">
+                <label>Video:</label><input type="file" id="nVideo" accept="video/*">
+                <button class="btn-save" style="background:#00ccff" onclick="saveKino('normal')">SAQLASH</button>
+            </div>
+            <div id="delList"></div>
+        </div>
+    </div>
 
-        // 2. Sahifa almashtirish
+    <!-- PLAYER -->
+    <div id="player">
+        <i class="fa fa-chevron-left close-player tap-active" onclick="closePlayer()"></i>
+        <video id="mainVideo" controls playsinline></video>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script>
+        // 1. DATABASE
+        const db = new Dexie("KinoDramaUltimateDB");
+        db.version(1).stores({ 
+            movies: "++id, title, category", 
+            profile: "key, value" 
+        });
+
+        // 2. SWIPER (Avtomatik o'tish)
+        let swiper = new Swiper('.hero-swiper', {
+            slidesPerView: 'auto', centeredSlides: true, loop: true, spaceBetween: -15,
+            autoplay: { delay: 2000, disableOnInteraction: false },
+            pagination: { el: '.swiper-pagination', clickable: true }
+        });
+
+        // 3. PAGE SWITCH
         function showPage(pageId, element) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
@@ -131,46 +234,116 @@
             element.classList.add('active');
         }
 
-        // 3. AVTOMATIK PROFILNI ANIQLASH
-        async function initUser() {
-            // A. Telegram Web App ichida bo'lsa (Eng tez va avtomatik yo'l)
+        // 4. TELEGRAM AVTO PROFIL
+        async function initProfile() {
             const tg = window.Telegram.WebApp;
             if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
                 const user = tg.initDataUnsafe.user;
-                const userData = {
-                    name: user.first_name + (user.last_name ? " " + user.last_name : ""),
-                    img: user.photo_url || `https://ui-avatars.com/api/?name=${user.first_name}&background=00ff73&color=000`
+                const data = { 
+                    name: user.first_name, 
+                    img: user.photo_url || `https://ui-avatars.com/api/?name=${user.first_name}&background=00ff73&color=000` 
                 };
-                saveAndApply(userData);
-                return;
-            }
-
-            // B. Brauzerda bo'lsa, avval saqlanganini tekshirish
-            const saved = await db.settings.get('profile');
-            if (saved) {
-                applyUI(saved.value);
+                await db.profile.put({ key: 'user', value: data });
+                applyProfile(data);
+            } else {
+                const saved = await db.profile.get('user');
+                if (saved) applyProfile(saved.value);
             }
         }
 
-        // UI ni yangilash
-        function applyUI(data) {
+        function applyProfile(data) {
             document.getElementById('mainAvatar').src = data.img;
             document.getElementById('navAvatar').src = data.img;
             document.getElementById('tgName').innerText = data.name;
         }
 
-        // Saqlash va UI ni yangilash
-        async function saveAndApply(data) {
-            await db.settings.put({ key: 'profile', value: data });
-            applyUI(data);
+        // 5. ADMIN LOGIC
+        function openAdmin() { document.getElementById('adminPanel').style.display = 'block'; }
+        function closeAdmin() { document.getElementById('adminPanel').style.display = 'none'; }
+        
+        function login() {
+            if(document.getElementById('admLogin').value === 'Aziz' && document.getElementById('admPass').value === 'Azizbek') {
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('uploadForm').style.display = 'block';
+                renderDelList();
+            } else { alert('Xato!'); }
         }
 
-        // Sayt yuklanganda ishga tushirish
-        window.onload = initUser;
+        async function saveKino(cat) {
+            const prefix = cat === 'slider' ? 's' : 'n';
+            const title = document.getElementById(prefix + 'Title').value;
+            const poster = document.getElementById(prefix + 'Poster').files[0];
+            const video = document.getElementById(prefix + 'Video').files[0];
+            
+            if(!title || !poster || !video) return alert('Hammasini tanlang!');
+            
+            await db.movies.add({ title, poster, video, category: cat });
+            alert('Kino qo\'shildi!');
+            
+            // Tozalash
+            document.getElementById(prefix + 'Title').value = '';
+            document.getElementById(prefix + 'Poster').value = '';
+            document.getElementById(prefix + 'Video').value = '';
+            
+            renderDelList();
+            loadContent();
+        }
 
-        // Telegram interfeysini sozlash
-        window.Telegram.WebApp.ready();
-        window.Telegram.WebApp.expand();
+        // 6. CONTENT LOAD
+        async function loadContent() {
+            const movies = await db.movies.toArray();
+            const heroList = document.getElementById('heroList');
+            const normalList = document.getElementById('normalList');
+            
+            heroList.innerHTML = '';
+            normalList.innerHTML = '';
+
+            movies.forEach(m => {
+                const img = URL.createObjectURL(m.poster);
+                if(m.category === 'slider') {
+                    heroList.innerHTML += `<div class="swiper-slide tap-active" onclick="playMovie(${m.id})"><img src="${img}" class="hero-img"><div class="hero-overlay"><h1 class="hero-title">${m.title}</h1><p style="color:var(--accent)">▶ HOZIR KO'RISH</p></div></div>`;
+                } else {
+                    normalList.innerHTML += `<div class="movie-card tap-active" onclick="playMovie(${m.id})"><img src="${img}"><div style="margin-top:8px; font-weight:bold; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${m.title}</div></div>`;
+                }
+            });
+            swiper.update();
+        }
+
+        async function renderDelList() {
+            const movies = await db.movies.toArray();
+            document.getElementById('delList').innerHTML = '<h3 style="margin:20px 0 10px;">O\'chirish:</h3>' + movies.map(m => `<div style="padding:15px; background:#1a1a1a; margin-bottom:8px; border-radius:12px; display:flex; justify-content:space-between; border:1px solid #333;">${m.title} <i class="fa fa-trash" style="color:red" onclick="deleteMovie(${m.id})"></i></div>`).join('');
+        }
+
+        async function deleteMovie(id) {
+            if(confirm('Ushbu kinoni o\'chirasizmi?')) {
+                await db.movies.delete(id);
+                renderDelList();
+                loadContent();
+            }
+        }
+
+        // 7. PLAYER
+        function playMovie(id) {
+            db.movies.get(id).then(m => {
+                document.getElementById('player').style.display = 'block';
+                const v = document.getElementById('mainVideo');
+                v.src = URL.createObjectURL(m.video);
+                v.play();
+            });
+        }
+
+        function closePlayer() { 
+            document.getElementById('mainVideo').pause(); 
+            document.getElementById('player').style.display = 'none'; 
+        }
+
+        // START
+        window.onload = () => {
+            initProfile();
+            loadContent();
+            window.Telegram.WebApp.ready();
+            window.Telegram.WebApp.expand();
+        };
     </script>
 </body>
 </html>
