@@ -3,280 +3,384 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>uzDrama - Official Web Portal</title>
+    <title>uzDrama - Online Kinoteatr</title>
+    
+    <!-- Kutubxonalar -->
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-        :root { --red: #E50914; --bg: #0b0b0b; --card: #181818; --text: #ffffff; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; overflow-x: hidden; }
+        :root {
+            --red: #E50914;
+            --black: #050505;
+            --gray: #121212;
+            --light-gray: #252525;
+            --text: #ffffff;
+            --anim: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
-        /* HEADER */
+        body {
+            background-color: var(--black);
+            color: var(--text);
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        /* --- HEADER --- */
         header {
-            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
-            padding: 15px 5%; display: flex; justify-content: space-between;
-            align-items: center; position: fixed; top: 0; width: 90%; z-index: 1000;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+            padding: 15px 5%;
+            display: flex; justify-content: space-between; align-items: center;
+            position: fixed; top: 0; width: 90%; z-index: 1000;
+            transition: 0.3s;
         }
-        .logo { color: var(--red); font-size: 28px; font-weight: 800; text-decoration: none; }
-        .nav-right { display: flex; gap: 15px; align-items: center; }
+        header.active { background: var(--black); box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+
+        .logo { color: var(--red); font-size: 26px; font-weight: 900; text-decoration: none; letter-spacing: -1px; }
         
-        .search-container { position: relative; }
-        .search-container input {
-            background: rgba(255,255,255,0.1); border: 1px solid #444; color: white;
-            padding: 8px 15px 8px 35px; border-radius: 20px; outline: none; width: 150px; transition: 0.3s;
+        .header-tools { display: flex; align-items: center; gap: 20px; }
+        .search-icon, .user-icon { font-size: 20px; cursor: pointer; transition: 0.3s; }
+        .search-icon:hover { color: var(--red); }
+
+        /* --- HERO BANNER --- */
+        .hero {
+            height: 70vh;
+            background: linear-gradient(to top, var(--black) 5%, transparent 50%), 
+                        linear-gradient(to right, var(--black) 10%, transparent 60%),
+                        url('https://images.alphacoders.com/131/1311035.jpg') center/cover;
+            display: flex; align-items: flex-end; padding: 50px 5%;
         }
-        .search-container input:focus { width: 250px; border-color: var(--red); }
-        .search-container i { position: absolute; left: 12px; top: 10px; color: #888; }
+        .hero-content h1 { font-size: 50px; margin: 0; font-weight: 800; text-shadow: 2px 2px 10px rgba(0,0,0,0.5); }
+        .hero-content p { color: #bbb; max-width: 500px; margin: 10px 0 20px; }
 
-        /* HERO & CATEGORIES */
-        .hero { height: 60vh; background: linear-gradient(to top, var(--bg), transparent), url('https://wallpaperaccess.com/full/6191119.jpg') center/cover; display: flex; align-items: flex-end; padding: 50px 5%; }
-        .cat-btns { display: flex; gap: 10px; padding: 20px 5%; overflow-x: auto; scrollbar-width: none; }
-        .cat-btn { background: #222; border: none; color: white; padding: 10px 25px; border-radius: 25px; cursor: pointer; white-space: nowrap; font-weight: 500; }
-        .cat-btn:hover { background: #333; }
+        /* --- CATEGORY PILLS --- */
+        .categories {
+            display: flex; gap: 10px; padding: 20px 5%;
+            overflow-x: auto; scrollbar-width: none;
+        }
+        .categories::-webkit-scrollbar { display: none; }
+        .pill {
+            background: var(--light-gray); padding: 10px 24px; border-radius: 25px;
+            font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap;
+            transition: var(--anim); border: 1px solid transparent;
+        }
+        .pill:hover { background: #333; border-color: var(--red); }
 
-        /* MOVIE GRID */
-        .container { padding: 0 5%; }
-        .section-title { font-size: 20px; margin: 20px 0; font-weight: bold; border-left: 4px solid var(--red); padding-left: 10px; }
-        .movie-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; }
+        /* --- MOVIE GRID --- */
+        .section { padding: 0 5% 50px; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .section-header h2 { font-size: 22px; margin: 0; border-left: 4px solid var(--red); padding-left: 12px; }
         
-        .movie-card { background: var(--card); border-radius: 8px; overflow: hidden; transition: 0.3s; cursor: pointer; position: relative; }
-        .movie-card:hover { transform: translateY(-10px); }
-        .movie-card img { width: 100%; height: 240px; object-fit: cover; }
-        .movie-card .badge { position: absolute; top: 10px; right: 10px; background: gold; color: black; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 900; }
-        .movie-card .free-badge { position: absolute; top: 10px; right: 10px; background: #00c853; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; }
-        .movie-card .info { padding: 10px; text-align: center; font-size: 14px; }
+        .movie-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 15px;
+        }
 
-        /* ADMIN MODAL */
-        .modal { display: none; position: fixed; top: 0; left:0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; overflow-y: auto; }
-        .admin-box { max-width: 500px; margin: 50px auto; background: #181818; padding: 30px; border-radius: 12px; }
-        .input-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; color: #888; font-size: 13px; }
-        input, select { width: 100%; padding: 12px; background: #222; border: 1px solid #333; color: white; border-radius: 6px; box-sizing: border-box; }
-        .btn-main { width: 100%; padding: 15px; background: var(--red); border: none; color: white; font-weight: bold; cursor: pointer; border-radius: 6px; margin-top: 10px; }
+        .movie-card {
+            background: var(--gray); border-radius: 12px; overflow: hidden;
+            position: relative; transition: var(--anim); cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .movie-card:hover { transform: scale(1.06); z-index: 10; }
+        .movie-card img { width: 100%; height: 240px; object-fit: cover; display: block; }
         
-        /* TABLE */
-        .movie-list-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
-        .movie-list-table td { padding: 10px; border-bottom: 1px solid #333; }
-        .del-btn { color: var(--red); cursor: pointer; background: none; border: none; }
+        .premium-tag {
+            position: absolute; top: 10px; right: 10px;
+            background: linear-gradient(45deg, #ffd700, #ffa500);
+            color: black; font-size: 10px; font-weight: 900; padding: 4px 8px; border-radius: 4px;
+        }
+        .free-tag {
+            position: absolute; top: 10px; right: 10px;
+            background: #00c853; color: white; font-size: 10px; padding: 4px 8px; border-radius: 4px;
+        }
 
-        /* PLAYER */
-        .player-overlay { position: fixed; top:0; left:0; width: 100%; height: 100%; background: #000; display: none; z-index: 3000; }
-        .close-player { position: absolute; top: 20px; right: 30px; font-size: 40px; cursor: pointer; z-index: 10; }
+        .movie-info { padding: 12px; text-align: center; font-size: 14px; font-weight: 500; }
+
+        /* --- SEARCH PANEL --- */
+        .search-panel {
+            position: fixed; top: -100%; left: 0; width: 100%; height: 100%;
+            background: var(--black); z-index: 2000; transition: 0.5s;
+            padding: 20px 5%; box-sizing: border-box;
+        }
+        .search-panel.open { top: 0; }
+        .search-input {
+            width: 100%; background: var(--gray); border: 1px solid #333;
+            color: white; padding: 15px 20px; border-radius: 12px; font-size: 18px; outline: none;
+        }
+
+        /* --- ADMIN PANEL MODAL --- */
+        .admin-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 3000; overflow-y: auto;
+        }
+        .admin-content {
+            max-width: 500px; margin: 50px auto; background: var(--gray);
+            padding: 30px; border-radius: 20px; border: 1px solid #222;
+        }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #888; font-size: 13px; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 12px; background: var(--light-gray); border: 1px solid #333;
+            color: white; border-radius: 8px; box-sizing: border-box; outline: none;
+        }
+        .btn-red {
+            width: 100%; padding: 15px; background: var(--red); color: white;
+            border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s;
+        }
+        .btn-red:hover { background: #b00710; }
+
+        /* --- PLAYER --- */
+        #player-box {
+            display: none; position: fixed; top:0; left:0; width: 100%; height: 100%;
+            background: #000; z-index: 5000;
+        }
+        .close-player { position: absolute; top: 20px; right: 30px; font-size: 40px; cursor: pointer; z-index: 5001; }
         video { width: 100%; height: 100%; }
 
-        .loading { display: none; text-align: center; color: gold; margin: 10px 0; }
+        /* LOADER */
+        .loader { display: none; text-align: center; margin: 20px 0; color: var(--red); }
+        .loading-dots:after { content: '...'; animation: dots 1.5s infinite; }
+        @keyframes dots { 0% { content: '.'; } 33% { content: '..'; } 66% { content: '...'; } }
     </style>
 </head>
 <body>
 
-<header>
-    <a href="#" class="logo" onclick="location.reload()">uzDrama</a>
-    <div class="nav-right">
-        <div class="search-container">
-            <i class="fa fa-search"></i>
-            <input type="text" id="searchInput" placeholder="Qidiruv..." oninput="searchMovies()">
-        </div>
-        <button class="cat-btn" style="background: var(--red);" onclick="openAdmin()">Admin</button>
+<header id="navbar">
+    <a href="#" class="logo">uzDrama</a>
+    <div class="header-tools">
+        <i class="fa fa-search search-icon" onclick="toggleSearch(true)"></i>
+        <i class="fa fa-user-circle user-icon" onclick="openAdmin()"></i>
     </div>
 </header>
 
-<div id="homePage">
+<!-- MAIN CONTENT -->
+<div id="main-view">
     <div class="hero">
-        <div style="max-width: 600px;">
-            <h1 style="font-size: 45px; margin: 0;">Meni Yashir</h1>
-            <p style="color: #ccc;">Yangi fasl va barcha qismlar faqat bizda professional dublyajda.</p>
+        <div class="hero-content">
+            <h1>Javobsiz</h1>
+            <p>Sevimli dramalaringizni yuqori sifatda va o'zbek tilida tomosha qiling. Faqat bizning platformada!</p>
+            <button class="btn-red" style="width: 180px;" onclick="alert('Kino tanlang')">TOMOSHA QILISH</button>
         </div>
     </div>
 
-    <div class="cat-btns">
-        <button class="cat-btn">Multseriallar</button>
-        <button class="cat-btn">Anime</button>
-        <button class="cat-btn">Teleko'rsatuv</button>
-        <button class="cat-btn">Kinolar</button>
-        <button class="cat-btn">Seriallar</button>
+    <div class="categories">
+        <div class="pill">Multseriallar</div>
+        <div class="pill">Anime</div>
+        <div class="pill">Teleko'rsatuv</div>
+        <div class="pill">Kinolar</div>
+        <div class="pill">Seriallar</div>
     </div>
 
-    <div class="container">
-        <div class="section-title">Yaqinda qo'shilganlar</div>
-        <div id="movieGrid" class="movie-grid"></div>
+    <div class="section">
+        <div class="section-header">
+            <h2 id="list-title">Yaqinda qo'shilganlar</h2>
+            <a href="#" style="color: var(--red); text-decoration: none; font-size: 14px;">Hammasini ko'rish</a>
+        </div>
+        <div id="movieGrid" class="movie-grid">
+            <!-- Kinolar shu yerda chiqadi -->
+        </div>
     </div>
 </div>
 
-<!-- ADMIN PANEL LOGIN -->
-<div id="loginModal" class="modal">
-    <div class="admin-box">
-        <h2 style="text-align:center">Admin Login</h2>
-        <div class="input-group">
-            <input type="text" id="admLogin" placeholder="Login">
+<!-- SEARCH PANEL -->
+<div id="searchPanel" class="search-panel">
+    <div style="display: flex; gap: 15px; align-items: center;">
+        <i class="fa fa-arrow-left" onclick="toggleSearch(false)" style="cursor:pointer"></i>
+        <input type="text" id="searchBox" class="search-input" placeholder="Kino nomini yozing..." oninput="doSearch()">
+    </div>
+    <div id="searchGrid" class="movie-grid" style="margin-top: 30px;"></div>
+</div>
+
+<!-- ADMIN LOGIN -->
+<div id="adminLogin" class="admin-modal">
+    <div class="admin-content" style="margin-top: 150px; text-align: center;">
+        <h2>Admin Kirish</h2>
+        <div class="form-group">
+            <input type="text" id="admUser" placeholder="Login">
         </div>
-        <div class="input-group">
+        <div class="form-group">
             <input type="password" id="admPass" placeholder="Parol">
         </div>
-        <button class="btn-main" onclick="checkLogin()">KIRISH</button>
-        <button class="btn-main" style="background:#444" onclick="closeModal()">YOPISH</button>
+        <button class="btn-red" onclick="checkAuth()">KIRISH</button>
+        <p onclick="closeAll()" style="color:#666; cursor:pointer; margin-top:15px;">Yopish</p>
     </div>
 </div>
 
 <!-- ADMIN DASHBOARD -->
-<div id="adminDash" class="modal">
-    <div class="admin-box" style="max-width: 700px;">
-        <h2>Kino Boshqaruvi</h2>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-            <div class="input-group">
-                <label>Kino Nomi:</label>
-                <input type="text" id="mTitle">
-            </div>
-            <div class="input-group">
-                <label>Turini tanlang:</label>
-                <select id="mType">
-                    <option value="free">Bepul</option>
-                    <option value="paid">Pullik (PREMIUM)</option>
-                </select>
-            </div>
+<div id="adminDash" class="admin-modal">
+    <div class="admin-content">
+        <h2 style="text-align: center;">Kino Qo'shish</h2>
+        <div class="form-group">
+            <label>Nomi:</label>
+            <input type="text" id="mTitle">
         </div>
-        <div class="input-group">
-            <label>Poster (Rasm fayli):</label>
+        <div class="form-group">
+            <label>Turi:</label>
+            <select id="mType">
+                <option value="free">Bepul (TEKIN)</option>
+                <option value="paid">Pullik (PREMIUM)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Poster (Rasm):</label>
             <input type="file" id="mPoster" accept="image/*">
         </div>
-        <div class="input-group">
-            <label>Video (Fayl yuklang):</label>
+        <div class="form-group">
+            <label>Video (Fayl):</label>
             <input type="file" id="mVideo" accept="video/mp4">
         </div>
-        <div id="loadStatus" class="loading">Yuklanmoqda, iltimos kuting...</div>
-        <button class="btn-main" onclick="saveMovie()">SAYTGA JOYLASH</button>
+        <div id="loader" class="loader">Fayllar yuklanmoqda<span class="loading-dots"></span></div>
+        <button class="btn-red" onclick="saveMovie()">SAYTGA JOYLASHTIRISH</button>
         
-        <h3>Mavjud videolar</h3>
-        <table class="movie-list-table" id="adminTable"></table>
-        <button class="btn-main" style="background:#444" onclick="closeModal()">CHIQISH</button>
+        <h3 style="margin-top:30px; border-top: 1px solid #333; padding-top: 20px;">Kinolar ro'yxati</h3>
+        <div id="adminList"></div>
+        <button class="btn-red" style="background:#333; margin-top:20px;" onclick="closeAll()">CHIQISH</button>
     </div>
 </div>
 
 <!-- PLAYER -->
-<div id="playerBox" class="player-overlay">
+<div id="player-box">
     <span class="close-player" onclick="closePlayer()">&times;</span>
-    <video id="mainVid" controls controlsList="nodownload"></video>
+    <video id="v-play" controls autoplay></video>
 </div>
 
 <script>
-    // 1. Database (IndexedDB)
-    const db = new Dexie("uzDramaStorage");
+    // 1. Ma'lumotlar bazasi (IndexedDB)
+    const db = new Dexie("uzDramaDB_V1");
     db.version(1).stores({ movies: "++id, title, type" });
 
-    let allMovies = [];
+    let moviesList = [];
 
-    // 2. Auth
+    // 2. Auth Logic
     function openAdmin() {
-        if(sessionStorage.getItem('admin') === 'true') {
-            showDashboard();
+        if(localStorage.getItem('isAdmin') === 'true') {
+            document.getElementById('adminDash').style.display = 'block';
+            renderAdminList();
         } else {
-            document.getElementById('loginModal').style.display = 'block';
+            document.getElementById('adminLogin').style.display = 'block';
         }
     }
 
-    function checkLogin() {
-        const l = document.getElementById('admLogin').value;
+    function checkAuth() {
+        const u = document.getElementById('admUser').value;
         const p = document.getElementById('admPass').value;
-        if(l === "Aziz" && p === "Azizbek") {
-            sessionStorage.setItem('admin', 'true');
-            document.getElementById('loginModal').style.display = 'none';
-            showDashboard();
+        if(u === "Aziz" && p === "Azizbek") {
+            localStorage.setItem('isAdmin', 'true');
+            closeAll();
+            openAdmin();
         } else {
-            alert("Login yoki Parol xato!");
+            alert("Xato ma'lumot!");
         }
     }
 
-    function closeModal() {
-        document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+    function closeAll() {
+        document.querySelectorAll('.admin-modal').forEach(m => m.style.display = 'none');
     }
 
-    // 3. Movie Logic
-    async function showDashboard() {
-        document.getElementById('adminDash').style.display = 'block';
-        const movies = await db.movies.toArray();
-        const table = document.getElementById('adminTable');
-        table.innerHTML = movies.map(m => `
-            <tr>
-                <td>${m.title} (${m.type})</td>
-                <td align="right"><button class="del-btn" onclick="deleteMovie(${m.id})"><i class="fa fa-trash"></i></button></td>
-            </tr>
-        `).join('');
-    }
-
+    // 3. Movie Management
     async function saveMovie() {
         const title = document.getElementById('mTitle').value;
         const type = document.getElementById('mType').value;
         const poster = document.getElementById('mPoster').files[0];
         const video = document.getElementById('mVideo').files[0];
-        const status = document.getElementById('loadStatus');
+        const loader = document.getElementById('loader');
 
-        if(!title || !poster || !video) return alert("Hamma ma'lumotni kiriting!");
+        if(!title || !poster || !video) return alert("Hamma fayllarni tanlang!");
 
-        status.style.display = "block";
+        loader.style.display = "block";
         try {
             await db.movies.add({ title, type, poster, video });
-            status.style.display = "none";
-            alert("Kino qo'shildi!");
+            alert("Kino muvaffaqiyatli qo'shildi!");
             location.reload();
-        } catch(e) {
-            alert("Xatolik! Joy yetarli emas.");
-            status.style.display = "none";
+        } catch (e) {
+            alert("Xato: Xotira to'lgan bo'lishi mumkin.");
+            loader.style.display = "none";
         }
     }
 
+    async function renderAdminList() {
+        const list = await db.movies.toArray();
+        const container = document.getElementById('adminList');
+        container.innerHTML = list.map(m => `
+            <div style="display:flex; justify-content:space-between; padding:10px; background:#222; border-radius:8px; margin-bottom:5px;">
+                <span>${m.title}</span>
+                <i class="fa fa-trash" style="color:red; cursor:pointer" onclick="deleteMovie(${m.id})"></i>
+            </div>
+        `).join('');
+    }
+
     async function deleteMovie(id) {
-        if(confirm("Ushbu kinoni o'chirmoqchimisiz?")) {
+        if(confirm("O'chirilsinmi?")) {
             await db.movies.delete(id);
-            showDashboard();
-            loadHome();
+            renderAdminList();
+            loadMovies();
         }
     }
 
     // 4. UI Rendering
-    async function loadHome() {
-        allMovies = await db.movies.toArray();
-        renderGrid(allMovies);
-    }
-
-    function renderGrid(data) {
+    async function loadMovies() {
+        moviesList = await db.movies.toArray();
         const grid = document.getElementById('movieGrid');
-        grid.innerHTML = data.map(m => `
+        grid.innerHTML = moviesList.map(m => `
             <div class="movie-card" onclick="playMovie(${m.id})">
-                ${m.type === 'paid' ? '<div class="badge">PREMIUM</div>' : '<div class="free-badge">FREE</div>'}
+                ${m.type === 'paid' ? '<div class="premium-tag">PREMIUM</div>' : '<div class="free-tag">BEPUL</div>'}
                 <img src="${URL.createObjectURL(m.poster)}">
-                <div class="info">
-                    <h3>${m.title}</h3>
-                </div>
+                <div class="movie-info">${m.title}</div>
             </div>
         `).join('');
-        if(data.length === 0) grid.innerHTML = "<p>Hozircha kinolar yo'q.</p>";
     }
 
-    function searchMovies() {
-        const q = document.getElementById('searchInput').value.toLowerCase();
-        const filtered = allMovies.filter(m => m.title.toLowerCase().includes(q));
-        renderGrid(filtered);
+    // 5. Search
+    function toggleSearch(show) {
+        document.getElementById('searchPanel').classList.toggle('open', show);
+        if(!show) document.getElementById('searchBox').value = "";
     }
 
-    // 5. Player
+    function doSearch() {
+        const q = document.getElementById('searchBox').value.toLowerCase();
+        const filtered = moviesList.filter(m => m.title.toLowerCase().includes(q));
+        const grid = document.getElementById('searchGrid');
+        grid.innerHTML = filtered.map(m => `
+            <div class="movie-card" onclick="playMovie(${m.id})">
+                <img src="${URL.createObjectURL(m.poster)}">
+                <div class="movie-info">${m.title}</div>
+            </div>
+        `).join('');
+    }
+
+    // 6. Player
     async function playMovie(id) {
-        const movie = await db.movies.get(id);
-        if(movie.type === 'paid') {
-            alert("Bu premium kino! Ko'rish uchun obuna bo'ling (Demo)");
+        const m = await db.movies.get(id);
+        if(m.type === 'paid') {
+            const ok = confirm("Bu premium kino! 32 500 so'm to'lab ko'rasizmi?");
+            if(!ok) return;
         }
-        const playerBox = document.getElementById('playerBox');
-        const vid = document.getElementById('mainVid');
-        vid.src = URL.createObjectURL(movie.video);
-        playerBox.style.display = 'block';
-        vid.play();
+        const box = document.getElementById('player-box');
+        const v = document.getElementById('v-play');
+        v.src = URL.createObjectURL(m.video);
+        box.style.display = 'block';
+        v.play();
     }
 
     function closePlayer() {
-        const vid = document.getElementById('mainVid');
-        vid.pause();
-        vid.src = "";
-        document.getElementById('playerBox').style.display = 'none';
+        const v = document.getElementById('v-play');
+        v.pause();
+        v.src = "";
+        document.getElementById('player-box').style.display = 'none';
     }
 
-    loadHome();
+    // Header scroll effekt
+    window.onscroll = () => {
+        const nav = document.getElementById('navbar');
+        if(window.scrollY > 50) nav.classList.add('active');
+        else nav.classList.remove('active');
+    };
+
+    loadMovies();
 </script>
+
 </body>
 </html>
