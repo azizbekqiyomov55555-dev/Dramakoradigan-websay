@@ -11,190 +11,125 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 
     <style>
-        :root { 
-            --bg: #000; 
-            --accent: #00ff73; 
-            --card: #121212; 
-            --border: #222;
-        }
-
-        body { 
-            background: var(--bg); color: white; 
-            font-family: -apple-system, system-ui, sans-serif; 
-            margin: 0; padding-bottom: 90px; overflow-x: hidden;
-        }
-
+        :root { --bg: #000; --accent: #00ff73; --card: #121212; --border: #222; }
+        body { background: var(--bg); color: white; font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 90px; overflow-x: hidden; user-select: none; }
+        
         .tap-active { transition: transform 0.1s ease; cursor: pointer; }
         .tap-active:active { transform: scale(0.95); opacity: 0.8; }
 
-        /* --- NAV BAR --- */
-        .bottom-nav { 
-            position: fixed; bottom: 0; width: 100%; height: 75px; 
-            background: rgba(10,10,10,0.9); backdrop-filter: blur(20px); 
-            display: flex; justify-content: space-around; align-items: center; 
-            border-top: 1px solid var(--border); z-index: 1000; 
-        }
-        .nav-item { text-align: center; color: #888; font-size: 11px; flex: 1; }
+        /* NAV BAR */
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 75px; background: rgba(10,10,10,0.9); backdrop-filter: blur(20px); display: flex; border-top: 1px solid var(--border); z-index: 1000; }
+        .nav-item { flex: 1; text-align: center; color: #888; font-size: 11px; display: flex; flex-direction: column; justify-content: center; }
         .nav-item.active { color: var(--accent); }
-        .siz-btn-oval { 
-            display: inline-flex; align-items: center; gap: 8px; 
-            background: #1a1a1a; padding: 4px 14px; border-radius: 30px; 
-            border: 1.5px solid #333; 
-        }
+        .nav-item i { font-size: 22px; margin-bottom: 4px; }
+        .siz-btn-oval { display: inline-flex; align-items: center; gap: 8px; background: #1a1a1a; padding: 4px 14px; border-radius: 30px; border: 1.5px solid #333; }
         .nav-avatar-img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
 
-        /* --- PAGES --- */
+        /* PAGES */
         .page { display: none; padding: 15px 5%; animation: fadeIn 0.3s ease; }
         .page.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- CARDS --- */
+        /* GRID & CARDS */
         .movie-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
-        .movie-card { width: 100%; position: relative; }
-        .movie-card img { width: 100%; height: 115px; border-radius: 20px; object-fit: cover; border: 1px solid #222; }
-        .price-badge { 
-            position: absolute; top: 10px; right: 10px; 
-            background: var(--accent); color: #000; 
-            padding: 3px 8px; border-radius: 8px; font-size: 11px; font-weight: 800; 
-        }
+        .movie-card { width: 100%; position: relative; background: var(--card); border-radius: 20px; overflow: hidden; border: 1px solid #222; }
+        .movie-card img { width: 100%; height: 120px; object-fit: cover; }
+        .price-badge { position: absolute; top: 10px; right: 10px; background: var(--accent); color: #000; padding: 3px 8px; border-radius: 8px; font-size: 11px; font-weight: 900; }
 
-        .status-card { 
-            background: var(--card); padding: 20px; border-radius: 25px; 
-            border: 1px solid var(--border); margin-bottom: 15px; 
-        }
+        .status-card { background: var(--card); padding: 20px; border-radius: 25px; border: 1px solid var(--border); margin-bottom: 15px; }
 
-        /* --- MODALS --- */
-        .modal { 
-            display: none; position: fixed; top: 0; left: 0; 
-            width: 100%; height: 100%; background: rgba(0,0,0,0.9); 
-            backdrop-filter: blur(10px); z-index: 2000; overflow-y: auto;
-        }
-        .modal-content { 
-            background: #111; border-radius: 35px 35px 0 0; 
-            padding: 30px 20px; margin-top: 50px; border-top: 1px solid var(--accent);
-        }
+        /* PLAYER */
+        #customPlayer { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000; }
+        .player-ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; box-sizing: border-box; background: rgba(0,0,0,0.4); z-index: 5005; }
+        .tap-zone { position: absolute; top: 0; width: 40%; height: 100%; z-index: 5001; }
+        .tap-left { left: 0; } .tap-right { right: 0; }
+        .progress-container { width: 100%; height: 5px; background: #333; border-radius: 5px; margin-bottom: 10px; overflow: hidden; }
+        #progressBar { height: 100%; background: var(--accent); width: 0%; }
 
-        input, select { 
-            width: 100%; padding: 18px; background: #1a1a1a; border: 1px solid #333; 
-            color: white; border-radius: 15px; margin-bottom: 15px; box-sizing: border-box; 
-        }
-
+        /* MODALS */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; overflow-y: auto; }
+        .modal-content { background: #111; border-radius: 35px 35px 0 0; padding: 30px 20px; margin-top: 50px; border-top: 2px solid var(--accent); }
+        input, select { width: 100%; padding: 18px; background: #1a1a1a; border: 1px solid #333; color: white; border-radius: 15px; margin-bottom: 15px; box-sizing: border-box; }
         .btn { width: 100%; padding: 18px; border-radius: 15px; border: none; font-weight: 900; cursor: pointer; }
         .btn-accent { background: var(--accent); color: #000; }
 
-        /* --- VIDEO PLAYER --- */
-        #customPlayer { 
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #000; z-index: 5000; 
-        }
-        .player-ui { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            display: flex; flex-direction: column; justify-content: space-between; padding: 20px; box-sizing: border-box;
-            background: rgba(0,0,0,0.2);
-        }
-        .tap-zone { position: absolute; top: 0; width: 40%; height: 100%; z-index: 5001; }
-        .tap-left { left: 0; } .tap-right { right: 0; }
-
-        .history-item { background: #1a1a1a; padding: 15px; border-radius: 15px; margin-bottom: 10px; border-left: 4px solid var(--accent); }
+        .history-item { background: #1a1a1a; padding: 15px; border-radius: 15px; margin-bottom: 10px; border-left: 4px solid var(--accent); font-size: 14px; }
+        .ep-btn { background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 15px; border-radius: 12px; margin-bottom: 10px; width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
 
-    <div id="toast" style="position:fixed; top:20px; left:50%; transform:translateX(-50%); background:var(--accent); color:#000; padding:10px 20px; border-radius:20px; z-index:9000; display:none;">Xabar!</div>
+    <div id="toast" style="position:fixed; top:20px; left:50%; transform:translateX(-50%); background:var(--accent); color:#000; padding:10px 20px; border-radius:20px; z-index:9000; display:none; font-weight:bold;"></div>
 
-    <!-- BOSH SAHIFA -->
+    <!-- HOME -->
     <div id="home" class="page active">
-        <div class="swiper hero-swiper" style="height: 350px; margin-bottom: 20px;">
+        <div class="swiper hero-swiper" style="height: 380px; margin-bottom: 20px;">
             <div class="swiper-wrapper" id="heroList"></div>
         </div>
         <div style="font-weight: 900; font-size: 20px; border-left: 5px solid var(--accent); padding-left: 15px; margin-bottom: 15px;">Kinolar</div>
         <div class="movie-grid" id="normalList"></div>
     </div>
 
-    <!-- MENING -->
+    <!-- HISTORY (MENING) -->
     <div id="mening" class="page">
-        <h2>Mening tarixim</h2>
+        <h2 style="margin-bottom:20px">Mening Tarixim</h2>
         <div id="userHistory"></div>
     </div>
 
-    <!-- SIZ (PROFIL) -->
+    <!-- PROFILE (SIZ) -->
     <div id="siz" class="page">
         <div style="display: flex; align-items: center; gap: 20px; padding: 30px 0;">
             <img src="" id="mainAvatar" style="width:85px; height:85px; border-radius:50%; border:3px solid var(--accent);">
             <div>
-                <h2 id="tgName" style="margin:0;">Yuklanmoqda...</h2>
-                <div id="premiumTimer" style="font-size: 13px; color: var(--accent); font-weight: bold; margin-top: 5px;">Premium: Faol emas ❌</div>
+                <h2 id="tgName" style="margin:0;">Foydalanuvchi</h2>
+                <div id="premiumTimer" style="font-size: 14px; color: var(--accent); font-weight: bold; margin-top: 5px;">Premium: Faol emas ❌</div>
             </div>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
             <div class="status-card tap-active" onclick="openPremiumModal()">
-                <small>PREMIUM</small><br><strong id="premBtnText">Sotib olish</strong>
+                <small style="color:#ff453a; font-weight:bold;">PREMIUM</small><br><strong>Sotib olish</strong>
             </div>
             <div class="status-card tap-active" onclick="openDepositModal()">
-                <small>BALANS</small><br><strong id="userBalance">0 so'm</strong>
+                <small style="color:#888; font-weight:bold;">BALANS</small><br><strong id="userBalance">0 so'm</strong>
             </div>
         </div>
-        <button class="btn tap-active" style="background:#222; color:#fff; margin-top:20px;" onclick="showAdminLogin()">Admin Panel</button>
+        <button class="btn tap-active" style="background:#1a1a1a; color:#fff; border:1px solid #333; margin-top:20px;" onclick="showAdminLogin()">
+            <i class="fa fa-lock" style="margin-right:10px;"></i> Admin Panel
+        </button>
     </div>
 
-    <!-- QISMLARNI TANLASH -->
+    <!-- EPISODES MODAL -->
     <div id="episodeModal" class="modal">
         <div class="modal-content">
-            <h2 id="epMovieTitle">Kino nomi</h2>
+            <h2 id="epMovieTitle" style="margin:0 0 20px 0; color:var(--accent);">Kino nomi</h2>
             <div id="episodeList"></div>
-            <button class="btn tap-active" style="margin-top:15px; background:#333; color:#fff;" onclick="closeModal('episodeModal')">Yopish</button>
+            <button class="btn tap-active" style="margin-top:15px; background:#222; color:#fff;" onclick="closeModal('episodeModal')">Yopish</button>
         </div>
     </div>
 
-    <!-- VIDEO PLAYER -->
+    <!-- CUSTOM PLAYER -->
     <div id="customPlayer">
         <video id="mainVideo" style="width:100%; height:100%;" playsinline></video>
-        <div class="tap-zone tap-left" ondblclick="skip(-10)"></div>
-        <div class="tap-zone tap-right" ondblclick="skip(10)"></div>
+        <div class="tap-zone tap-left" ondblclick="skipTime(-10)"></div>
+        <div class="tap-zone tap-right" ondblclick="skipTime(10)"></div>
+        
         <div class="player-ui">
-            <div style="display:flex; justify-content:space-between;">
-                <i class="fa fa-arrow-left" style="font-size:25px;" onclick="closePlayer()"></i>
-                <i class="fa fa-expand" style="font-size:25px;" onclick="toggleFullscreen()"></i>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <i class="fa fa-arrow-left tap-active" style="font-size:25px; padding:10px;" onclick="closePlayer()"></i>
+                <span id="playerTitle" style="font-weight:bold; font-size:14px; color:#fff;"></span>
+                <i class="fa fa-expand tap-active" style="font-size:25px; padding:10px;" onclick="toggleRotate()"></i>
             </div>
-            <div style="display:flex; justify-content:center; align-items:center; gap:50px;">
-                <i class="fa fa-backward" style="font-size:30px;" onclick="skip(-10)"></i>
-                <i id="playIcon" class="fa fa-pause" style="font-size:50px;" onclick="togglePlay()"></i>
-                <i class="fa fa-forward" style="font-size:30px;" onclick="skip(10)"></i>
-            </div>
-            <div style="text-align:center; font-size:12px; color:#aaa;">2 marta urish: +/- 10 soniya</div>
-        </div>
-    </div>
 
-    <!-- ADMIN PANEL -->
-    <div id="adminPanel" class="modal">
-        <div class="modal-content" style="background:#000;">
-            <h2>Admin Panel</h2>
-            <div class="status-card">
-                <h3>Bot & Karta</h3>
-                <input type="text" id="admBotToken" placeholder="Bot Token">
-                <input type="text" id="admChatId" placeholder="Admin Chat ID">
-                <input type="text" id="admCard" placeholder="Karta raqami">
-                <button class="btn btn-accent" onclick="saveAdminConfig()">SAQLASH</button>
+            <div style="display:flex; justify-content:center; align-items:center; gap:60px;">
+                <i class="fa fa-backward tap-active" style="font-size:35px;" onclick="skipTime(-10)"></i>
+                <i id="playIcon" class="fa fa-pause tap-active" style="font-size:60px;" onclick="togglePlay()"></i>
+                <i class="fa fa-forward tap-active" style="font-size:35px;" onclick="skipTime(10)"></i>
             </div>
-            <div class="status-card">
-                <h3>Yangi Kino</h3>
-                <input type="text" id="kTitle" placeholder="Kino nomi">
-                <input type="number" id="kPrice" placeholder="Narxi (0=bepul)">
-                <small>Poster:</small><input type="file" id="kPoster">
-                <div id="episodeInputs">
-                    <div style="border:1px solid #333; padding:10px; margin-bottom:10px; border-radius:10px;">
-                        <input type="text" placeholder="1-qism nomi" class="ep-t">
-                        <input type="file" class="ep-v">
-                    </div>
-                </div>
-                <button onclick="addEpField()">+ Qism qo'shish</button>
-                <button class="btn btn-accent" style="margin-top:10px;" onclick="saveKino()">YUKLASH</button>
+
+            <div style="width:100%">
+                <div class="progress-container"><div id="progressBar"></div></div>
+                <div style="text-align:center; font-size:11px; color:#aaa;">Double Tap: +/- 10 soniya</div>
             </div>
-            <div class="status-card">
-                <h3>Kutilayotgan to'lovlar</h3>
-                <div id="pendingList"></div>
-            </div>
-            <button class="btn" style="background:#333; color:#fff;" onclick="closeModal('adminPanel')">Yopish</button>
         </div>
     </div>
 
@@ -202,36 +137,90 @@
     <div id="depositModal" class="modal">
         <div class="modal-content">
             <h2>Hisobni to'ldirish</h2>
-            <div style="background:var(--accent); color:#000; padding:20px; border-radius:20px; margin-bottom:15px;">
-                Karta: <b id="displayCard">8600 ...</b><br>Ega: KINO DRAMA
+            <div style="background:linear-gradient(135deg, #00ff73, #008f41); color:#000; padding:25px; border-radius:20px; margin-bottom:20px;" class="tap-active" onclick="copyCard()">
+                <small>To'lov uchun karta raqami:</small><br>
+                <b id="displayCard" style="font-size:22px; letter-spacing:1px;">8600 0000 0000 0000</b><br>
+                <span>Nusxa olish uchun bosing</span>
             </div>
-            <input type="number" id="depSum" placeholder="Summa">
+            <input type="number" id="depSum" placeholder="Summani kiriting">
+            <label style="display:block; margin-bottom:10px; color:#888;">To'lov cheki (Rasm):</label>
             <input type="file" id="depCheck" accept="image/*">
-            <button class="btn btn-accent" onclick="requestDeposit()">TASDIQLASHGA YUBORISH</button>
-            <button class="btn" style="margin-top:10px; background:#222; color:#fff;" onclick="closeModal('depositModal')">Yopish</button>
+            <button class="btn btn-accent tap-active" onclick="requestDeposit()">TASDIQLASHGA YUBORISH</button>
+            <button class="btn tap-active" style="margin-top:10px; background:#222; color:#fff;" onclick="closeModal('depositModal')">Bekor qilish</button>
         </div>
     </div>
 
-    <!-- NAV BAR -->
-    <div class="bottom-nav">
-        <div class="nav-item active tap-active" onclick="showPage('home', this)"><i class="fa fa-home" style="font-size:22px;"></i><br>Asosiy</div>
-        <div class="nav-item tap-active" onclick="showPage('mening', this)"><i class="fa fa-bookmark" style="font-size:22px;"></i><br>Mening</div>
-        <div class="nav-item tap-active" onclick="showPage('siz', this)">
-            <div class="siz-btn-oval">
-                <img src="" id="navAvatar" class="nav-avatar-img">
-                <span style="font-weight:bold;">Siz</span>
+    <!-- PREMIUM STORE -->
+    <div id="premiumModal" class="modal">
+        <div class="modal-content">
+            <h2>Premium Tariflar</h2>
+            <div id="premiumPlans"></div>
+            <button class="btn tap-active" style="margin-top:20px; background:#222; color:#fff;" onclick="closeModal('premiumModal')">Yopish</button>
+        </div>
+    </div>
+
+    <!-- ADMIN PANEL -->
+    <div id="adminPanel" class="modal">
+        <div class="modal-content" style="background:#000; border-top:2px solid #fff;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2>Admin Boshqaruvi</h2>
+                <i class="fa fa-times-circle" style="font-size:30px;" onclick="closeModal('adminPanel')"></i>
             </div>
+
+            <div class="status-card">
+                <h3>Sozlamalar</h3>
+                <input type="text" id="admBotToken" placeholder="Bot Token">
+                <input type="text" id="admChatId" placeholder="Admin Chat ID">
+                <input type="text" id="admCard" placeholder="Karta raqami">
+                <button class="btn btn-accent" onclick="saveSettings()">SAQLASH</button>
+            </div>
+
+            <div class="status-card">
+                <h3>Kino/Serial Qo'shish</h3>
+                <input type="text" id="kTitle" placeholder="Kino nomi">
+                <input type="number" id="kPrice" placeholder="Narxi (0 = tekin)">
+                <small>Poster rasm:</small><input type="file" id="kPoster" accept="image/*">
+                <div id="epFields">
+                    <div style="border:1px solid #333; padding:15px; margin-bottom:10px; border-radius:15px;">
+                        <input type="text" placeholder="1-qism nomi" class="ept">
+                        <input type="file" class="epv" accept="video/*">
+                    </div>
+                </div>
+                <button onclick="addEp()" style="background:#222; color:#fff; border:none; padding:10px; border-radius:10px; margin-bottom:15px;">+ Qism qo'shish</button>
+                <button class="btn btn-accent" onclick="saveKino()">KINONI SAYTGA YUKLASH</button>
+            </div>
+
+            <div class="status-card">
+                <h3>Tariflar</h3>
+                <input type="text" id="pName" placeholder="Tarif nomi">
+                <input type="number" id="pVal" placeholder="Vaqt miqdori">
+                <select id="pType">
+                    <option value="min">Minut</option>
+                    <option value="hour">Soat</option>
+                    <option value="day">Kun</option>
+                </select>
+                <input type="number" id="pPrice" placeholder="Narxi">
+                <button class="btn btn-accent" onclick="savePlan()">TARIFNI QO'SHISH</button>
+            </div>
+
+            <div class="status-card">
+                <h3>To'lovlarni Tasdiqlash</h3>
+                <div id="admPending"></div>
+            </div>
+            
+            <div id="admMovieList"></div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script>
-        const db = new Dexie("KinoDramaFinalDB");
+        const db = new Dexie("KinoDramaGlobalDB");
         db.version(1).stores({
             movies: "++id, title, price",
             profile: "key, value",
             settings: "key, value",
-            history: "++id, date"
+            history: "++id, date",
+            plans: "++id, name"
         });
 
         const tg = window.Telegram.WebApp;
@@ -240,7 +229,7 @@
         async function init() {
             if (tg.initDataUnsafe.user) {
                 const u = tg.initDataUnsafe.user;
-                await db.profile.put({key: 'uinfo', value: {name: u.first_name, img: u.photo_url || "https://ui-avatars.com/api/?name="+u.first_name}});
+                await db.profile.put({key:'uinfo', value:{name:u.first_name, img:u.photo_url || "https://ui-avatars.com/api/?name="+u.first_name}});
             }
             if(!(await db.profile.get('balance'))) await db.profile.put({key:'balance', value: 0});
             if(!(await db.profile.get('prem_exp'))) await db.profile.put({key:'prem_exp', value: 0});
@@ -261,84 +250,88 @@
                 document.getElementById('navAvatar').src = info.value.img;
                 document.getElementById('tgName').innerText = info.value.name;
             }
-            document.getElementById('userBalance').innerText = bal.value.toLocaleString() + " so'm";
+            document.getElementById('userBalance').innerText = (bal.value || 0).toLocaleString() + " so'm";
             document.getElementById('displayCard').innerText = card.value;
             
-            // Admin fields
             document.getElementById('admCard').value = card.value;
-            document.getElementById('admBotToken').value = bTok ? bTok.value : "";
-            document.getElementById('admChatId').value = bId ? bId.value : "";
-
+            document.getElementById('admBotToken').value = bTok ? bTok.value : '';
+            document.getElementById('admChatId').value = bId ? bId.value : '';
             loadHistory();
         }
 
         async function loadContent() {
             const movies = await db.movies.toArray();
-            const hList = document.getElementById('heroList');
-            const nList = document.getElementById('normalList');
-            hList.innerHTML = ''; nList.innerHTML = '';
-
+            const hL = document.getElementById('heroList');
+            const nL = document.getElementById('normalList');
+            hL.innerHTML = ''; nL.innerHTML = '';
             movies.forEach(m => {
-                const img = URL.createObjectURL(m.poster);
-                const badge = `<div class="price-badge" style="${m.price==0?'background:#fff':'' }">${m.price==0?'BEPUL':m.price+' so\'m'}</div>`;
-                hList.innerHTML += `<div class="swiper-slide" onclick="openEpisodes(${m.id})">${badge}<img src="${img}" style="width:100%; height:100%; object-fit:cover; border-radius:30px;"></div>`;
-                nList.innerHTML += `<div class="movie-card tap-active" onclick="openEpisodes(${m.id})">${badge}<img src="${img}"><div style="margin-top:10px; font-weight:bold;">${m.title}</div></div>`;
+                const poster = URL.createObjectURL(m.poster);
+                const badge = `<div class="price-badge" style="${m.price==0?'background:#fff':''}">${m.price==0?'BEPUL':m.price.toLocaleString()+' so\'m'}</div>`;
+                hL.innerHTML += `<div class="swiper-slide tap-active" onclick="openEp(${m.id})">${badge}<img src="${poster}" style="width:100%;height:100%;object-fit:cover;border-radius:30px;"></div>`;
+                nL.innerHTML += `<div class="movie-card tap-active" onclick="openEp(${m.id})">${badge}<img src="${poster}"><div style="padding:10px;font-weight:bold;">${m.title}</div></div>`;
             });
-            new Swiper('.hero-swiper', { slidesPerView: 'auto', centeredSlides: true, loop: true, spaceBetween: 15, autoplay: {delay:3000} });
+            new Swiper('.hero-swiper', { slidesPerView: 'auto', centeredSlides: true, loop: true, spaceBetween: 15, autoplay: {delay:3500} });
         }
 
-        // QISMLARNI OCHISH
-        async function openEpisodes(id) {
+        // EPISODES
+        async function openEp(id) {
             const m = await db.movies.get(id);
             const bal = await db.profile.get('balance');
             const exp = await db.profile.get('prem_exp');
             
             if(m.price > 0 && exp.value < Date.now()) {
-                if(!confirm(`Kino pullik: ${m.price} so'm. Balansdan ko'rasizmi?`)) return;
-                if(bal.value < m.price) return alert("Balans yetarli emas!");
+                if(!confirm(`Ushbu kino pullik: ${m.price.toLocaleString()} so'm. Sotib olasizmi?`)) return;
+                if(bal.value < m.price) { alert("Balans yetarli emas!"); return openDepositModal(); }
                 await db.profile.put({key:'balance', value: bal.value - m.price});
-                addHistory(`Sotib olindi: ${m.title}`);
+                addHistory(`Sotib olindi: ${m.title} (-${m.price} so'm)`);
                 loadUI();
             }
 
             document.getElementById('epMovieTitle').innerText = m.title;
             const list = document.getElementById('episodeList');
             list.innerHTML = '';
-            m.episodes.forEach((ep, i) => {
-                list.innerHTML += `<button class="btn tap-active" style="background:#222; color:#fff; margin-bottom:10px;" onclick="playVideo(${m.id}, ${i})">${ep.title}</button>`;
+            m.episodes.forEach((e, i) => {
+                list.innerHTML += `<div class="ep-btn tap-active" onclick="playVid(${m.id}, ${i})"><span>${i+1}. ${e.title}</span><i class="fa fa-play-circle" style="color:var(--accent)"></i></div>`;
             });
             document.getElementById('episodeModal').style.display = 'block';
         }
 
-        function playVideo(mId, epIdx) {
-            db.movies.get(mId).then(m => {
-                const ep = m.episodes[epIdx];
+        function playVid(mid, idx) {
+            db.movies.get(mid).then(m => {
+                const ep = m.episodes[idx];
                 v.src = URL.createObjectURL(ep.video);
+                document.getElementById('playerTitle').innerText = m.title + " - " + ep.title;
                 document.getElementById('episodeModal').style.display = 'none';
                 document.getElementById('customPlayer').style.display = 'block';
                 v.play();
-                addHistory(`Ko'rildi: ${m.title} - ${ep.title}`);
+                addHistory(`Ko'rildi: ${m.title} (${ep.title})`);
             });
         }
 
-        // PLAYER
+        // PLAYER LOGIC
         function togglePlay() { 
             if(v.paused) { v.play(); document.getElementById('playIcon').className = 'fa fa-pause'; }
             else { v.pause(); document.getElementById('playIcon').className = 'fa fa-play'; }
         }
-        function skip(s) { v.currentTime += s; }
+        function skipTime(s) { v.currentTime += s; }
         function closePlayer() { v.pause(); document.getElementById('customPlayer').style.display = 'none'; }
-        function toggleFullscreen() {
-            if(!document.fullscreenElement) document.getElementById('customPlayer').requestFullscreen();
-            else document.exitFullscreen();
+        function toggleRotate() {
+            if(!document.fullscreenElement) {
+                document.getElementById('customPlayer').requestFullscreen().catch(() => {});
+                screen.orientation.lock('landscape').catch(() => {});
+            } else {
+                document.exitFullscreen();
+                screen.orientation.unlock().catch(() => {});
+            }
         }
+        v.ontimeupdate = () => { document.getElementById('progressBar').style.width = (v.currentTime / v.duration) * 100 + "%"; };
 
         // DEPOSIT BOT
         async function requestDeposit() {
             const sum = document.getElementById('depSum').value;
             const file = document.getElementById('depCheck').files[0];
             const info = await db.profile.get('uinfo');
-            if(!sum || !file) return alert("To'ldiring!");
+            if(!sum || !file) return alert("To'liq to'ldiring!");
 
             const token = (await db.settings.get('bot_token'))?.value;
             const chat = (await db.settings.get('admin_id'))?.value;
@@ -346,21 +339,22 @@
             if(token && chat) {
                 const fd = new FormData();
                 fd.append('chat_id', chat); fd.append('photo', file);
-                fd.append('caption', `💰 TO'LOV\n👤 ${info.value.name}\n💵 ${sum} so'm\nTasdiqlash uchun saytga kiring.`);
+                fd.append('caption', `💰 TO'LOV CHEKI\n👤 Foydalanuvchi: ${info.value.name}\n💵 Summa: ${sum} so'm\nTasdiqlash uchun sayt Admin paneliga kiring.`);
                 fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {method:'POST', body:fd});
             }
 
             const p = (await db.settings.get('pending')) || {key:'pending', value:[]};
             p.value.push({name: info.value.name, sum, id: Date.now()});
             await db.settings.put(p);
-            alert("Botga yuborildi. Admin tasdiqlashi kutilmoqda.");
+            showToast("Chek yuborildi! Admin tasdiqlashi kutilmoqda.");
             closeModal('depositModal');
         }
 
-        // TAYMER & TARIX
+        // PREMIUM TIMER & HISTORY
         function startTimer() {
             setInterval(async () => {
-                const exp = (await db.profile.get('prem_exp')).value;
+                const expObj = await db.profile.get('prem_exp');
+                const exp = expObj ? expObj.value : 0;
                 const now = Date.now();
                 if(exp > now) {
                     const d = exp - now;
@@ -368,59 +362,44 @@
                     const m = Math.floor((d%3600000)/60000).toString().padStart(2,'0');
                     const s = Math.floor((d%60000)/1000).toString().padStart(2,'0');
                     document.getElementById('premiumTimer').innerText = `Premium: ${h}:${m}:${s} qoldi ✅`;
-                } else {
-                    document.getElementById('premiumTimer').innerText = "Premium: Faol emas ❌";
-                }
+                } else { document.getElementById('premiumTimer').innerText = "Premium: Faol emas ❌"; }
             }, 1000);
         }
 
-        async function addHistory(txt) {
-            await db.history.add({text: txt, date: new Date().toLocaleString()});
-            loadHistory();
-        }
-
+        async function addHistory(txt) { await db.history.add({text: txt, date: new Date().toLocaleString()}); loadHistory(); }
         async function loadHistory() {
             const h = await db.history.reverse().toArray();
-            document.getElementById('userHistory').innerHTML = h.map(i => `<div class="history-item"><small>${i.date}</small><br><b>${i.text}</b></div>`).join('');
+            document.getElementById('userHistory').innerHTML = h.map(i => `<div class="history-item"><small style="color:#666;">${i.date}</small><br><b>${i.text}</b></div>`).join('') || "Tarix bo'sh";
         }
 
         // ADMIN
-        function showAdminLogin() {
-            if(prompt("Login:")==='Aziz' && prompt("Parol:")==='Azizbek') {
-                document.getElementById('adminPanel').style.display='block';
-                loadPending();
-            }
-        }
-
-        function addEpField() {
+        function showAdminLogin() { if(prompt("Login:")==='Aziz' && prompt("Parol:")==='Azizbek') { document.getElementById('adminPanel').style.display='block'; loadPending(); renderAdmList(); } }
+        function addEp() {
             const div = document.createElement('div');
-            div.style = "border:1px solid #333; padding:10px; margin-bottom:10px; border-radius:10px;";
-            div.innerHTML = `<input type="text" placeholder="Qism nomi" class="ep-t"> <input type="file" class="ep-v">`;
-            document.getElementById('episodeInputs').appendChild(div);
+            div.style = "border:1px solid #333; padding:15px; margin-bottom:10px; border-radius:15px;";
+            div.innerHTML = `<input type="text" placeholder="Qism nomi" class="ept"> <input type="file" class="epv" accept="video/*">`;
+            document.getElementById('epFields').appendChild(div);
         }
-
         async function saveKino() {
             const title = document.getElementById('kTitle').value;
             const price = parseInt(document.getElementById('kPrice').value) || 0;
             const poster = document.getElementById('kPoster').files[0];
-            const tInputs = document.querySelectorAll('.ep-t');
-            const vInputs = document.querySelectorAll('.ep-v');
+            const tIns = document.querySelectorAll('.ept');
+            const vIns = document.querySelectorAll('.epv');
             let episodes = [];
-            for(let i=0; i<tInputs.length; i++) {
-                if(tInputs[i].value && vInputs[i].files[0]) episodes.push({title: tInputs[i].value, video: vInputs[i].files[0]});
-            }
-            if(!title || !poster || episodes.length==0) return alert("Xatolik!");
+            for(let i=0; i<tIns.length; i++) { if(tIns[i].value && vIns[i].files[0]) episodes.push({title: tIns[i].value, video: vIns[i].files[0]}); }
+            if(!title || !poster || episodes.length==0) return alert("Ma'lumotlar xato!");
             await db.movies.add({title, price, poster, episodes});
-            alert("Yuklandi!"); location.reload();
+            alert("Kino yuklandi!"); location.reload();
         }
-
         async function loadPending() {
             const p = (await db.settings.get('pending'))?.value || [];
-            document.getElementById('pendingList').innerHTML = p.map(x => `
-                <div style="background:#222; padding:10px; margin-bottom:5px; border-radius:10px;">
-                    ${x.name} - ${x.sum} <button onclick="approve(${x.id}, ${x.sum})">OK</button>
+            document.getElementById('admPending').innerHTML = p.map(x => `
+                <div style="background:#222; padding:15px; margin-bottom:5px; border-radius:12px; display:flex; justify-content:space-between; align-items:center;">
+                    <div><b>${x.name}</b><br>${x.sum} so'm</div>
+                    <button class="btn tap-active" style="width:auto; padding:8px 15px; background:var(--accent); color:#000;" onclick="approve(${x.id}, ${x.sum})">Tasdiqlash</button>
                 </div>
-            `).join('');
+            `).join('') || "Kutilayotgan to'lovlar yo'q";
         }
         async function approve(id, s) {
             const b = await db.profile.get('balance');
@@ -428,14 +407,45 @@
             const p = await db.settings.get('pending');
             p.value = p.value.filter(i => i.id !== id);
             await db.settings.put(p);
-            alert("Tasdiqlandi!"); loadPending(); loadUI();
+            alert("Pul balansga qo'shildi!"); loadPending(); loadUI();
+            addHistory(`Hisob to'ldirildi: +${s} so'm (Admin tasdiqladi)`);
         }
-
-        async function saveAdminConfig() {
+        async function saveSettings() {
             await db.settings.put({key:'bot_token', value: document.getElementById('admBotToken').value});
             await db.settings.put({key:'admin_id', value: document.getElementById('admChatId').value});
             await db.settings.put({key:'card', value: document.getElementById('admCard').value});
             alert("Saqlandi!"); loadUI();
+        }
+
+        async function openPremiumModal() {
+            const ps = await db.plans.toArray();
+            document.getElementById('premiumPlans').innerHTML = ps.map(p => `
+                <div class="status-card tap-active" onclick="buyPrem(${p.id})">
+                    <strong style="font-size:18px">${p.name}</strong><br>
+                    <span style="color:var(--accent)">${p.price.toLocaleString()} so'm</span>
+                </div>
+            `).join('') || "Tariflar yo'q";
+            document.getElementById('premiumModal').style.display='block';
+        }
+        async function savePlan() {
+            const name = document.getElementById('pName').value;
+            const pVal = parseInt(document.getElementById('pVal').value);
+            const pType = document.getElementById('pType').value;
+            const price = parseInt(document.getElementById('pPrice').value);
+            await db.plans.add({name, pVal, pType, price});
+            alert("Tarif qo'shildi!");
+        }
+        async function buyPrem(id) {
+            const p = await db.plans.get(id);
+            const b = await db.profile.get('balance');
+            const exp = await db.profile.get('prem_exp');
+            if(b.value < p.price) return alert("Balans yetarli emas!");
+            await db.profile.put({key:'balance', value: b.value - p.price});
+            let ms = p.pVal * (p.pType==='min'?60000 : p.pType==='hour'?3600000 : 86400000);
+            const newExp = (exp.value > Date.now() ? exp.value : Date.now()) + ms;
+            await db.profile.put({key:'prem_exp', value: newExp});
+            alert("Premium faollashdi!"); closeModal('premiumModal'); loadUI();
+            addHistory(`Premium sotib olindi: ${p.name}`);
         }
 
         // UTILS
@@ -447,7 +457,14 @@
         }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
         function openDepositModal() { document.getElementById('depositModal').style.display = 'block'; }
-        
+        function copyCard() { navigator.clipboard.writeText(document.getElementById('displayCard').innerText); showToast("Nusxalandi!"); }
+        function showToast(m) { const t=document.getElementById('toast'); t.innerText=m; t.style.display='block'; setTimeout(()=>t.style.display='none', 2000); }
+        async function renderAdmList() {
+            const ms = await db.movies.toArray();
+            document.getElementById('admMovieList').innerHTML = "<h3>O'chirish</h3>" + ms.map(m => `<div style="padding:10px;background:#222;margin-bottom:5px;border-radius:10px;display:flex;justify-content:space-between;">${m.title} <i class="fa fa-trash" style="color:red" onclick="delMov(${m.id})"></i></div>`).join('');
+        }
+        async function delMov(id) { await db.movies.delete(id); renderAdmList(); loadContent(); }
+
         init();
     </script>
 </body>
