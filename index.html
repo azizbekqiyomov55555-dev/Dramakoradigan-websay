@@ -16,22 +16,18 @@
             --accent: #00ff73; 
             --card: #121212; 
             --border: #222;
-            --glass: rgba(20, 20, 20, 0.8);
         }
 
         body { 
-            background: var(--bg); 
-            color: white; 
+            background: var(--bg); color: white; 
             font-family: -apple-system, system-ui, sans-serif; 
-            margin: 0; 
-            padding-bottom: 90px;
-            overflow-x: hidden;
+            margin: 0; padding-bottom: 90px; overflow-x: hidden;
         }
 
         .tap-active { transition: transform 0.1s ease; cursor: pointer; }
         .tap-active:active { transform: scale(0.95); opacity: 0.8; }
 
-        /* --- BOTTOM NAV --- */
+        /* --- NAV BAR --- */
         .bottom-nav { 
             position: fixed; bottom: 0; width: 100%; height: 75px; 
             background: rgba(10,10,10,0.9); backdrop-filter: blur(20px); 
@@ -52,7 +48,7 @@
         .page.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- CARDS & GRID --- */
+        /* --- CARDS --- */
         .movie-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
         .movie-card { width: 100%; position: relative; }
         .movie-card img { width: 100%; height: 115px; border-radius: 20px; object-fit: cover; border: 1px solid #222; }
@@ -70,187 +66,155 @@
         /* --- MODALS --- */
         .modal { 
             display: none; position: fixed; top: 0; left: 0; 
-            width: 100%; height: 100%; background: rgba(0,0,0,0.8); 
+            width: 100%; height: 100%; background: rgba(0,0,0,0.9); 
             backdrop-filter: blur(10px); z-index: 2000; overflow-y: auto;
         }
         .modal-content { 
-            position: relative; background: #111; border-radius: 35px 35px 0 0; 
-            padding: 30px 20px 50px; box-sizing: border-box; 
-            margin-top: 50px; border-top: 1px solid var(--accent);
+            background: #111; border-radius: 35px 35px 0 0; 
+            padding: 30px 20px; margin-top: 50px; border-top: 1px solid var(--accent);
         }
-
-        .payment-card { 
-            background: linear-gradient(135deg, #00ff73 0%, #008f41 100%);
-            padding: 25px; border-radius: 20px; color: #000; margin: 20px 0;
-            position: relative; overflow: hidden;
-        }
-        .card-number { font-size: 22px; font-weight: 900; letter-spacing: 2px; display: block; margin: 10px 0; }
 
         input, select { 
             width: 100%; padding: 18px; background: #1a1a1a; border: 1px solid #333; 
-            color: white; border-radius: 15px; margin-bottom: 15px; box-sizing: border-box; font-size: 16px;
+            color: white; border-radius: 15px; margin-bottom: 15px; box-sizing: border-box; 
         }
 
-        .btn { 
-            width: 100%; padding: 18px; border-radius: 15px; border: none; 
-            font-weight: 900; cursor: pointer; font-size: 16px; transition: 0.3s;
-        }
+        .btn { width: 100%; padding: 18px; border-radius: 15px; border: none; font-weight: 900; cursor: pointer; }
         .btn-accent { background: var(--accent); color: #000; }
-        .btn-outline { background: transparent; border: 1px solid #444; color: #fff; }
 
-        .file-upload-label {
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-            background: #222; padding: 18px; border-radius: 15px; border: 2px dashed #444;
-            margin-bottom: 20px; color: #888; font-weight: bold;
+        /* --- VIDEO PLAYER --- */
+        #customPlayer { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #000; z-index: 5000; 
         }
-
-        #toast {
-            position: fixed; top: 30px; left: 50%; transform: translateX(-50%);
-            background: var(--accent); color: #000; padding: 10px 25px;
-            border-radius: 30px; font-weight: 900; z-index: 3000; display: none;
+        .player-ui { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            display: flex; flex-direction: column; justify-content: space-between; padding: 20px; box-sizing: border-box;
+            background: rgba(0,0,0,0.2);
         }
+        .tap-zone { position: absolute; top: 0; width: 40%; height: 100%; z-index: 5001; }
+        .tap-left { left: 0; } .tap-right { right: 0; }
 
-        .hero-swiper { width: 100%; height: 400px; margin-bottom: 20px; }
-        .swiper-slide { width: 85% !important; border-radius: 30px; overflow: hidden; transform: scale(0.9); transition: 0.3s; }
-        .swiper-slide-active { transform: scale(1); }
-        .hero-img { width: 100%; height: 100%; object-fit: cover; }
+        .history-item { background: #1a1a1a; padding: 15px; border-radius: 15px; margin-bottom: 10px; border-left: 4px solid var(--accent); }
     </style>
 </head>
 <body>
 
-    <div id="toast">Nusxalandi!</div>
+    <div id="toast" style="position:fixed; top:20px; left:50%; transform:translateX(-50%); background:var(--accent); color:#000; padding:10px 20px; border-radius:20px; z-index:9000; display:none;">Xabar!</div>
 
     <!-- BOSH SAHIFA -->
     <div id="home" class="page active">
-        <div class="swiper hero-swiper">
+        <div class="swiper hero-swiper" style="height: 350px; margin-bottom: 20px;">
             <div class="swiper-wrapper" id="heroList"></div>
         </div>
         <div style="font-weight: 900; font-size: 20px; border-left: 5px solid var(--accent); padding-left: 15px; margin-bottom: 15px;">Kinolar</div>
         <div class="movie-grid" id="normalList"></div>
     </div>
 
-    <!-- QIDIRISH -->
-    <div id="search" class="page">
-        <input type="text" id="searchInput" placeholder="Kino qidirish..." oninput="searchMovie()" style="margin-top:20px;">
-        <div class="movie-grid" id="searchResult"></div>
-    </div>
-
     <!-- MENING -->
     <div id="mening" class="page">
-        <h2 style="text-align:center">Mening kutubxonam</h2>
-        <div id="purchasedList" class="movie-grid"></div>
+        <h2>Mening tarixim</h2>
+        <div id="userHistory"></div>
     </div>
 
     <!-- SIZ (PROFIL) -->
     <div id="siz" class="page">
         <div style="display: flex; align-items: center; gap: 20px; padding: 30px 0;">
-            <img src="" id="mainAvatar" style="width:85px; height:85px; border-radius:50%; border:3px solid var(--accent); padding:3px; background:#111;">
+            <img src="" id="mainAvatar" style="width:85px; height:85px; border-radius:50%; border:3px solid var(--accent);">
             <div>
-                <h2 id="tgName" style="margin:0; font-size: 26px;">Yuklanmoqda...</h2>
-                <div id="premiumTimer" style="font-size: 13px; color: var(--accent); font-weight: bold; margin-top: 5px;"></div>
+                <h2 id="tgName" style="margin:0;">Yuklanmoqda...</h2>
+                <div id="premiumTimer" style="font-size: 13px; color: var(--accent); font-weight: bold; margin-top: 5px;">Premium: Faol emas ❌</div>
             </div>
         </div>
-
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
             <div class="status-card tap-active" onclick="openPremiumModal()">
-                <span style="color:#ff453a; font-size:12px; font-weight: 800;">PREMIUM</span><br>
-                <strong style="font-size: 18px;">Sotib olish</strong>
+                <small>PREMIUM</small><br><strong id="premBtnText">Sotib olish</strong>
             </div>
             <div class="status-card tap-active" onclick="openDepositModal()">
-                <span style="color:#888; font-size:12px; font-weight: 800;">HISOB</span><br>
-                <strong id="userBalance" style="font-size: 18px;">0 so'm</strong>
+                <small>BALANS</small><br><strong id="userBalance">0 so'm</strong>
             </div>
         </div>
+        <button class="btn tap-active" style="background:#222; color:#fff; margin-top:20px;" onclick="showAdminLogin()">Admin Panel</button>
+    </div>
 
-        <div class="status-card" style="padding:0; overflow:hidden;">
-            <div class="tap-active" style="padding:20px; border-bottom:1px solid #222;" onclick="openAdmin()"><i class="fa fa-user-shield" style="margin-right:15px; color:var(--accent);"></i> Admin Panel</div>
-            <div class="tap-active" style="padding:20px;"><i class="fa fa-gear" style="margin-right:15px; color:var(--accent);"></i> Sozlamalar</div>
+    <!-- QISMLARNI TANLASH -->
+    <div id="episodeModal" class="modal">
+        <div class="modal-content">
+            <h2 id="epMovieTitle">Kino nomi</h2>
+            <div id="episodeList"></div>
+            <button class="btn tap-active" style="margin-top:15px; background:#333; color:#fff;" onclick="closeModal('episodeModal')">Yopish</button>
         </div>
     </div>
 
-    <!-- HISOB TO'LDIRISH MODAL -->
-    <div id="depositModal" class="modal">
-        <div class="modal-content">
-            <h2>Hisobni to'ldirish</h2>
-            <div class="payment-card tap-active" onclick="copyCard()">
-                <span id="displayCard" class="card-number">8600 0000 0000 0000</span>
-                <span>KINO DRAMA (Nusxa olish uchun bosing)</span>
+    <!-- VIDEO PLAYER -->
+    <div id="customPlayer">
+        <video id="mainVideo" style="width:100%; height:100%;" playsinline></video>
+        <div class="tap-zone tap-left" ondblclick="skip(-10)"></div>
+        <div class="tap-zone tap-right" ondblclick="skip(10)"></div>
+        <div class="player-ui">
+            <div style="display:flex; justify-content:space-between;">
+                <i class="fa fa-arrow-left" style="font-size:25px;" onclick="closePlayer()"></i>
+                <i class="fa fa-expand" style="font-size:25px;" onclick="toggleFullscreen()"></i>
             </div>
-            <input type="number" id="depAmount" placeholder="Summani yozing">
-            <label for="depCheck" class="file-upload-label">
-                <i class="fa fa-upload"></i> <span id="fileName">Chek rasmini yuklang</span>
-            </label>
-            <input type="file" id="depCheck" hidden onchange="document.getElementById('fileName').innerText = this.files[0].name">
-            <button class="btn btn-accent" onclick="submitDeposit()">TO'LOVNI YUBORISH</button>
-            <button class="btn btn-outline" style="margin-top:10px;" onclick="closeModal('depositModal')">YOPISH</button>
-        </div>
-    </div>
-
-    <!-- PREMIUM MODAL -->
-    <div id="premiumModal" class="modal">
-        <div class="modal-content">
-            <h2>Premium tariflar</h2>
-            <div id="premiumPlans"></div>
-            <button class="btn btn-outline" style="margin-top:20px;" onclick="closeModal('premiumModal')">YOPISH</button>
+            <div style="display:flex; justify-content:center; align-items:center; gap:50px;">
+                <i class="fa fa-backward" style="font-size:30px;" onclick="skip(-10)"></i>
+                <i id="playIcon" class="fa fa-pause" style="font-size:50px;" onclick="togglePlay()"></i>
+                <i class="fa fa-forward" style="font-size:30px;" onclick="skip(10)"></i>
+            </div>
+            <div style="text-align:center; font-size:12px; color:#aaa;">2 marta urish: +/- 10 soniya</div>
         </div>
     </div>
 
     <!-- ADMIN PANEL -->
-    <div id="adminPanel" class="modal" style="background: #000;">
-        <div style="padding:20px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h2>Admin Panel</h2>
-                <i class="fa fa-times-circle" style="font-size:30px;" onclick="closeAdmin()"></i>
-            </div>
-            
+    <div id="adminPanel" class="modal">
+        <div class="modal-content" style="background:#000;">
+            <h2>Admin Panel</h2>
             <div class="status-card">
-                <h3>Bot Sozlamalari</h3>
+                <h3>Bot & Karta</h3>
                 <input type="text" id="admBotToken" placeholder="Bot Token">
-                <input type="text" id="admAdminId" placeholder="Admin Chat ID">
-                <button class="btn btn-accent" onclick="testBotConnection()">BOTNI TEKSHIRISH</button>
+                <input type="text" id="admChatId" placeholder="Admin Chat ID">
+                <input type="text" id="admCard" placeholder="Karta raqami">
+                <button class="btn btn-accent" onclick="saveAdminConfig()">SAQLASH</button>
             </div>
-
-            <div class="status-card">
-                <h3>Karta & To'lov</h3>
-                <input type="text" id="adminCardNum" placeholder="Karta raqami">
-                <button class="btn btn-accent" onclick="saveSettings()">SAQLASH</button>
-            </div>
-
             <div class="status-card">
                 <h3>Yangi Kino</h3>
                 <input type="text" id="kTitle" placeholder="Kino nomi">
-                <input type="number" id="kPrice" placeholder="Narxi">
+                <input type="number" id="kPrice" placeholder="Narxi (0=bepul)">
                 <small>Poster:</small><input type="file" id="kPoster">
-                <small>Video:</small><input type="file" id="kVideo">
-                <button class="btn btn-accent" onclick="saveKino()">YUKLASH</button>
+                <div id="episodeInputs">
+                    <div style="border:1px solid #333; padding:10px; margin-bottom:10px; border-radius:10px;">
+                        <input type="text" placeholder="1-qism nomi" class="ep-t">
+                        <input type="file" class="ep-v">
+                    </div>
+                </div>
+                <button onclick="addEpField()">+ Qism qo'shish</button>
+                <button class="btn btn-accent" style="margin-top:10px;" onclick="saveKino()">YUKLASH</button>
             </div>
-
             <div class="status-card">
-                <h3>Tarif qo'shish</h3>
-                <input type="text" id="pName" placeholder="Nomi (Masalan: 1 soatlik)">
-                <input type="number" id="pVal" placeholder="Miqdori">
-                <select id="pType">
-                    <option value="min">Minut</option>
-                    <option value="hour">Soat</option>
-                    <option value="day">Kun</option>
-                </select>
-                <input type="number" id="pPrice" placeholder="Narxi">
-                <button class="btn btn-accent" onclick="addPremiumPlan()">TARIFNI QO'SHISH</button>
+                <h3>Kutilayotgan to'lovlar</h3>
+                <div id="pendingList"></div>
             </div>
-            <div id="delList"></div>
+            <button class="btn" style="background:#333; color:#fff;" onclick="closeModal('adminPanel')">Yopish</button>
         </div>
     </div>
 
-    <!-- PLAYER -->
-    <div id="player" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:3000;">
-        <i class="fa fa-arrow-left" onclick="closePlayer()" style="position:absolute; top:30px; left:20px; z-index:10; font-size:24px; padding:10px;"></i>
-        <video id="mainVideo" controls style="width:100%; height:100%;"></video>
+    <!-- DEPOSIT MODAL -->
+    <div id="depositModal" class="modal">
+        <div class="modal-content">
+            <h2>Hisobni to'ldirish</h2>
+            <div style="background:var(--accent); color:#000; padding:20px; border-radius:20px; margin-bottom:15px;">
+                Karta: <b id="displayCard">8600 ...</b><br>Ega: KINO DRAMA
+            </div>
+            <input type="number" id="depSum" placeholder="Summa">
+            <input type="file" id="depCheck" accept="image/*">
+            <button class="btn btn-accent" onclick="requestDeposit()">TASDIQLASHGA YUBORISH</button>
+            <button class="btn" style="margin-top:10px; background:#222; color:#fff;" onclick="closeModal('depositModal')">Yopish</button>
+        </div>
     </div>
 
     <!-- NAV BAR -->
     <div class="bottom-nav">
         <div class="nav-item active tap-active" onclick="showPage('home', this)"><i class="fa fa-home" style="font-size:22px;"></i><br>Asosiy</div>
-        <div class="nav-item tap-active" onclick="showPage('search', this)"><i class="fa fa-search" style="font-size:22px;"></i><br>Qidiruv</div>
         <div class="nav-item tap-active" onclick="showPage('mening', this)"><i class="fa fa-bookmark" style="font-size:22px;"></i><br>Mening</div>
         <div class="nav-item tap-active" onclick="showPage('siz', this)">
             <div class="siz-btn-oval">
@@ -262,35 +226,33 @@
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script>
-        const db = new Dexie("KinoDramaXDB_New");
+        const db = new Dexie("KinoDramaFinalDB");
         db.version(1).stores({
             movies: "++id, title, price",
             profile: "key, value",
             settings: "key, value",
-            premPlans: "++id, name, pVal, pType, price"
+            history: "++id, date"
         });
 
         const tg = window.Telegram.WebApp;
+        const v = document.getElementById('mainVideo');
 
         async function init() {
             if (tg.initDataUnsafe.user) {
-                const user = tg.initDataUnsafe.user;
-                await db.profile.put({ key: 'user_info', value: { name: user.first_name, img: user.photo_url || "https://ui-avatars.com/api/?name="+user.first_name+"&background=00ff73&color=000" } });
+                const u = tg.initDataUnsafe.user;
+                await db.profile.put({key: 'uinfo', value: {name: u.first_name, img: u.photo_url || "https://ui-avatars.com/api/?name="+u.first_name}});
             }
             if(!(await db.profile.get('balance'))) await db.profile.put({key:'balance', value: 0});
-            if(!(await db.profile.get('prem_expiry'))) await db.profile.put({key:'prem_expiry', value: 0});
-            if(!(await db.settings.get('card_number'))) await db.settings.put({key:'card_number', value: '8600 0000 0000 0000'});
+            if(!(await db.profile.get('prem_exp'))) await db.profile.put({key:'prem_exp', value: 0});
+            if(!(await db.settings.get('card'))) await db.settings.put({key:'card', value: '8600 0000 0000 0000'});
             
-            loadUI();
-            loadContent();
-            tg.expand();
+            loadUI(); loadContent(); startTimer(); tg.expand();
         }
 
         async function loadUI() {
-            const info = await db.profile.get('user_info');
+            const info = await db.profile.get('uinfo');
             const bal = await db.profile.get('balance');
-            const exp = await db.profile.get('prem_expiry');
-            const card = await db.settings.get('card_number');
+            const card = await db.settings.get('card');
             const bTok = await db.settings.get('bot_token');
             const bId = await db.settings.get('admin_id');
 
@@ -299,174 +261,193 @@
                 document.getElementById('navAvatar').src = info.value.img;
                 document.getElementById('tgName').innerText = info.value.name;
             }
-            document.getElementById('userBalance').innerText = (bal.value || 0).toLocaleString() + " so'm";
+            document.getElementById('userBalance').innerText = bal.value.toLocaleString() + " so'm";
             document.getElementById('displayCard').innerText = card.value;
-            document.getElementById('adminCardNum').value = card.value;
-            document.getElementById('admBotToken').value = bTok ? bTok.value : '';
-            document.getElementById('admAdminId').value = bId ? bId.value : '';
+            
+            // Admin fields
+            document.getElementById('admCard').value = card.value;
+            document.getElementById('admBotToken').value = bTok ? bTok.value : "";
+            document.getElementById('admChatId').value = bId ? bId.value : "";
 
-            const now = Date.now();
-            if(exp.value > now) {
-                const diff = exp.value - now;
-                const d = Math.floor(diff / 86400000);
-                const h = Math.floor((diff % 86400000) / 3600000);
-                const m = Math.floor((diff % 3600000) / 60000);
-                document.getElementById('premiumTimer').innerText = `Premium: ${d}k ${h}s ${m}m qoldi ✅`;
-            } else {
-                document.getElementById('premiumTimer').innerText = "Premium: Faol emas ❌";
-            }
+            loadHistory();
         }
 
         async function loadContent() {
             const movies = await db.movies.toArray();
-            const heroList = document.getElementById('heroList');
-            const normalList = document.getElementById('normalList');
-            heroList.innerHTML = ''; normalList.innerHTML = '';
+            const hList = document.getElementById('heroList');
+            const nList = document.getElementById('normalList');
+            hList.innerHTML = ''; nList.innerHTML = '';
+
             movies.forEach(m => {
                 const img = URL.createObjectURL(m.poster);
-                const badge = m.price > 0 ? `<div class="price-badge">${m.price.toLocaleString()} so'm</div>` : `<div class="price-badge" style="background:#fff;">TEKIN</div>`;
-                heroList.innerHTML += `<div class="swiper-slide" onclick="checkPlay(${m.id})">${badge}<img src="${img}" class="hero-img"></div>`;
-                normalList.innerHTML += `<div class="movie-card tap-active" onclick="checkPlay(${m.id})">${badge}<img src="${img}"><div style="margin-top:10px; font-weight:bold;">${m.title}</div></div>`;
+                const badge = `<div class="price-badge" style="${m.price==0?'background:#fff':'' }">${m.price==0?'BEPUL':m.price+' so\'m'}</div>`;
+                hList.innerHTML += `<div class="swiper-slide" onclick="openEpisodes(${m.id})">${badge}<img src="${img}" style="width:100%; height:100%; object-fit:cover; border-radius:30px;"></div>`;
+                nList.innerHTML += `<div class="movie-card tap-active" onclick="openEpisodes(${m.id})">${badge}<img src="${img}"><div style="margin-top:10px; font-weight:bold;">${m.title}</div></div>`;
             });
-            new Swiper('.hero-swiper', { slidesPerView: 'auto', centeredSlides: true, loop: true, spaceBetween: 10, autoplay: {delay:3000} });
+            new Swiper('.hero-swiper', { slidesPerView: 'auto', centeredSlides: true, loop: true, spaceBetween: 15, autoplay: {delay:3000} });
         }
 
-        // BOT BILAN ISHLASH
-        async function sendToBot(msg, photo = null) {
-            const token = (await db.settings.get('bot_token'))?.value;
-            const adminId = (await db.settings.get('admin_id'))?.value;
-            if(!token || !adminId) return alert("Admin botni sozlamagan!");
-
-            if(photo) {
-                const fd = new FormData();
-                fd.append('chat_id', adminId);
-                fd.append('photo', photo);
-                fd.append('caption', msg);
-                await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method: 'POST', body: fd });
-            } else {
-                await fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${adminId}&text=${encodeURIComponent(msg)}`);
-            }
-        }
-
-        async function testBotConnection() {
-            const t = document.getElementById('admBotToken').value;
-            const i = document.getElementById('admAdminId').value;
-            await db.settings.put({key:'bot_token', value: t});
-            await db.settings.put({key:'admin_id', value: i});
-            try {
-                await fetch(`https://api.telegram.org/bot${t}/sendMessage?chat_id=${i}&text=Bot muvaffaqiyatli ulandi!`);
-                alert("Botga xabar yuborildi!");
-            } catch(e) { alert("Xatolik!"); }
-        }
-
-        async function submitDeposit() {
-            const amount = document.getElementById('depAmount').value;
-            const file = document.getElementById('depCheck').files[0];
-            const info = await db.profile.get('user_info');
-            if(!amount || !file) return alert("Ma'lumotlarni to'ldiring!");
-
-            const date = new Date().toLocaleString();
-            const text = `💰 TO'LOV CHEKI!\n👤 Foydalanuvchi: ${info.value.name}\n💵 Summa: ${amount} so'm\n📅 Sana: ${date}`;
-            
-            await sendToBot(text, file);
-            alert("To'lov yuborildi! Admin tez orada balansingizni to'ldiradi.");
-            // Demo: Balans qo'shish
-            const bal = await db.profile.get('balance');
-            await db.profile.put({key: 'balance', value: bal.value + parseInt(amount)});
-            closeModal('depositModal');
-            loadUI();
-        }
-
-        async function buyPremium(id) {
-            const p = await db.premPlans.get(id);
-            const bal = await db.profile.get('balance');
-            const exp = await db.profile.get('prem_expiry');
-            if(bal.value >= p.price) {
-                await db.profile.put({key:'balance', value: bal.value - p.price});
-                let ms = 0;
-                if(p.pType === 'min') ms = p.pVal * 60000;
-                else if(p.pType === 'hour') ms = p.pVal * 3600000;
-                else if(p.pType === 'day') ms = p.pVal * 86400000;
-                
-                const now = Date.now();
-                const newExp = (exp.value > now ? exp.value : now) + ms;
-                await db.profile.put({key:'prem_expiry', value: newExp});
-                alert("Premium faollashtirildi!");
-                closeModal('premiumModal');
-                loadUI();
-            } else { alert("Mablag' yetarli emas!"); }
-        }
-
-        // QOLGAN FUNKSIYALAR
-        async function checkPlay(id) {
+        // QISMLARNI OCHISH
+        async function openEpisodes(id) {
             const m = await db.movies.get(id);
             const bal = await db.profile.get('balance');
-            const exp = await db.profile.get('prem_expiry');
-            if(m.price == 0 || exp.value > Date.now()) {
-                const p = document.getElementById('player');
-                const v = document.getElementById('mainVideo');
-                p.style.display = 'block';
-                v.src = URL.createObjectURL(m.video);
+            const exp = await db.profile.get('prem_exp');
+            
+            if(m.price > 0 && exp.value < Date.now()) {
+                if(!confirm(`Kino pullik: ${m.price} so'm. Balansdan ko'rasizmi?`)) return;
+                if(bal.value < m.price) return alert("Balans yetarli emas!");
+                await db.profile.put({key:'balance', value: bal.value - m.price});
+                addHistory(`Sotib olindi: ${m.title}`);
+                loadUI();
+            }
+
+            document.getElementById('epMovieTitle').innerText = m.title;
+            const list = document.getElementById('episodeList');
+            list.innerHTML = '';
+            m.episodes.forEach((ep, i) => {
+                list.innerHTML += `<button class="btn tap-active" style="background:#222; color:#fff; margin-bottom:10px;" onclick="playVideo(${m.id}, ${i})">${ep.title}</button>`;
+            });
+            document.getElementById('episodeModal').style.display = 'block';
+        }
+
+        function playVideo(mId, epIdx) {
+            db.movies.get(mId).then(m => {
+                const ep = m.episodes[epIdx];
+                v.src = URL.createObjectURL(ep.video);
+                document.getElementById('episodeModal').style.display = 'none';
+                document.getElementById('customPlayer').style.display = 'block';
                 v.play();
-            } else {
-                if(confirm(`Pullik kino: ${m.price} so'm. Balansdan ko'rasizmi?`)) {
-                    if(bal.value >= m.price) {
-                        await db.profile.put({key:'balance', value: bal.value - m.price});
-                        loadUI(); checkPlay(id);
-                    } else { alert("Mablag' yetarli emas!"); openDepositModal(); }
+                addHistory(`Ko'rildi: ${m.title} - ${ep.title}`);
+            });
+        }
+
+        // PLAYER
+        function togglePlay() { 
+            if(v.paused) { v.play(); document.getElementById('playIcon').className = 'fa fa-pause'; }
+            else { v.pause(); document.getElementById('playIcon').className = 'fa fa-play'; }
+        }
+        function skip(s) { v.currentTime += s; }
+        function closePlayer() { v.pause(); document.getElementById('customPlayer').style.display = 'none'; }
+        function toggleFullscreen() {
+            if(!document.fullscreenElement) document.getElementById('customPlayer').requestFullscreen();
+            else document.exitFullscreen();
+        }
+
+        // DEPOSIT BOT
+        async function requestDeposit() {
+            const sum = document.getElementById('depSum').value;
+            const file = document.getElementById('depCheck').files[0];
+            const info = await db.profile.get('uinfo');
+            if(!sum || !file) return alert("To'ldiring!");
+
+            const token = (await db.settings.get('bot_token'))?.value;
+            const chat = (await db.settings.get('admin_id'))?.value;
+
+            if(token && chat) {
+                const fd = new FormData();
+                fd.append('chat_id', chat); fd.append('photo', file);
+                fd.append('caption', `💰 TO'LOV\n👤 ${info.value.name}\n💵 ${sum} so'm\nTasdiqlash uchun saytga kiring.`);
+                fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {method:'POST', body:fd});
+            }
+
+            const p = (await db.settings.get('pending')) || {key:'pending', value:[]};
+            p.value.push({name: info.value.name, sum, id: Date.now()});
+            await db.settings.put(p);
+            alert("Botga yuborildi. Admin tasdiqlashi kutilmoqda.");
+            closeModal('depositModal');
+        }
+
+        // TAYMER & TARIX
+        function startTimer() {
+            setInterval(async () => {
+                const exp = (await db.profile.get('prem_exp')).value;
+                const now = Date.now();
+                if(exp > now) {
+                    const d = exp - now;
+                    const h = Math.floor(d/3600000).toString().padStart(2,'0');
+                    const m = Math.floor((d%3600000)/60000).toString().padStart(2,'0');
+                    const s = Math.floor((d%60000)/1000).toString().padStart(2,'0');
+                    document.getElementById('premiumTimer').innerText = `Premium: ${h}:${m}:${s} qoldi ✅`;
+                } else {
+                    document.getElementById('premiumTimer').innerText = "Premium: Faol emas ❌";
                 }
+            }, 1000);
+        }
+
+        async function addHistory(txt) {
+            await db.history.add({text: txt, date: new Date().toLocaleString()});
+            loadHistory();
+        }
+
+        async function loadHistory() {
+            const h = await db.history.reverse().toArray();
+            document.getElementById('userHistory').innerHTML = h.map(i => `<div class="history-item"><small>${i.date}</small><br><b>${i.text}</b></div>`).join('');
+        }
+
+        // ADMIN
+        function showAdminLogin() {
+            if(prompt("Login:")==='Aziz' && prompt("Parol:")==='Azizbek') {
+                document.getElementById('adminPanel').style.display='block';
+                loadPending();
             }
         }
 
-        function openAdmin() {
-            if(prompt("Login:") === 'Aziz' && prompt("Parol:") === 'Azizbek') document.getElementById('adminPanel').style.display = 'block';
-        }
-        function closeAdmin() { document.getElementById('adminPanel').style.display = 'none'; }
-        async function saveSettings() {
-            await db.settings.put({key:'card_number', value: document.getElementById('adminCardNum').value});
-            alert("Saqlandi!"); loadUI();
-        }
-        async function saveKino() {
-            const title = document.getElementById('kTitle').value;
-            const price = parseInt(document.getElementById('kPrice').value);
-            const poster = document.getElementById('kPoster').files[0];
-            const video = document.getElementById('kVideo').files[0];
-            await db.movies.add({title, price, poster, video});
-            alert("Kino qo'shildi!"); loadContent();
-        }
-        async function addPremiumPlan() {
-            const name = document.getElementById('pName').value;
-            const pVal = parseInt(document.getElementById('pVal').value);
-            const pType = document.getElementById('pType').value;
-            const price = parseInt(document.getElementById('pPrice').value);
-            await db.premPlans.add({name, pVal, pType, price});
-            alert("Tarif qo'shildi!");
-        }
-        async function openPremiumModal() {
-            const plans = await db.premPlans.toArray();
-            document.getElementById('premiumPlans').innerHTML = plans.map(p => `
-                <div class="status-card tap-active" onclick="buyPremium(${p.id})">
-                    <strong>${p.name}</strong><br><span>${p.price.toLocaleString()} so'm</span>
-                </div>
-            `).join('');
-            document.getElementById('premiumModal').style.display = 'block';
+        function addEpField() {
+            const div = document.createElement('div');
+            div.style = "border:1px solid #333; padding:10px; margin-bottom:10px; border-radius:10px;";
+            div.innerHTML = `<input type="text" placeholder="Qism nomi" class="ep-t"> <input type="file" class="ep-v">`;
+            document.getElementById('episodeInputs').appendChild(div);
         }
 
+        async function saveKino() {
+            const title = document.getElementById('kTitle').value;
+            const price = parseInt(document.getElementById('kPrice').value) || 0;
+            const poster = document.getElementById('kPoster').files[0];
+            const tInputs = document.querySelectorAll('.ep-t');
+            const vInputs = document.querySelectorAll('.ep-v');
+            let episodes = [];
+            for(let i=0; i<tInputs.length; i++) {
+                if(tInputs[i].value && vInputs[i].files[0]) episodes.push({title: tInputs[i].value, video: vInputs[i].files[0]});
+            }
+            if(!title || !poster || episodes.length==0) return alert("Xatolik!");
+            await db.movies.add({title, price, poster, episodes});
+            alert("Yuklandi!"); location.reload();
+        }
+
+        async function loadPending() {
+            const p = (await db.settings.get('pending'))?.value || [];
+            document.getElementById('pendingList').innerHTML = p.map(x => `
+                <div style="background:#222; padding:10px; margin-bottom:5px; border-radius:10px;">
+                    ${x.name} - ${x.sum} <button onclick="approve(${x.id}, ${x.sum})">OK</button>
+                </div>
+            `).join('');
+        }
+        async function approve(id, s) {
+            const b = await db.profile.get('balance');
+            await db.profile.put({key:'balance', value: b.value + parseInt(s)});
+            const p = await db.settings.get('pending');
+            p.value = p.value.filter(i => i.id !== id);
+            await db.settings.put(p);
+            alert("Tasdiqlandi!"); loadPending(); loadUI();
+        }
+
+        async function saveAdminConfig() {
+            await db.settings.put({key:'bot_token', value: document.getElementById('admBotToken').value});
+            await db.settings.put({key:'admin_id', value: document.getElementById('admChatId').value});
+            await db.settings.put({key:'card', value: document.getElementById('admCard').value});
+            alert("Saqlandi!"); loadUI();
+        }
+
+        // UTILS
         function showPage(id, el) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             el.classList.add('active');
         }
-        function openDepositModal() { document.getElementById('depositModal').style.display = 'block'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-        function closePlayer() { document.getElementById('mainVideo').pause(); document.getElementById('player').style.display = 'none'; }
-        function copyCard() {
-            navigator.clipboard.writeText(document.getElementById('displayCard').innerText);
-            document.getElementById('toast').style.display = 'block';
-            setTimeout(() => document.getElementById('toast').style.display = 'none', 2000);
-        }
-
+        function openDepositModal() { document.getElementById('depositModal').style.display = 'block'; }
+        
         init();
     </script>
 </body>
