@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KINO DRAMA</title>
+    <title>KINO DRAMA - Premium</title>
     
     <!-- Kutubxonalar -->
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
@@ -12,107 +12,134 @@
 
     <style>
         :root {
-            --bg: #0b0b0b;
-            --card-bg: #1c1c1e;
+            --bg: #050505;
+            --card-bg: #121212;
             --accent: #00ff73;
-            --gray-text: #8e8e93;
-            --border: #2c2c2e;
-            --tab-bg: #2a2a2a;
+            --accent-glow: rgba(0, 255, 115, 0.3);
+            --gray-text: #a0a0a0;
+            --border: #222;
+            --tab-bg: #1c1c1e;
             --red-text: #ff453a;
+            --gold: #ffd700;
         }
 
         body {
             background-color: var(--bg);
             color: white;
-            font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             margin: 0; padding: 0;
             overflow-x: hidden;
             padding-bottom: 90px;
+            user-select: none;
+        }
+
+        /* --- ANIMATSIYALAR --- */
+        @keyframes ripple {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.92); }
+            100% { transform: scale(1); }
+        }
+
+        .tap-active:active {
+            animation: ripple 0.2s ease-out;
+            opacity: 0.8;
         }
 
         /* --- BOTTOM NAV --- */
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 75px;
-            background: rgba(10, 10, 10, 0.98); backdrop-filter: blur(20px);
+            background: rgba(15, 15, 15, 0.95); backdrop-filter: blur(25px);
             display: flex; justify-content: space-around; align-items: center;
-            border-top: 0.5px solid var(--border); z-index: 1000;
+            border-top: 1px solid var(--border); z-index: 1000;
         }
-        .nav-item { text-align: center; color: var(--gray-text); font-size: 11px; cursor: pointer; flex: 1; text-decoration: none; }
-        .nav-item.active { color: white; }
-        .nav-item i { font-size: 22px; display: block; margin-bottom: 4px; }
+        .nav-item { 
+            text-align: center; color: var(--gray-text); font-size: 11px; 
+            cursor: pointer; flex: 1; transition: 0.3s; 
+        }
+        .nav-item.active { color: var(--accent); }
+        .nav-item i { font-size: 22px; display: block; margin-bottom: 4px; transition: 0.3s; }
+        .nav-item.active i { transform: translateY(-3px); text-shadow: 0 0 10px var(--accent-glow); }
 
-        /* Siz Oval Tugmasi (Haqiqiy Telegram Rasm bilan) */
+        /* Siz Oval Tugmasi */
         .siz-btn-oval {
             display: inline-flex; align-items: center; gap: 8px;
-            background: #242424; padding: 4px 14px 4px 4px;
-            border-radius: 30px; border: 1.5px solid #333; transition: 0.3s;
+            background: linear-gradient(145deg, #1a1a1a, #000); 
+            padding: 5px 15px 5px 5px;
+            border-radius: 30px; border: 1px solid #333; transition: 0.3s;
         }
+        .nav-item.active .siz-btn-oval { border-color: var(--accent); box-shadow: 0 0 15px var(--accent-glow); }
         .tg-nav-avatar { 
-            width: 28px; height: 28px; 
+            width: 30px; height: 30px; 
             border-radius: 50%; object-fit: cover; 
-            background: #333; /* Rasm yuklanguncha turadigan rang */
+            background: #222; border: 1px solid #444;
         }
 
         /* --- PAGES --- */
-        .page { display: none; padding-top: 10px; animation: fadeIn 0.3s ease; height: calc(100vh - 75px); overflow-y: auto; }
+        .page { display: none; padding-top: 10px; animation: pageIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); height: calc(100vh - 75px); overflow-y: auto; }
         .page.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes pageIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- BOSH SAHIFA (SLAYDER + NUQTALAR) --- */
-        .hero-swiper { width: 100%; height: 420px; padding: 10px 0; position: relative; }
+        /* --- HERO SLIDER --- */
+        .hero-swiper { width: 100%; height: 430px; padding: 10px 0; }
         .swiper-slide { 
-            width: 82% !important; height: 380px; border-radius: 25px; 
-            overflow: hidden; position: relative; transform: scale(0.95); transition: 0.3s;
+            width: 85% !important; height: 390px; border-radius: 30px; 
+            overflow: hidden; position: relative; transform: scale(0.9); transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
         }
         .swiper-slide-active { transform: scale(1); }
         .hero-img { width: 100%; height: 100%; object-fit: cover; }
         .hero-overlay {
             position: absolute; bottom: 0; width: 100%; height: 100%;
-            background: linear-gradient(to top, rgba(0,0,0,1) 5%, transparent 60%);
-            display: flex; flex-direction: column; justify-content: flex-end; padding: 30px 20px; box-sizing: border-box;
+            background: linear-gradient(to top, rgba(5,5,5,1) 5%, rgba(5,5,5,0.4) 40%, transparent 80%);
+            display: flex; flex-direction: column; justify-content: flex-end; padding: 35px 20px; box-sizing: border-box;
             text-align: center;
         }
-        .hero-title { font-size: 32px; font-weight: 900; margin: 0; color: #fff; }
+        .hero-title { font-size: 32px; font-weight: 900; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
         
-        /* Pagination Nuqtachalari */
-        .swiper-pagination { bottom: 0px !important; }
-        .swiper-pagination-bullet { background: #555 !important; opacity: 1; }
-        .swiper-pagination-bullet-active { background: #fff !important; width: 20px; border-radius: 5px; }
+        .swiper-pagination-bullet { background: #444 !important; opacity: 1; }
+        .swiper-pagination-bullet-active { background: var(--accent) !important; width: 25px !important; border-radius: 5px; box-shadow: 0 0 10px var(--accent); }
 
-        .cat-row { display: flex; gap: 10px; padding: 0 5%; overflow-x: auto; scrollbar-width: none; margin: 15px 0; }
-        .cat-btn { background: #2c2c2e; padding: 12px 20px; border-radius: 20px; white-space: nowrap; font-size: 14px; color: #ccc; }
-
-        .section-title { padding: 15px 5% 10px; font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
-        .section-title::before { content: ""; width: 3px; height: 18px; background: var(--accent); border-radius: 2px; }
-
-        .continue-list { display: flex; gap: 15px; padding: 0 5%; overflow-x: auto; scrollbar-width: none; }
-        .continue-card { width: 200px; flex-shrink: 0; }
-        .continue-card img { width: 100%; height: 115px; border-radius: 12px; object-fit: cover; }
-
-        /* --- MENING SAHIFASI --- */
-        .phone-mockup {
-            width: 180px; height: 320px; background: #1c1c1e; border-radius: 30px;
-            margin: 40px auto 20px; border: 4px solid #2c2c2e; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        /* --- CATEGORIES & LIST --- */
+        .cat-row { display: flex; gap: 12px; padding: 10px 5%; overflow-x: auto; scrollbar-width: none; }
+        .cat-btn { 
+            background: var(--tab-bg); padding: 12px 22px; border-radius: 25px; 
+            white-space: nowrap; font-size: 14px; color: #eee; border: 1px solid #222; transition: 0.2s;
         }
+        .cat-btn:active { background: var(--accent); color: #000; }
 
-        /* --- SIZ SAHIFASI --- */
-        .status-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 20px 5% 10px; }
-        .status-box { background: var(--card-bg); padding: 18px; border-radius: 18px; }
-        .menu-list { background: var(--card-bg); margin: 15px 5%; border-radius: 18px; overflow: hidden; }
-        .menu-item { display: flex; align-items: center; padding: 16px; border-bottom: 0.5px solid #2c2c2e; cursor: pointer; }
-        .menu-item i.icon { width: 35px; font-size: 18px; }
-        .menu-item span { flex: 1; font-size: 15px; }
+        .section-title { padding: 25px 5% 15px; font-size: 20px; font-weight: 800; display: flex; align-items: center; gap: 12px; }
+        .section-title::before { content: ""; width: 4px; height: 22px; background: var(--accent); border-radius: 10px; box-shadow: 0 0 10px var(--accent); }
 
-        /* --- ADMIN PANEL --- */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 2000; padding: 20px; box-sizing: border-box; overflow-y: auto; }
-        .admin-card { background: #181818; padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #333; }
-        input { width: 100%; padding: 15px; background: #222; border: 1px solid #333; color: white; border-radius: 12px; margin-bottom: 12px; box-sizing: border-box; outline: none; }
-        .btn-save { width: 100%; background: white; color: black; padding: 15px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; }
+        .continue-list { display: flex; gap: 18px; padding: 0 5% 20px; overflow-x: auto; scrollbar-width: none; }
+        .movie-card { width: 190px; flex-shrink: 0; transition: 0.3s; }
+        .movie-card img { width: 100%; height: 110px; border-radius: 18px; object-fit: cover; border: 1px solid #222; }
+        .progress-bar { width: 100%; height: 4px; background: #222; margin-top: 10px; border-radius: 2px; overflow: hidden; }
+        .progress-inner { height: 100%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
+        /* --- ADMIN & MODALS --- */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 2000; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+        .admin-card { background: #0f0f0f; padding: 20px; border-radius: 20px; margin-bottom: 20px; border: 1px solid #222; }
+        input { width: 100%; padding: 16px; background: #1a1a1a; border: 1px solid #333; color: white; border-radius: 15px; margin-bottom: 15px; box-sizing: border-box; font-size: 16px; }
+        .btn-save { 
+            width: 100%; background: var(--accent); color: black; padding: 16px; 
+            border-radius: 15px; border: none; font-weight: 800; cursor: pointer; transition: 0.3s;
+        }
+        .btn-save:active { transform: scale(0.98); }
 
         /* PLAYER */
         #player { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; }
-        video { width: 100%; height: 100%; }
-        .close-player { position: absolute; top: 20px; left: 20px; font-size: 30px; color: white; z-index: 10; cursor: pointer; }
+        video { width: 100%; height: 100%; object-fit: contain; }
+        .close-player { position: absolute; top: 30px; left: 20px; font-size: 24px; color: white; z-index: 10; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 50%; }
+
+        /* SIZ PAGE EXTRAS */
+        .status-box { 
+            background: linear-gradient(145deg, #161618, #0a0a0a); 
+            padding: 20px; border-radius: 22px; border: 1px solid #222;
+        }
+        .menu-list { background: #111; margin: 15px 5%; border-radius: 22px; border: 1px solid #222; }
+        .menu-item { display: flex; align-items: center; padding: 18px; border-bottom: 1px solid #1a1a1a; }
+        .menu-item:last-child { border: none; }
+        .menu-item i.icon { color: var(--accent); margin-right: 15px; font-size: 18px; }
     </style>
 </head>
 <body>
@@ -125,9 +152,10 @@
         </div>
 
         <div class="cat-row">
-            <div class="cat-btn">Xammasi birgalikda <i class="fa fa-chevron-right" style="font-size: 10px;"></i></div>
-            <div class="cat-btn">Filmlar</div>
-            <div class="cat-btn">Seriallar</div>
+            <div class="cat-btn tap-active">Barchasi <i class="fa fa-chevron-right" style="font-size: 10px; margin-left: 5px;"></i></div>
+            <div class="cat-btn tap-active">Filmlar</div>
+            <div class="cat-btn tap-active">Seriallar</div>
+            <div class="cat-btn tap-active">Multfilmlar</div>
         </div>
 
         <div class="section-title">Ko'rishni davom ettirish</div>
@@ -136,114 +164,135 @@
 
     <!-- MENING -->
     <div id="mening" class="page">
-        <h2 style="text-align:center">Mening</h2>
-        <div style="display:flex; justify-content:center; gap:8px; padding:0 5%;">
-            <div style="background:var(--tab-bg); padding:10px 20px; border-radius:20px;">Tanlangan</div>
-            <div style="padding:10px 20px; color:var(--gray-text)">Tarix</div>
+        <h2 style="text-align:center; margin: 20px 0;">Mening kutubxonam</h2>
+        <div style="display:flex; justify-content:center; gap:10px; padding:0 5%;">
+            <div class="cat-btn tap-active" style="background:var(--accent); color:#000; font-weight:bold;">Tanlanganlar</div>
+            <div class="cat-btn tap-active">Tarix</div>
         </div>
-        <div class="phone-mockup">
-            <div style="width:45px; height:45px; border:2px solid var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center;">
-                <i class="fa fa-bookmark" style="color:var(--accent)"></i>
-            </div>
+        <div style="margin-top: 100px; text-align: center; opacity: 0.5;">
+            <i class="fa fa-folder-open" style="font-size: 60px; color: var(--accent); margin-bottom: 20px;"></i>
+            <p>Hozircha hech narsa yo'q</p>
         </div>
-        <p style="text-align:center; color:var(--gray-text)">Bu yerda sizning saqlaganlaringiz turadi</p>
     </div>
 
     <!-- SIZ (PROFIL) -->
     <div id="siz" class="page">
-        <!-- Telegram Profil qismi -->
-        <div style="padding: 20px 5%; display: flex; align-items: center; gap: 15px;">
-            <img src="https://via.placeholder.com/100?text=TG" id="mainAvatar" style="width:60px; height:60px; border-radius:50%; background:#222; object-fit: cover;">
+        <div style="padding: 30px 5%; display: flex; align-items: center; gap: 20px; background: linear-gradient(to bottom, #111, transparent);">
+            <div style="position: relative;">
+                <img src="https://via.placeholder.com/100?text=K" id="mainAvatar" style="width:85px; height:85px; border-radius:50%; border:3px solid var(--accent); padding:3px; object-fit: cover;">
+                <div style="position: absolute; bottom: 0; right: 0; background: var(--accent); color: #000; width: 25px; height: 25px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 3px solid #000;">
+                    <i class="fa fa-check"></i>
+                </div>
+            </div>
             <div>
-                <h2 id="tgName" style="margin:0">Mehmon</h2>
-                <div id="tg-login-container" style="margin-top:10px;">
-                    <!-- Telegram Widget (Haqiqiy rasm olish uchun) -->
-                    <script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-login="SizningBotingiz" data-size="small" data-onauth="onTelegramAuth(user)" data-request-access="write"></script>
+                <h2 id="tgName" style="margin:0; font-size: 24px;">Mehmon</h2>
+                <p style="margin: 5px 0 0; color: var(--gray-text); font-size: 14px;">ID: 58294021</p>
+                <div id="tg-login-container" style="margin-top:12px;">
+                    <script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-login="SizningBotingiz" data-size="medium" data-onauth="onTelegramAuth(user)" data-request-access="write"></script>
                 </div>
             </div>
         </div>
 
-        <!-- Status bloklari -->
-        <div class="status-row">
-            <div class="status-box"><span style="color:var(--red-text); font-size:13px;">Premium faol emas</span><br><strong>Obunalar ></strong></div>
-            <div class="status-box"><span style="color:var(--gray-text); font-size:11px;">Hisob: 0 so'm</span><br><strong>To'ldirish ></strong></div>
-        </div>
-
-        <!-- Barcha 7 ta tugma qaytarildi -->
-        <div class="menu-list">
-            <div class="menu-item"><i class="fa fa-play icon" style="width:30px"></i><span>Obuna</span><i class="fa fa-chevron-right"></i></div>
-            <div class="menu-item"><i class="fa fa-rectangle-list icon" style="width:30px"></i><span>Kontentga buyurtma berish</span><i class="fa fa-chevron-right"></i></div>
-            <div class="menu-item"><i class="fa fa-download icon" style="width:30px"></i><span>Yuklanganlar</span><i class="fa fa-chevron-right"></i></div>
+        <div class="status-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 10px 5%;">
+            <div class="status-box tap-active">
+                <span style="color:var(--red-text); font-size:12px; font-weight: bold; text-transform: uppercase;">Premium</span><br>
+                <strong style="font-size: 16px;">Obuna bo'lish <i class="fa fa-chevron-right" style="font-size: 10px;"></i></strong>
+            </div>
+            <div class="status-box tap-active">
+                <span style="color:var(--gray-text); font-size:12px; font-weight: bold; text-transform: uppercase;">Hamyon</span><br>
+                <strong style="font-size: 16px;">0.00 so'm <i class="fa fa-plus" style="font-size: 10px; color: var(--accent);"></i></strong>
+            </div>
         </div>
 
         <div class="menu-list">
-            <div class="menu-item"><i class="fa fa-gift icon" style="width:30px"></i><span>Promokod</span><i class="fa fa-chevron-right"></i></div>
-            <div class="menu-item"><i class="fa fa-qrcode icon" style="width:30px"></i><span>QR skanerlash</span><i class="fa fa-chevron-right"></i></div>
-            <div class="menu-item"><i class="fa fa-laptop icon" style="width:30px"></i><span>Mening qurilmalarim</span><i class="fa fa-chevron-right"></i></div>
-            <!-- ADMIN PANEL TIGGER -->
-            <div class="menu-item" onclick="openAdmin()"><i class="fa fa-gear icon" style="width:30px"></i><span>Sozlamalar (Admin)</span><i class="fa fa-chevron-right"></i></div>
+            <div class="menu-item tap-active"><i class="fa fa-play-circle icon"></i><span style="flex:1">Obuna paketlari</span><i class="fa fa-chevron-right" style="opacity:0.3"></i></div>
+            <div class="menu-item tap-active"><i class="fa fa-cloud-download icon"></i><span style="flex:1">Yuklanganlar</span><i class="fa fa-chevron-right" style="opacity:0.3"></i></div>
+            <div class="menu-item tap-active"><i class="fa fa-comment-dots icon"></i><span style="flex:1">Yordam markazi</span><i class="fa fa-chevron-right" style="opacity:0.3"></i></div>
+        </div>
+
+        <div class="menu-list">
+            <div class="menu-item tap-active" onclick="openAdmin()"><i class="fa fa-user-shield icon"></i><span style="flex:1">Admin Panel (Aziz)</span><i class="fa fa-chevron-right" style="opacity:0.3"></i></div>
+            <div class="menu-item tap-active"><i class="fa fa-gear icon"></i><span style="flex:1">Sozlamalar</span><i class="fa fa-chevron-right" style="opacity:0.3"></i></div>
         </div>
     </div>
 
     <!-- BOTTOM NAV -->
     <div class="bottom-nav">
-        <div class="nav-item active" onclick="showPage('home', this)"><i class="fa fa-house"></i>Bosh sahifa</div>
-        <div class="nav-item"><i class="fa fa-search"></i>Katalog</div>
-        <div class="nav-item" onclick="showPage('mening', this)"><i class="fa fa-bookmark"></i>Mening</div>
-        <div class="nav-item" onclick="showPage('siz', this)">
+        <div class="nav-item active tap-active" onclick="showPage('home', this)"><i class="fa fa-home"></i>Bosh sahifa</div>
+        <div class="nav-item tap-active"><i class="fa fa-compass"></i>Katalog</div>
+        <div class="nav-item tap-active" onclick="showPage('mening', this)"><i class="fa fa-clapperboard"></i>Mening</div>
+        <div class="nav-item tap-active" onclick="showPage('siz', this)">
             <div class="siz-btn-oval">
-                <!-- FOYDALANUVCHINING HAQIQIY TELEGRAM RASMI SHU YERDA CHIQADI -->
-                <img src="https://via.placeholder.com/100?text=TG" class="tg-nav-avatar" id="navAvatar">
-                <span>Siz</span>
+                <img src="https://via.placeholder.com/100?text=U" class="tg-nav-avatar" id="navAvatar">
+                <span style="font-weight: bold; color: white;">Siz</span>
             </div>
         </div>
     </div>
 
     <!-- ADMIN PANEL -->
     <div id="adminPanel" class="modal">
-        <h2 style="text-align: center;">Admin Panel</h2>
-        <div id="loginForm">
-            <input type="text" id="admLogin" placeholder="Login (Aziz)">
-            <input type="password" id="admPass" placeholder="Parol (Azizbek)">
-            <button class="btn-save" onclick="login()">KIRISH</button>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+            <h2 style="margin:0">Boshqaruv Paneli</h2>
+            <i class="fa fa-times-circle" style="font-size: 30px; color: #555;" onclick="closeAdmin()"></i>
         </div>
+
+        <div id="loginForm">
+            <div class="admin-card">
+                <p style="text-align: center; color: var(--gray-text);">Admin login va parolini kiriting</p>
+                <input type="text" id="admLogin" placeholder="Login">
+                <input type="password" id="admPass" placeholder="Parol">
+                <button class="btn-save" onclick="login()">TIZIMGA KIRISH</button>
+            </div>
+        </div>
+
         <div id="uploadForm" style="display: none;">
             <div class="admin-card">
-                <h3 style="margin:0 0 15px; color:var(--accent)">1. Slayder uchun yuklash</h3>
+                <h3 style="margin:0 0 20px; color:var(--accent); border-left: 4px solid var(--accent); padding-left: 10px;">Yangi Kino (Slayder)</h3>
                 <input type="text" id="sTitle" placeholder="Kino nomi">
-                <label>Poster:</label><input type="file" id="sPoster" accept="image/*">
-                <label>Video:</label><input type="file" id="sVideo" accept="video/mp4">
+                <label style="display:block; margin-bottom: 8px; font-size: 13px;">Poster (Rasm):</label>
+                <input type="file" id="sPoster" accept="image/*">
+                <label style="display:block; margin-bottom: 8px; font-size: 13px;">Video fayl:</label>
+                <input type="file" id="sVideo" accept="video/mp4,video/x-m4v,video/*">
                 <button class="btn-save" onclick="saveKino('slider')">SLAYDERGA QO'SHISH</button>
             </div>
+
             <div class="admin-card">
-                <h3 style="margin:0 0 15px; color:#00ccff">2. Pastki ro'yxat uchun yuklash</h3>
+                <h3 style="margin:0 0 20px; color:#00ccff; border-left: 4px solid #00ccff; padding-left: 10px;">Yangi Kino (Ro'yxat)</h3>
                 <input type="text" id="nTitle" placeholder="Kino nomi">
-                <label>Poster:</label><input type="file" id="nPoster" accept="image/*">
-                <label>Video:</label><input type="file" id="nVideo" accept="video/mp4">
-                <button class="btn-save" onclick="saveKino('normal')">RO'YXATGA QO'SHISH</button>
+                <label style="display:block; margin-bottom: 8px; font-size: 13px;">Poster (Rasm):</label>
+                <input type="file" id="nPoster" accept="image/*">
+                <label style="display:block; margin-bottom: 8px; font-size: 13px;">Video fayl:</label>
+                <input type="file" id="nVideo" accept="video/mp4,video/x-m4v,video/*">
+                <button class="btn-save" style="background:#00ccff" onclick="saveKino('normal')">RO'YXATGA QO'SHISH</button>
             </div>
+
+            <h3 style="margin: 20px 0 10px;">Mavjud kinolar:</h3>
             <div id="delList"></div>
         </div>
-        <button class="btn-save" style="background:#333; color:white; margin-top:15px;" onclick="closeAdmin()">YOPISH</button>
     </div>
 
     <!-- PLAYER -->
     <div id="player">
-        <i class="fa fa-chevron-left close-player" onclick="closePlayer()"></i>
-        <video id="mainVideo" controls autoplay></video>
+        <i class="fa fa-chevron-left close-player tap-active" onclick="closePlayer()"></i>
+        <video id="mainVideo" controls playsinline></video>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script>
-        const db = new Dexie("FrameRealFinalDB");
-        db.version(1).stores({ movies: "++id, title, category", settings: "key, value" });
-
-        const swiper = new Swiper('.hero-swiper', {
-            slidesPerView: 'auto', centeredSlides: true, loop: true, spaceBetween: -15,
-            pagination: { el: '.swiper-pagination', clickable: true },
-            autoplay: { delay: 4000 }
+        // Dexie Ma'lumotlar bazasi
+        const db = new Dexie("KinoDramaPremiumDB");
+        db.version(2).stores({ 
+            movies: "++id, title, category", 
+            settings: "key, value" 
         });
 
+        const swiper = new Swiper('.hero-swiper', {
+            slidesPerView: 'auto', centeredSlides: true, loop: true, spaceBetween: 0,
+            pagination: { el: '.swiper-pagination', clickable: true },
+            autoplay: { delay: 5000, disableOnInteraction: false }
+        });
+
+        // Sahifalar almashinuvi
         function showPage(pageId, element) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
@@ -251,9 +300,8 @@
             element.classList.add('active');
         }
 
-        // --- Telegram Auth (Rasmni olish mantiqi) ---
+        // Telegram Auth
         async function onTelegramAuth(user) {
-            // Telegramdan kelgan rasmni saqlaymiz
             await db.settings.put({ key: 'profile', value: user });
             updateProfileUI(user);
         }
@@ -267,7 +315,7 @@
             }
         }
 
-        // --- Admin Logic ---
+        // Admin Panel Logic
         function openAdmin() { document.getElementById('adminPanel').style.display = 'block'; }
         function closeAdmin() { document.getElementById('adminPanel').style.display = 'none'; }
 
@@ -276,21 +324,44 @@
                 document.getElementById('loginForm').style.display = 'none';
                 document.getElementById('uploadForm').style.display = 'block';
                 renderDelList();
-            } else { alert('Xato!'); }
+            } else { alert('Xato login yoki parol!'); }
         }
 
+        // Kinoni saqlash (Sahifa yangilanmaydi)
         async function saveKino(cat) {
             const prefix = cat === 'slider' ? 's' : 'n';
             const title = document.getElementById(prefix + 'Title').value;
             const poster = document.getElementById(prefix + 'Poster').files[0];
             const video = document.getElementById(prefix + 'Video').files[0];
-            if(!title || !poster || !video) return alert('Hamma fayllarni tanlang!');
-            await db.movies.add({ title, poster, video, category: cat });
-            location.reload();
+            
+            if(!title || !poster || !video) return alert('Iltimos hamma maydonlarni to\'ldiring!');
+
+            const btn = event.target;
+            const originalText = btn.innerText;
+            btn.innerText = "YUKLANMOQDA...";
+            btn.disabled = true;
+
+            try {
+                await db.movies.add({ title, poster, video, category: cat });
+                
+                // Formalarni tozalash
+                document.getElementById(prefix + 'Title').value = "";
+                document.getElementById(prefix + 'Poster').value = "";
+                document.getElementById(prefix + 'Video').value = "";
+                
+                alert('Muvaffaqiyatli qo\'shildi!');
+                renderDelList();
+                loadContent(); // Bosh sahifani yangilash (yopilmasdan)
+            } catch (e) {
+                alert("Xatolik: " + e);
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
         }
 
+        // Kontentni yuklash
         async function loadContent() {
-            // Avval saqlangan profilni tekshiramiz
             const profile = await db.settings.get('profile');
             if(profile) updateProfileUI(profile.value);
 
@@ -298,38 +369,70 @@
             const heroList = document.getElementById('heroList');
             const normalList = document.getElementById('normalList');
 
+            // Avvalgi kontentni tozalash
+            heroList.innerHTML = "";
+            normalList.innerHTML = "";
+
             movies.forEach(m => {
                 const img = URL.createObjectURL(m.poster);
                 if(m.category === 'slider') {
-                    heroList.innerHTML += `<div class="swiper-slide" onclick="playMovie(${m.id})"><img src="${img}" class="hero-img"><div class="hero-overlay"><h1 class="hero-title">${m.title}</h1></div></div>`;
+                    heroList.innerHTML += `
+                        <div class="swiper-slide tap-active" onclick="playMovie(${m.id})">
+                            <img src="${img}" class="hero-img">
+                            <div class="hero-overlay">
+                                <h1 class="hero-title">${m.title}</h1>
+                                <p style="color:var(--accent); font-weight:bold;"><i class="fa fa-play"></i> HOZIR KO'RISH</p>
+                            </div>
+                        </div>`;
                 } else {
-                    normalList.innerHTML += `<div style="width:200px; flex-shrink:0" onclick="playMovie(${m.id})"><img src="${img}" style="width:100%; height:115px; border-radius:12px; object-fit:cover"><div style="margin-top:8px; font-weight:600; font-size:14px;">${m.title}</div><div style="width:100%; height:3px; background:#333; margin-top:8px;"><div style="width:35%; height:100%; background:white"></div></div></div>`;
+                    normalList.innerHTML += `
+                        <div class="movie-card tap-active" onclick="playMovie(${m.id})">
+                            <img src="${img}">
+                            <div style="margin-top:10px; font-weight:700; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${m.title}</div>
+                            <div class="progress-bar"><div class="progress-inner" style="width:${Math.floor(Math.random() * 60) + 10}%"></div></div>
+                        </div>`;
                 }
             });
             swiper.update();
         }
 
+        // O'chirish ro'yxati
         async function renderDelList() {
             const movies = await db.movies.toArray();
-            document.getElementById('delList').innerHTML = movies.map(m => `<div style="display:flex; justify-content:space-between; background:#222; padding:12px; border-radius:10px; margin-bottom:8px;"><span>[${m.category}] ${m.title}</span> <i class="fa fa-trash" style="color:red; cursor:pointer" onclick="deleteMovie(${m.id})"></i></div>`).join('');
+            document.getElementById('delList').innerHTML = movies.map(m => `
+                <div style="display:flex; justify-content:space-between; background:#1a1a1a; padding:15px; border-radius:15px; margin-bottom:10px; border:1px solid #333;">
+                    <span><small style="color:var(--accent)">[${m.category}]</small> ${m.title}</span> 
+                    <i class="fa fa-trash-alt" style="color:var(--red-text); cursor:pointer" onclick="deleteMovie(${m.id})"></i>
+                </div>`).join('');
         }
 
         async function deleteMovie(id) {
-            await db.movies.delete(id);
-            renderDelList();
+            if(confirm('Ushbu kinoni o\'chirmoqchimisiz?')) {
+                await db.movies.delete(id);
+                renderDelList();
+                loadContent();
+            }
         }
 
+        // Player
         function playMovie(id) {
             db.movies.get(id).then(m => {
-                document.getElementById('player').style.display = 'block';
+                const player = document.getElementById('player');
                 const v = document.getElementById('mainVideo');
                 v.src = URL.createObjectURL(m.video);
+                player.style.display = 'block';
                 v.play();
             });
         }
 
-        function closePlayer() { document.getElementById('mainVideo').pause(); document.getElementById('player').style.display = 'none'; }
+        function closePlayer() { 
+            const v = document.getElementById('mainVideo');
+            v.pause(); 
+            v.src = "";
+            document.getElementById('player').style.display = 'none'; 
+        }
 
+        // Initial Load
         loadContent();
     </script>
 </body>
