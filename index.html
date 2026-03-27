@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KINO DRAMA - Premium</title>
+    <title>KINO DRAMA PRO</title>
     
     <!-- Kutubxonalar -->
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
@@ -12,134 +12,98 @@
 
     <style>
         :root {
-            --bg: #050505;
-            --card-bg: #121212;
+            --bg: #000000;
+            --card-bg: #111111;
             --accent: #00ff73;
-            --accent-glow: rgba(0, 255, 115, 0.3);
+            --accent-glow: rgba(0, 255, 115, 0.5);
             --gray-text: #a0a0a0;
             --border: #222;
-            --tab-bg: #1c1c1e;
-            --red-text: #ff453a;
-            --gold: #ffd700;
         }
 
         body {
             background-color: var(--bg);
             color: white;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
             margin: 0; padding: 0;
             overflow-x: hidden;
             padding-bottom: 90px;
-            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         /* --- ANIMATSIYALAR --- */
-        @keyframes ripple {
-            0% { transform: scale(1); }
-            50% { transform: scale(0.92); }
-            100% { transform: scale(1); }
-        }
-
-        .tap-active:active {
-            animation: ripple 0.2s ease-out;
-            opacity: 0.8;
-        }
+        .tap-active { transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .tap-active:active { transform: scale(0.92); opacity: 0.8; }
 
         /* --- BOTTOM NAV --- */
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 75px;
-            background: rgba(15, 15, 15, 0.95); backdrop-filter: blur(25px);
+            background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(20px);
             display: flex; justify-content: space-around; align-items: center;
             border-top: 1px solid var(--border); z-index: 1000;
         }
-        .nav-item { 
-            text-align: center; color: var(--gray-text); font-size: 11px; 
-            cursor: pointer; flex: 1; transition: 0.3s; 
-        }
+        .nav-item { text-align: center; color: var(--gray-text); font-size: 11px; cursor: pointer; flex: 1; transition: 0.3s; }
         .nav-item.active { color: var(--accent); }
-        .nav-item i { font-size: 22px; display: block; margin-bottom: 4px; transition: 0.3s; }
-        .nav-item.active i { transform: translateY(-3px); text-shadow: 0 0 10px var(--accent-glow); }
+        .nav-item i { font-size: 22px; display: block; margin-bottom: 4px; }
 
-        /* Siz Oval Tugmasi */
         .siz-btn-oval {
             display: inline-flex; align-items: center; gap: 8px;
-            background: linear-gradient(145deg, #1a1a1a, #000); 
-            padding: 5px 15px 5px 5px;
-            border-radius: 30px; border: 1px solid #333; transition: 0.3s;
+            background: #1a1a1a; padding: 5px 15px 5px 5px;
+            border-radius: 30px; border: 1.5px solid #333; transition: 0.3s;
         }
         .nav-item.active .siz-btn-oval { border-color: var(--accent); box-shadow: 0 0 15px var(--accent-glow); }
-        .tg-nav-avatar { 
-            width: 30px; height: 30px; 
-            border-radius: 50%; object-fit: cover; 
-            background: #222; border: 1px solid #444;
-        }
+        .tg-nav-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: #222; border: 1px solid #444; }
 
         /* --- PAGES --- */
-        .page { display: none; padding-top: 10px; animation: pageIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); height: calc(100vh - 75px); overflow-y: auto; }
+        .page { display: none; animation: slideUp 0.4s ease; height: calc(100vh - 75px); overflow-y: auto; }
         .page.active { display: block; }
-        @keyframes pageIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- HERO SLIDER --- */
-        .hero-swiper { width: 100%; height: 430px; padding: 10px 0; }
+        /* --- SLAYDER (HERO) --- */
+        .hero-swiper { width: 100%; height: 420px; padding: 10px 0; }
         .swiper-slide { 
-            width: 85% !important; height: 390px; border-radius: 30px; 
-            overflow: hidden; position: relative; transform: scale(0.9); transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            width: 85% !important; height: 380px; border-radius: 25px; 
+            overflow: hidden; position: relative; transform: scale(0.9); transition: 0.5s;
         }
-        .swiper-slide-active { transform: scale(1); }
+        .swiper-slide-active { transform: scale(1); box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
         .hero-img { width: 100%; height: 100%; object-fit: cover; }
         .hero-overlay {
             position: absolute; bottom: 0; width: 100%; height: 100%;
-            background: linear-gradient(to top, rgba(5,5,5,1) 5%, rgba(5,5,5,0.4) 40%, transparent 80%);
-            display: flex; flex-direction: column; justify-content: flex-end; padding: 35px 20px; box-sizing: border-box;
-            text-align: center;
+            background: linear-gradient(to top, rgba(0,0,0,1) 15%, transparent 70%);
+            display: flex; flex-direction: column; justify-content: flex-end; padding: 30px 20px; box-sizing: border-box; text-align: center;
         }
-        .hero-title { font-size: 32px; font-weight: 900; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+        .hero-title { font-size: 28px; font-weight: 900; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+        .swiper-pagination-bullet { background: #555 !important; }
+        .swiper-pagination-bullet-active { background: var(--accent) !important; width: 25px !important; border-radius: 5px; }
+
+        /* --- CONTENT --- */
+        .cat-row { display: flex; gap: 12px; padding: 15px 5%; overflow-x: auto; scrollbar-width: none; }
+        .cat-btn { background: #1a1a1a; padding: 12px 22px; border-radius: 20px; white-space: nowrap; font-size: 14px; border: 1px solid #222; }
         
-        .swiper-pagination-bullet { background: #444 !important; opacity: 1; }
-        .swiper-pagination-bullet-active { background: var(--accent) !important; width: 25px !important; border-radius: 5px; box-shadow: 0 0 10px var(--accent); }
-
-        /* --- CATEGORIES & LIST --- */
-        .cat-row { display: flex; gap: 12px; padding: 10px 5%; overflow-x: auto; scrollbar-width: none; }
-        .cat-btn { 
-            background: var(--tab-bg); padding: 12px 22px; border-radius: 25px; 
-            white-space: nowrap; font-size: 14px; color: #eee; border: 1px solid #222; transition: 0.2s;
-        }
-        .cat-btn:active { background: var(--accent); color: #000; }
-
-        .section-title { padding: 25px 5% 15px; font-size: 20px; font-weight: 800; display: flex; align-items: center; gap: 12px; }
-        .section-title::before { content: ""; width: 4px; height: 22px; background: var(--accent); border-radius: 10px; box-shadow: 0 0 10px var(--accent); }
+        .section-title { padding: 25px 5% 15px; font-size: 20px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+        .section-title::before { content: ""; width: 5px; height: 20px; background: var(--accent); border-radius: 10px; box-shadow: 0 0 10px var(--accent); }
 
         .continue-list { display: flex; gap: 18px; padding: 0 5% 20px; overflow-x: auto; scrollbar-width: none; }
-        .movie-card { width: 190px; flex-shrink: 0; transition: 0.3s; }
-        .movie-card img { width: 100%; height: 110px; border-radius: 18px; object-fit: cover; border: 1px solid #222; }
+        .movie-card { width: 190px; flex-shrink: 0; position: relative; }
+        .movie-card img { width: 100%; height: 110px; border-radius: 15px; object-fit: cover; border: 1px solid #222; }
         .progress-bar { width: 100%; height: 4px; background: #222; margin-top: 10px; border-radius: 2px; overflow: hidden; }
-        .progress-inner { height: 100%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+        .progress-fill { height: 100%; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
 
-        /* --- ADMIN & MODALS --- */
+        /* --- SIZ PAGE --- */
+        .status-card { background: linear-gradient(145deg, #111, #000); padding: 20px; border-radius: 20px; border: 1px solid #222; }
+        .menu-list { background: #0f0f0f; margin: 15px 5%; border-radius: 20px; border: 1px solid #222; overflow: hidden; }
+        .menu-item { display: flex; align-items: center; padding: 18px; border-bottom: 1px solid #1a1a1a; }
+        .menu-item i.icon { color: var(--accent); margin-right: 15px; font-size: 18px; }
+
+        /* --- ADMIN PANEL --- */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 2000; padding: 20px; box-sizing: border-box; overflow-y: auto; }
-        .admin-card { background: #0f0f0f; padding: 20px; border-radius: 20px; margin-bottom: 20px; border: 1px solid #222; }
-        input { width: 100%; padding: 16px; background: #1a1a1a; border: 1px solid #333; color: white; border-radius: 15px; margin-bottom: 15px; box-sizing: border-box; font-size: 16px; }
-        .btn-save { 
-            width: 100%; background: var(--accent); color: black; padding: 16px; 
-            border-radius: 15px; border: none; font-weight: 800; cursor: pointer; transition: 0.3s;
-        }
-        .btn-save:active { transform: scale(0.98); }
+        .admin-card { background: #0a0a0a; padding: 20px; border-radius: 20px; margin-bottom: 20px; border: 1px solid #333; }
+        input { width: 100%; padding: 16px; background: #161616; border: 1px solid #333; color: white; border-radius: 12px; margin-bottom: 12px; box-sizing: border-box; }
+        .btn-save { width: 100%; background: var(--accent); color: black; padding: 16px; border-radius: 12px; border: none; font-weight: 900; cursor: pointer; text-transform: uppercase; }
 
         /* PLAYER */
         #player { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; }
-        video { width: 100%; height: 100%; object-fit: contain; }
-        .close-player { position: absolute; top: 30px; left: 20px; font-size: 24px; color: white; z-index: 10; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 50%; }
-
-        /* SIZ PAGE EXTRAS */
-        .status-box { 
-            background: linear-gradient(145deg, #161618, #0a0a0a); 
-            padding: 20px; border-radius: 22px; border: 1px solid #222;
-        }
-        .menu-list { background: #111; margin: 15px 5%; border-radius: 22px; border: 1px solid #222; }
-        .menu-item { display: flex; align-items: center; padding: 18px; border-bottom: 1px solid #1a1a1a; }
-        .menu-item:last-child { border: none; }
-        .menu-item i.icon { color: var(--accent); margin-right: 15px; font-size: 18px; }
+        video { width: 100%; height: 100%; }
+        .close-player { position: absolute; top: 30px; left: 20px; font-size: 24px; color: white; z-index: 10; background: rgba(0,0,0,0.6); padding: 12px; border-radius: 50%; }
     </style>
 </head>
 <body>
@@ -155,64 +119,46 @@
             <div class="cat-btn tap-active">Barchasi <i class="fa fa-chevron-right" style="font-size: 10px; margin-left: 5px;"></i></div>
             <div class="cat-btn tap-active">Filmlar</div>
             <div class="cat-btn tap-active">Seriallar</div>
-            <div class="cat-btn tap-active">Multfilmlar</div>
         </div>
 
         <div class="section-title">Ko'rishni davom ettirish</div>
         <div class="continue-list" id="normalList"></div>
     </div>
 
-    <!-- MENING -->
+    <!-- MENING PAGE -->
     <div id="mening" class="page">
         <h2 style="text-align:center; margin: 20px 0;">Mening kutubxonam</h2>
         <div style="display:flex; justify-content:center; gap:10px; padding:0 5%;">
-            <div class="cat-btn tap-active" style="background:var(--accent); color:#000; font-weight:bold;">Tanlanganlar</div>
+            <div class="cat-btn tap-active" style="background:var(--accent); color:black; font-weight:bold;">Tanlanganlar</div>
             <div class="cat-btn tap-active">Tarix</div>
         </div>
-        <div style="margin-top: 100px; text-align: center; opacity: 0.5;">
-            <i class="fa fa-folder-open" style="font-size: 60px; color: var(--accent); margin-bottom: 20px;"></i>
-            <p>Hozircha hech narsa yo'q</p>
+        <div style="text-align:center; margin-top:100px; opacity:0.2;">
+            <i class="fa fa-folder-open" style="font-size:80px; color:var(--accent)"></i>
+            <p>Hali saqlanganlar yo'q</p>
         </div>
     </div>
 
-    <!-- SIZ (PROFIL) -->
+    <!-- SIZ (PROFIL) PAGE -->
     <div id="siz" class="page">
         <div style="padding: 30px 5%; display: flex; align-items: center; gap: 20px; background: linear-gradient(to bottom, #111, transparent);">
-            <div style="position: relative;">
-                <img src="https://via.placeholder.com/100?text=K" id="mainAvatar" style="width:85px; height:85px; border-radius:50%; border:3px solid var(--accent); padding:3px; object-fit: cover;">
-                <div style="position: absolute; bottom: 0; right: 0; background: var(--accent); color: #000; width: 25px; height: 25px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 3px solid #000;">
-                    <i class="fa fa-check"></i>
-                </div>
-            </div>
+            <img src="https://via.placeholder.com/100?text=K" id="mainAvatar" style="width:80px; height:80px; border-radius:50%; border:3px solid var(--accent); object-fit: cover;">
             <div>
                 <h2 id="tgName" style="margin:0; font-size: 24px;">Mehmon</h2>
-                <p style="margin: 5px 0 0; color: var(--gray-text); font-size: 14px;">ID: 58294021</p>
-                <div id="tg-login-container" style="margin-top:12px;">
-                    <script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-login="SizningBotingiz" data-size="medium" data-onauth="onTelegramAuth(user)" data-request-access="write"></script>
+                <div id="tg-login-container" style="margin-top:10px;">
+                    <script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-login="SizningBotingiz" data-size="small" data-onauth="onTelegramAuth(user)" data-request-access="write"></script>
                 </div>
             </div>
         </div>
 
-        <div class="status-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 10px 5%;">
-            <div class="status-box tap-active">
-                <span style="color:var(--red-text); font-size:12px; font-weight: bold; text-transform: uppercase;">Premium</span><br>
-                <strong style="font-size: 16px;">Obuna bo'lish <i class="fa fa-chevron-right" style="font-size: 10px;"></i></strong>
-            </div>
-            <div class="status-box tap-active">
-                <span style="color:var(--gray-text); font-size:12px; font-weight: bold; text-transform: uppercase;">Hamyon</span><br>
-                <strong style="font-size: 16px;">0.00 so'm <i class="fa fa-plus" style="font-size: 10px; color: var(--accent);"></i></strong>
-            </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 10px 5%;">
+            <div class="status-card tap-active"><span style="color:#ff453a; font-size:12px; font-weight:bold;">PREMIUM</span><br><strong>Sotib olish ></strong></div>
+            <div class="status-card tap-active"><span style="color:var(--gray-text); font-size:12px;">HAMYON</span><br><strong>0 so'm ></strong></div>
         </div>
 
         <div class="menu-list">
-            <div class="menu-item tap-active"><i class="fa fa-play-circle icon"></i><span style="flex:1">Obuna paketlari</span><i class="fa fa-chevron-right" style="opacity:0.3"></i></div>
-            <div class="menu-item tap-active"><i class="fa fa-cloud-download icon"></i><span style="flex:1">Yuklanganlar</span><i class="fa fa-chevron-right" style="opacity:0.3"></i></div>
-            <div class="menu-item tap-active"><i class="fa fa-comment-dots icon"></i><span style="flex:1">Yordam markazi</span><i class="fa fa-chevron-right" style="opacity:0.3"></i></div>
-        </div>
-
-        <div class="menu-list">
-            <div class="menu-item tap-active" onclick="openAdmin()"><i class="fa fa-user-shield icon"></i><span style="flex:1">Admin Panel (Aziz)</span><i class="fa fa-chevron-right" style="opacity:0.3"></i></div>
-            <div class="menu-item tap-active"><i class="fa fa-gear icon"></i><span style="flex:1">Sozlamalar</span><i class="fa fa-chevron-right" style="opacity:0.3"></i></div>
+            <div class="menu-item tap-active"><i class="fa fa-play-circle icon"></i><span>Mening obunalarim</span></div>
+            <div class="menu-item tap-active" onclick="openAdmin()"><i class="fa fa-user-shield icon"></i><span>Admin Panel (Aziz)</span></div>
+            <div class="menu-item tap-active"><i class="fa fa-gear icon"></i><span>Sozlamalar</span></div>
         </div>
     </div>
 
@@ -220,53 +166,46 @@
     <div class="bottom-nav">
         <div class="nav-item active tap-active" onclick="showPage('home', this)"><i class="fa fa-home"></i>Bosh sahifa</div>
         <div class="nav-item tap-active"><i class="fa fa-compass"></i>Katalog</div>
-        <div class="nav-item tap-active" onclick="showPage('mening', this)"><i class="fa fa-clapperboard"></i>Mening</div>
+        <div class="nav-item tap-active" onclick="showPage('mening', this)"><i class="fa fa-bookmark"></i>Mening</div>
         <div class="nav-item tap-active" onclick="showPage('siz', this)">
             <div class="siz-btn-oval">
-                <img src="https://via.placeholder.com/100?text=U" class="tg-nav-avatar" id="navAvatar">
-                <span style="font-weight: bold; color: white;">Siz</span>
+                <img src="https://via.placeholder.com/100?text=?" class="tg-nav-avatar" id="navAvatar">
+                <span style="font-weight:bold; color:white">Siz</span>
             </div>
         </div>
     </div>
 
     <!-- ADMIN PANEL -->
     <div id="adminPanel" class="modal">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-            <h2 style="margin:0">Boshqaruv Paneli</h2>
-            <i class="fa fa-times-circle" style="font-size: 30px; color: #555;" onclick="closeAdmin()"></i>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 style="margin:0">Admin Boshqaruvi</h2>
+            <i class="fa fa-times-circle" style="font-size:30px; color:#555;" onclick="closeAdmin()"></i>
         </div>
 
         <div id="loginForm">
-            <div class="admin-card">
-                <p style="text-align: center; color: var(--gray-text);">Admin login va parolini kiriting</p>
-                <input type="text" id="admLogin" placeholder="Login">
-                <input type="password" id="admPass" placeholder="Parol">
-                <button class="btn-save" onclick="login()">TIZIMGA KIRISH</button>
-            </div>
+            <input type="text" id="admLogin" placeholder="Login">
+            <input type="password" id="admPass" placeholder="Parol">
+            <button class="btn-save" onclick="login()">KIRISH</button>
         </div>
 
         <div id="uploadForm" style="display: none;">
             <div class="admin-card">
-                <h3 style="margin:0 0 20px; color:var(--accent); border-left: 4px solid var(--accent); padding-left: 10px;">Yangi Kino (Slayder)</h3>
+                <h3 style="color:var(--accent); margin-top:0;">Slayderga Kino</h3>
                 <input type="text" id="sTitle" placeholder="Kino nomi">
-                <label style="display:block; margin-bottom: 8px; font-size: 13px;">Poster (Rasm):</label>
-                <input type="file" id="sPoster" accept="image/*">
-                <label style="display:block; margin-bottom: 8px; font-size: 13px;">Video fayl:</label>
-                <input type="file" id="sVideo" accept="video/mp4,video/x-m4v,video/*">
-                <button class="btn-save" onclick="saveKino('slider')">SLAYDERGA QO'SHISH</button>
+                <label>Poster:</label><input type="file" id="sPoster" accept="image/*">
+                <label>Video:</label><input type="file" id="sVideo" accept="video/*">
+                <button class="btn-save" onclick="saveKino('slider')">SAQLASH</button>
             </div>
 
             <div class="admin-card">
-                <h3 style="margin:0 0 20px; color:#00ccff; border-left: 4px solid #00ccff; padding-left: 10px;">Yangi Kino (Ro'yxat)</h3>
+                <h3 style="color:#00ccff; margin-top:0;">Ro'yxatga Kino</h3>
                 <input type="text" id="nTitle" placeholder="Kino nomi">
-                <label style="display:block; margin-bottom: 8px; font-size: 13px;">Poster (Rasm):</label>
-                <input type="file" id="nPoster" accept="image/*">
-                <label style="display:block; margin-bottom: 8px; font-size: 13px;">Video fayl:</label>
-                <input type="file" id="nVideo" accept="video/mp4,video/x-m4v,video/*">
-                <button class="btn-save" style="background:#00ccff" onclick="saveKino('normal')">RO'YXATGA QO'SHISH</button>
+                <label>Poster:</label><input type="file" id="nPoster" accept="image/*">
+                <label>Video:</label><input type="file" id="nVideo" accept="video/*">
+                <button class="btn-save" style="background:#00ccff" onclick="saveKino('normal')">SAQLASH</button>
             </div>
-
-            <h3 style="margin: 20px 0 10px;">Mavjud kinolar:</h3>
+            
+            <h3 style="margin:20px 0 10px;">Kinolar ro'yxati:</h3>
             <div id="delList"></div>
         </div>
     </div>
@@ -279,20 +218,18 @@
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script>
-        // Dexie Ma'lumotlar bazasi
+        // DEXIE DB
         const db = new Dexie("KinoDramaPremiumDB");
-        db.version(2).stores({ 
-            movies: "++id, title, category", 
-            settings: "key, value" 
+        db.version(1).stores({ movies: "++id, title, category", profile: "key, value" });
+
+        // SWIPER INIT (Autoplay yoqilgan)
+        let swiper = new Swiper('.hero-swiper', {
+            slidesPerView: 'auto', centeredSlides: true, loop: true, spaceBetween: -15,
+            autoplay: { delay: 2000, disableOnInteraction: false },
+            pagination: { el: '.swiper-pagination', clickable: true }
         });
 
-        const swiper = new Swiper('.hero-swiper', {
-            slidesPerView: 'auto', centeredSlides: true, loop: true, spaceBetween: 0,
-            pagination: { el: '.swiper-pagination', clickable: true },
-            autoplay: { delay: 5000, disableOnInteraction: false }
-        });
-
-        // Sahifalar almashinuvi
+        // Sahifa almashtirish
         function showPage(pageId, element) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
@@ -300,9 +237,9 @@
             element.classList.add('active');
         }
 
-        // Telegram Auth
+        // Telegram Auth va Rasm ko'rsatish
         async function onTelegramAuth(user) {
-            await db.settings.put({ key: 'profile', value: user });
+            await db.profile.put({ key: 'current_user', value: user });
             updateProfileUI(user);
         }
 
@@ -315,7 +252,7 @@
             }
         }
 
-        // Admin Panel Logic
+        // Admin Panel
         function openAdmin() { document.getElementById('adminPanel').style.display = 'block'; }
         function closeAdmin() { document.getElementById('adminPanel').style.display = 'none'; }
 
@@ -324,116 +261,107 @@
                 document.getElementById('loginForm').style.display = 'none';
                 document.getElementById('uploadForm').style.display = 'block';
                 renderDelList();
-            } else { alert('Xato login yoki parol!'); }
+            } else { alert('Xato!'); }
         }
 
-        // Kinoni saqlash (Sahifa yangilanmaydi)
         async function saveKino(cat) {
             const prefix = cat === 'slider' ? 's' : 'n';
             const title = document.getElementById(prefix + 'Title').value;
             const poster = document.getElementById(prefix + 'Poster').files[0];
             const video = document.getElementById(prefix + 'Video').files[0];
             
-            if(!title || !poster || !video) return alert('Iltimos hamma maydonlarni to\'ldiring!');
+            if(!title || !poster || !video) return alert('Barcha fayllarni tanlang!');
 
-            const btn = event.target;
-            const originalText = btn.innerText;
-            btn.innerText = "YUKLANMOQDA...";
-            btn.disabled = true;
-
-            try {
-                await db.movies.add({ title, poster, video, category: cat });
-                
-                // Formalarni tozalash
-                document.getElementById(prefix + 'Title').value = "";
-                document.getElementById(prefix + 'Poster').value = "";
-                document.getElementById(prefix + 'Video').value = "";
-                
-                alert('Muvaffaqiyatli qo\'shildi!');
-                renderDelList();
-                loadContent(); // Bosh sahifani yangilash (yopilmasdan)
-            } catch (e) {
-                alert("Xatolik: " + e);
-            } finally {
-                btn.innerText = originalText;
-                btn.disabled = false;
-            }
+            await db.movies.add({ title, poster, video, category: cat });
+            
+            // Inputlarni tozalash (Admin panel yopilmaydi)
+            document.getElementById(prefix + 'Title').value = '';
+            document.getElementById(prefix + 'Poster').value = '';
+            document.getElementById(prefix + 'Video').value = '';
+            
+            alert('Kino muvaffaqiyatli qo\'shildi!');
+            renderDelList();
+            loadContent();
         }
 
-        // Kontentni yuklash
         async function loadContent() {
-            const profile = await db.settings.get('profile');
-            if(profile) updateProfileUI(profile.value);
+            // Profilni DB dan tekshirish
+            const savedProfile = await db.profile.get('current_user');
+            if(savedProfile) updateProfileUI(savedProfile.value);
 
             const movies = await db.movies.toArray();
             const heroList = document.getElementById('heroList');
             const normalList = document.getElementById('normalList');
-
-            // Avvalgi kontentni tozalash
-            heroList.innerHTML = "";
-            normalList.innerHTML = "";
+            
+            heroList.innerHTML = '';
+            normalList.innerHTML = '';
 
             movies.forEach(m => {
-                const img = URL.createObjectURL(m.poster);
+                const imgUrl = URL.createObjectURL(m.poster);
                 if(m.category === 'slider') {
                     heroList.innerHTML += `
-                        <div class="swiper-slide tap-active" onclick="playMovie(${m.id})">
-                            <img src="${img}" class="hero-img">
-                            <div class="hero-overlay">
-                                <h1 class="hero-title">${m.title}</h1>
-                                <p style="color:var(--accent); font-weight:bold;"><i class="fa fa-play"></i> HOZIR KO'RISH</p>
-                            </div>
-                        </div>`;
+                    <div class="swiper-slide tap-active" onclick="playMovie(${m.id})">
+                        <img src="${imgUrl}" class="hero-img">
+                        <div class="hero-overlay">
+                            <h1 class="hero-title">${m.title}</h1>
+                            <p style="color:var(--accent); font-weight:bold;"><i class="fa fa-play"></i> HOZIR KO'RISH</p>
+                        </div>
+                    </div>`;
                 } else {
                     normalList.innerHTML += `
-                        <div class="movie-card tap-active" onclick="playMovie(${m.id})">
-                            <img src="${img}">
-                            <div style="margin-top:10px; font-weight:700; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${m.title}</div>
-                            <div class="progress-bar"><div class="progress-inner" style="width:${Math.floor(Math.random() * 60) + 10}%"></div></div>
-                        </div>`;
+                    <div class="movie-card tap-active" onclick="playMovie(${m.id})">
+                        <img src="${imgUrl}">
+                        <div style="margin-top:8px; font-weight:bold; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${m.title}</div>
+                        <div class="progress-bar"><div class="progress-fill" style="width:30%"></div></div>
+                    </div>`;
                 }
             });
-            swiper.update();
+
+            // Slayderni yangilash
+            if(swiper) swiper.destroy();
+            swiper = new Swiper('.hero-swiper', {
+                slidesPerView: 'auto', centeredSlides: true, loop: true, spaceBetween: -15,
+                autoplay: { delay: 2000, disableOnInteraction: false },
+                pagination: { el: '.swiper-pagination', clickable: true }
+            });
         }
 
-        // O'chirish ro'yxati
         async function renderDelList() {
             const movies = await db.movies.toArray();
             document.getElementById('delList').innerHTML = movies.map(m => `
-                <div style="display:flex; justify-content:space-between; background:#1a1a1a; padding:15px; border-radius:15px; margin-bottom:10px; border:1px solid #333;">
-                    <span><small style="color:var(--accent)">[${m.category}]</small> ${m.title}</span> 
-                    <i class="fa fa-trash-alt" style="color:var(--red-text); cursor:pointer" onclick="deleteMovie(${m.id})"></i>
+                <div style="display:flex; justify-content:space-between; background:#1a1a1a; padding:15px; border-radius:12px; margin-bottom:8px; border:1px solid #333;">
+                    <span>${m.title} <small>(${m.category})</small></span>
+                    <i class="fa fa-trash" style="color:#ff453a" onclick="deleteMovie(${m.id})"></i>
                 </div>`).join('');
         }
 
         async function deleteMovie(id) {
-            if(confirm('Ushbu kinoni o\'chirmoqchimisiz?')) {
+            if(confirm('Ushbu kinoni o\'chirasizmi?')) {
                 await db.movies.delete(id);
                 renderDelList();
                 loadContent();
             }
         }
 
-        // Player
         function playMovie(id) {
             db.movies.get(id).then(m => {
                 const player = document.getElementById('player');
-                const v = document.getElementById('mainVideo');
-                v.src = URL.createObjectURL(m.video);
+                const video = document.getElementById('mainVideo');
+                video.src = URL.createObjectURL(m.video);
                 player.style.display = 'block';
-                v.play();
+                video.play();
             });
         }
 
-        function closePlayer() { 
-            const v = document.getElementById('mainVideo');
-            v.pause(); 
-            v.src = "";
-            document.getElementById('player').style.display = 'none'; 
+        function closePlayer() {
+            const video = document.getElementById('mainVideo');
+            video.pause();
+            video.src = "";
+            document.getElementById('player').style.display = 'none';
         }
 
-        // Initial Load
-        loadContent();
+        // Sahifa yuklanganda kontentni yuklash
+        window.onload = loadContent;
     </script>
 </body>
 </html>
