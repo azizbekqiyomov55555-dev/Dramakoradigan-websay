@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>uzDrama - Kinolar va Seriallar</title>
+    <!-- Dexie.js - Brauzer ichida katta fayllarni saqlash uchun -->
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+    <style>
+        :root {
+            --main-red: #E50914;
+            --bg-black: #080808;
+            --card-bg: #141414;
+        }
+
+        body {
+            background-color: var(--bg-black);
+            color: white;
+            font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        /* HEADER */
+        header {
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 100%);
+            padding: 15px 4%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0; width: 92%; z-index: 1000;
+            transition: background 0.5s;
+        }
+
+        .logo { 
+            color: var(--main-red); 
+            font-size: 32px; 
+            font-weight: 900; 
+            text-decoration: none; 
+            letter-spacing: -1px;
+            font-family: 'Arial Black', sans-serif;
+        }
+
+        .nav-right { display: flex; align-items: center; gap: 20px; }
+
+        /* QIDIRUV TIZIMI */
+        .search-box {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-box input {
+            background: rgba(0,0,0,0.6);
+            border: 1px solid #444;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            outline: none;
+            width: 200px;
+            transition: 0.3s;
+        }
+
+        .search-box input:focus { width: 300px; border-color: var(--main-red); }
+
+        .admin-btn {
+            background: var(--main-red);
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        /* HERO SECTION */
+        .hero {
+            height: 80vh;
+            background: linear-gradient(to top, var(--bg-black) 10%, transparent 50%), 
+                        linear-gradient(to right, var(--bg-black) 30%, transparent 70%),
+                        url('https://wallpapercave.com/wp/wp10509657.jpg') center/cover;
+            display: flex;
+            align-items: center;
+            padding: 0 4%;
+        }
+
+        .hero-content h1 { font-size: 70px; margin: 0; text-shadow: 2px 2px 10px rgba(0,0,0,0.8); }
+        .hero-content p { font-size: 18px; max-width: 600px; color: #ccc; margin-top: 10px; }
+
+        /* KINO GRID */
+        .main-container { padding: 0 4%; margin-top: -120px; position: relative; z-index: 10; }
+
+        .section-title {
+            font-size: 24px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .movie-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            padding-bottom: 50px;
+        }
+
+        .movie-card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        }
+
+        .movie-card:hover { transform: scale(1.08); z-index: 100; }
+
+        .movie-card img { width: 100%; height: 300px; object-fit: cover; }
+
+        .movie-card .card-body { padding: 12px; }
+        .movie-card h3 { font-size: 15px; margin: 0; color: #fff; text-align: center; }
+
+        /* ADMIN PANEL MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: #181818;
+            padding: 40px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #aaa; font-size: 14px; }
+        .form-group input {
+            width: 100%; padding: 12px; background: #333; border: 1px solid #444; 
+            color: white; border-radius: 5px; box-sizing: border-box;
+        }
+
+        .btn-submit {
+            width: 100%; padding: 15px; background: var(--main-red); color: white;
+            border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 10px;
+        }
+
+        /* PLAYER */
+        .player-box {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; display: none; z-index: 3000;
+        }
+        video { width: 100%; height: 100%; }
+        .close-player {
+            position: absolute; top: 20px; right: 30px; color: white;
+            font-size: 40px; cursor: pointer; z-index: 3001; text-shadow: 0 0 10px #000;
+        }
+
+        .loading-bar { height: 4px; background: var(--main-red); width: 0%; transition: 0.3s; margin-top: 10px; }
+
+    </style>
+</head>
+<body>
+
+<header id="mainHeader">
+    <a href="#" class="logo" onclick="location.reload()">uzDrama</a>
+    <div class="nav-right">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Kino qidirish..." oninput="searchMovies()">
+        </div>
+        <button class="admin-btn" onclick="toggleModal(true)">+ Yuklash</button>
+    </div>
+</header>
+
+<!-- MAIN CONTENT -->
+<div id="home-content">
+    <div class="hero">
+        <div class="hero-content">
+            <h1>Qora Niyat</h1>
+            <p>Eng mashhur turk dramasi endi uzDrama platformasida o'zbek tilida. Hoziroq tomosha qilishni boshlang!</p>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="section-title">
+            <span id="listTitle">Yangi Kinolar</span>
+        </div>
+        <div id="movieGrid" class="movie-grid">
+            <!-- Kinolar shu yerda chiqadi -->
+        </div>
+    </div>
+</div>
+
+<!-- ADMIN MODAL -->
+<div id="adminModal" class="modal">
+    <div class="modal-content">
+        <h2 style="margin-top: 0;">Kino Yuklash</h2>
+        <div class="form-group">
+            <label>Kino Nomi:</label>
+            <input type="text" id="titleInput" placeholder="Masalan: Forsaj 10">
+        </div>
+        <div class="form-group">
+            <label>Poster (Rasm fayli):</label>
+            <input type="file" id="posterInput" accept="image/*">
+        </div>
+        <div class="form-group">
+            <label>Video (Fayl yuklang):</label>
+            <input type="file" id="videoInput" accept="video/mp4">
+        </div>
+        <button class="btn-submit" onclick="saveMovie()">SAYTGA JOYLASHTIRISH</button>
+        <div id="loadBar" class="loading-bar"></div>
+        <button style="background:none; border:none; color:#888; width:100%; margin-top:15px; cursor:pointer;" onclick="toggleModal(false)">Yopish</button>
+    </div>
+</div>
+
+<!-- PLAYER -->
+<div id="playerBox" class="player-box">
+    <span class="close-player" onclick="closePlayer()">&times;</span>
+    <video id="v-player" controls></video>
+</div>
+
+<script>
+    // 1. IndexedDB sozlash
+    const db = new Dexie("uzDramaV2");
+    db.version(1).stores({ movies: "++id, title" });
+
+    let allMovies = []; // Qidiruv uchun hamma kinolar
+
+    // 2. Kinolarni yuklash
+    async function fetchMovies() {
+        allMovies = await db.movies.toArray();
+        renderMovies(allMovies);
+    }
+
+    function renderMovies(data) {
+        const grid = document.getElementById('movieGrid');
+        grid.innerHTML = "";
+        
+        if (data.length === 0) {
+            grid.innerHTML = "<p style='color:#666'>Hech narsa topilmadi...</p>";
+            return;
+        }
+
+        data.forEach(movie => {
+            const card = document.createElement('div');
+            card.className = 'movie-card';
+            const posterUrl = URL.createObjectURL(movie.poster);
+            
+            card.innerHTML = `
+                <img src="${posterUrl}" alt="Poster">
+                <div class="card-body">
+                    <h3>${movie.title}</h3>
+                </div>
+            `;
+            card.onclick = () => playMovie(movie.video);
+            grid.appendChild(card);
+        });
+    }
+
+    // 3. Qidiruv funksiyasi
+    function searchMovies() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const filtered = allMovies.filter(m => m.title.toLowerCase().includes(query));
+        
+        const titleText = document.getElementById('listTitle');
+        titleText.innerText = query ? `"${query}" bo'yicha natijalar` : "Yangi Kinolar";
+        
+        renderMovies(filtered);
+    }
+
+    // 4. Admin funksiyalari
+    function toggleModal(show) {
+        document.getElementById('adminModal').style.display = show ? 'flex' : 'none';
+    }
+
+    async function saveMovie() {
+        const title = document.getElementById('titleInput').value;
+        const poster = document.getElementById('posterInput').files[0];
+        const video = document.getElementById('videoInput').files[0];
+        const bar = document.getElementById('loadBar');
+
+        if (!title || !poster || !video) {
+            alert("Barcha ma'lumotlarni to'ldiring!");
+            return;
+        }
+
+        bar.style.width = "100%";
+        
+        try {
+            await db.movies.add({ title, poster, video });
+            alert("Muvaffaqiyatli yuklandi!");
+            location.reload();
+        } catch (e) {
+            alert("Xatolik: Xotira to'lgan bo'lishi mumkin.");
+            bar.style.width = "0%";
+        }
+    }
+
+    // 5. Player funksiyalari
+    function playMovie(blob) {
+        const player = document.getElementById('playerBox');
+        const video = document.getElementById('v-player');
+        player.style.display = 'block';
+        video.src = URL.createObjectURL(blob);
+        video.play();
+    }
+
+    function closePlayer() {
+        const player = document.getElementById('playerBox');
+        const video = document.getElementById('v-player');
+        player.style.display = 'none';
+        video.pause();
+        video.src = "";
+    }
+
+    // Header effekt
+    window.onscroll = function() {
+        const header = document.getElementById('mainHeader');
+        if (window.scrollY > 50) header.style.background = "#000";
+        else header.style.background = "linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 100%)";
+    };
+
+    // Sahifa yuklanganda
+    fetchMovies();
+</script>
+
+</body>
+</html>
