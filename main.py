@@ -17,12 +17,14 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 
 user_links = {}
 
+
 @dp.message(CommandStart())
 async def cmd_start(message: types.Message):
     await message.answer(
         "Salom! 👋\n\nMen Instagram va YouTube videolarini yuklab olaman.\n"
         "Menga link yuboring."
     )
+
 
 @dp.message(F.text.startswith(("http://", "https://")))
 async def process_link(message: types.Message):
@@ -45,9 +47,9 @@ async def process_link(message: types.Message):
         formats_list = []
         seen_heights = set()
         
-        for f in info.get('formats', []):
-            height = f.get('height')
-            vcodec = f.get('vcodec')            filesize = f.get('filesize') or f.get('filesize_approx', 0)
+        for f in info.get('formats', []):            height = f.get('height')
+            vcodec = f.get('vcodec')
+            filesize = f.get('filesize') or f.get('filesize_approx', 0)
             format_id = f.get('format_id')
             
             if height and vcodec != 'none' and height not in seen_heights:
@@ -94,10 +96,11 @@ async def process_link(message: types.Message):
                 photo=thumbnail,
                 caption=caption,
                 reply_markup=reply_markup
-            )
-        else:
-            await message.answer(caption, reply_markup=reply_markup)    except Exception as e:
+            )        else:
+            await message.answer(caption, reply_markup=reply_markup)
+    except Exception as e:
         await status_msg.edit_text(f"❌ Xatolik: {str(e)[:100]}")
+
 
 @dp.callback_query(F.data.startswith("dl_"))
 async def download_video(callback: types.CallbackQuery):
@@ -142,10 +145,11 @@ async def download_video(callback: types.CallbackQuery):
             
             if file_size > 50 * 1024 * 1024:
                 await edit_msg.edit_text("⚠️ Video 50MB dan katta.")
-                os.remove(filename)
-                return
+                os.remove(filename)                return
+                
             await bot.send_video(
-                chat_id=callback.message.chat.id,                video=types.FSInputFile(filename),
+                chat_id=callback.message.chat.id,
+                video=types.FSInputFile(filename),
                 caption="✅ Tayyor!"
             )
             
@@ -157,8 +161,10 @@ async def download_video(callback: types.CallbackQuery):
     except Exception as e:
         await callback.message.answer(f"❌ Xatolik: {str(e)[:100]}")
 
+
 async def main():
     await dp.start_polling(bot)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
