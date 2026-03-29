@@ -1,6 +1,7 @@
 import os
 import asyncio
 import aiohttp
+from bs4 import BeautifulSoup
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import Message, FSInputFile
 from aiogram.filters import CommandStart
@@ -16,72 +17,69 @@ async def start(message: Message):
     await message.answer("📥 Instagram link yubor")
 
 
-# INSTAGRAM VIDEO OLISH (REAL)
-async def get_instagram_video(url):
+# SNAPSAVE SCRAPER (ISHLAYDI)
+async def get_video(url):
     try:
-        if "reel" in url:
-            shortcode = url.split("/reel/")[1].split("/")[0]
-        elif "p/" in url:
-            shortcode = url.split("/p/")[1].split("/")[0]
-        else:
-            return None
+        api = "https://snapsave.app/action.php"
 
-        api_url = f"https://www.instagram.com/api/v1/media/{shortcode}/info/"
+        data = {
+            "url": url
+        }
 
         headers = {
-            "User-Agent": "Mozilla/5.0",
-            "Accept": "*/*",
+            "User-Agent": "Mozilla/5.0"
         }
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(api_url, headers=headers) as resp:
-                data = await resp.json()
+            async with session.post(api, data=data, headers=headers) as r:
+                html = await r.text()
 
-                items = data.get("items", [])
-                if not items:
-                    return None
+                soup = BeautifulSoup(html, "html.parser")
+                links = soup.find_all("a")
 
-                video = items[0]
-                return video["video_versions"][0]["url"]
+                for a in links:
+                    href = a.get("href")
+                    if href and ".mp4" in href:
+                        return href
 
     except Exception as e:
         print(e)
-        return None
+
+    return None
 
 
-# VIDEO DOWNLOAD
+# DOWNLOAD
 async def download(url, filename):
     async with aiohttp.ClientSession() as session:
-        async with session.get(url) as resp:
+        async with session.get(url) as r:
             with open(filename, "wb") as f:
-                f.write(await resp.read())
+                f.write(await r.read())
 
 
-# HANDLER
 @dp.message()
 async def handle(message: Message):
     url = message.text
 
     await message.answer("⏳ Qidirilmoqda...")
 
-    video_url = await get_instagram_video(url)
+    video_url = await get_video(url)
 
     if not video_url:
-        await message.answer("❌ Video topilmadi (private yoki blok)")
+        await message.answer("❌ Baribir topilmadi (Instagram blok)")
         return
 
-    filename = "video.mp4"
-    await download(video_url, filename)
+    file = "video.mp4"
+    await download(video_url, file)
 
-    size = round(os.path.getsize(filename) / 1024 / 1024, 2)
+    size = round(os.path.getsize(file) / 1024 / 1024, 2)
 
     await bot.send_video(
         message.chat.id,
-        FSInputFile(filename),
+        FSInputFile(file),
         caption=f"✅ {size} MB"
     )
 
-    os.remove(filename)
+    os.remove(file)
 
 
 async def main():
