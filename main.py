@@ -12,7 +12,6 @@ BOT_TOKEN = "8766647589:AAHmY6x59GgKA25K3e737-7jomufi9wRv2Y"
 
 app = Client("video_compressor", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-# Foydalanuvchi ma'lumotlarini saqlash uchun lug'at
 user_data = {}
 
 def get_duration(file_path):
@@ -27,21 +26,28 @@ async def compress_video(input_path, output_path, target_mb):
     duration = get_duration(input_path)
     if duration == 0: return False
     
-    total_bitrate = (target_mb * 8192) / duration
-    audio_bitrate = 64
-    video_bitrate = int(total_bitrate - audio_bitrate)
-    if video_bitrate < 150: video_bitrate = 150
+    # Aniqroq hisob-kitob (Maqsadli hajmdan 2% zaxira olamiz xatolik uchun)
+    target_size_bits = (target_mb * 1024 * 1024 * 8) * 0.98 
+    audio_bitrate = 64 * 1024 # 64kbps
+    video_bitrate = int((target_size_bits / duration) - audio_bitrate)
+    
+    if video_bitrate < 150000: video_bitrate = 150000
 
+    video_bitrate_k = int(video_bitrate / 1000)
+
+    # FFmpeg buyrug'i: Sifatni saqlash va hajmga tushirish uchun
     cmd = [
         "ffmpeg", "-y", "-i", input_path,
-        "-vf", "scale=-2:480",
+        "-vf", "scale='min(iw,1280)':-2", # Agar video katta bo'lsa 720p ga tushiradi (sifat uchun yaxshi)
         "-c:v", "libx264",
-        "-b:v", f"{video_bitrate}k",
-        "-preset", "slow", 
-        "-crf", "22",
+        "-b:v", f"{video_bitrate_k}k",
+        "-minrate", f"{video_bitrate_k}k", # Minimal bitreytni qotiramiz
+        "-maxrate", f"{video_bitrate_k}k", # Maksimalni ham (hajm aniq chiqishi uchun)
+        "-bufsize", f"{video_bitrate_k * 2}k",
+        "-preset", "slow",               # Sekin lekin sifatli siqish
         "-pix_fmt", "yuv420p",
         "-c:a", "aac",
-        "-b:a", f"{audio_bitrate}k",
+        "-b:a", "64k",
         "-movflags", "+faststart",
         output_path
     ]
@@ -49,10 +55,6 @@ async def compress_video(input_path, output_path, target_mb):
     process = await asyncio.create_subprocess_exec(*cmd)
     await process.wait()
     return True
-
-@app.on_message(filters.command("start"))
-async def start(client, message):
-    await message.reply_text("Salom! Video yuboring, uni sifatli qilib siqib beraman.")
 
 @app.on_message(filters.video | filters.document)
 async def handle_video(client, message):
@@ -62,41 +64,30 @@ async def handle_video(client, message):
     user_id = message.from_user.id
     msg = await message.reply_text("📥 Video yuklanmoqda...")
     
-    # Asl hajmni aniqlash (MB da)
     if message.video:
-        orig_size_bytes = message.video.file_size
+        orig_size_mb = round(message.video.file_size / (1024 * 1024), 2)
     else:
-        orig_size_bytes = message.document.file_size
-    
-    orig_size_mb = round(orig_size_bytes / (1024 * 1024), 2)
+        orig_size_mb = round(message.document.file_size / (1024 * 1024), 2)
 
-    if not os.path.exists("downloads"): os.makedirs("downloads")
     file_path = f"downloads/{user_id}_{message.id}.mp4"
+    if not os.path.exists("downloads"): os.makedirs("downloads")
     await message.download(file_name=file_path)
     
-    # Ma'lumotlarni saqlaymiz
-    user_data[user_id] = {
-        "path": file_path,
-        "orig_size": orig_size_mb
-    }
-    
-    await msg.edit_text(f"✅ Video qabul qilindi (Asl hajm: {orig_size_mb} MB).\nNecha MB bo'lsin? (Faqat raqam yozing)")
+    user_data[user_id] = {"path": file_path, "orig_size": orig_size_mb}
+    await msg.edit_text(f"✅ Video qabul qilindi ({orig_size_mb} MB).\nNecha MB bo'lsin? (Masalan: 20)")
 
 @app.on_message(filters.text & filters.private)
 async def set_size(client, message):
     user_id = message.from_user.id
     if user_id not in user_data: return
-
-    if not message.text.isdigit():
-        await message.reply_text("Iltimos, faqat raqam yozing!")
-        return
+    if not message.text.isdigit(): return
 
     target_mb = int(message.text)
     input_path = user_data[user_id]["path"]
     orig_size = user_data[user_id]["orig_size"]
     output_path = f"downloads/out_{user_id}.mp4"
     
-    status = await message.reply_text(f"⏳ Video {target_mb}MB ga moslab siqilmoqda...")
+    status = await message.reply_text(f"⏳ {target_mb} MB ga tayyorlanmoqda (Sifat maksimal darajada bo'ladi)...")
     
     try:
         success = await compress_video(input_path, output_path, target_mb)
@@ -104,10 +95,9 @@ async def set_size(client, message):
         if success and os.path.exists(output_path):
             real_size = round(os.path.getsize(output_path) / (1024 * 1024), 2)
             
-            # SIZ XOHLAGAN MATN:
             caption_text = (
                 f"Siz yuborgan {orig_size} MB videoni {real_size} MB ga qisqartirdim! 😎\n\n"
-                f"✨ Sifat: 480p (Tiniq)\n"
+                f"✨ Sifat: Maksimal (Optimallashgan)\n"
                 f"✅ Tayyor!"
             )
             
@@ -119,11 +109,10 @@ async def set_size(client, message):
             )
             await status.delete()
         else:
-            await status.edit_text("❌ Xatolik yuz berdi.")
+            await status.edit_text("❌ Xato yuz berdi.")
     except Exception as e:
         await status.edit_text(f"❌ Xato: {e}")
     
-    # Fayllarni o'chirish
     if os.path.exists(input_path): os.remove(input_path)
     if os.path.exists(output_path): os.remove(output_path)
     del user_data[user_id]
