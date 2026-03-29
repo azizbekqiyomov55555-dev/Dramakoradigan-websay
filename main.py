@@ -5,7 +5,7 @@ from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.filters import CommandStart
 import yt_dlp
 
-TOKEN = "SENING_BOT_TOKENING"
+TOKEN = "8766647589:AAHmY6x59GgKA25K3e737-7jomufi9wRv2Y"
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
