@@ -6,7 +6,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 import yt_dlp
 
 # Bot tokeningizni bura yozing yoki Railway Env orqali bering
-API_TOKEN = 'BOT_TOKENINGIZNI_YUKLANG'
+API_TOKEN = '8766647589:AAHmY6x59GgKA25K3e737-7jomufi9wRv2Y'
 
 logging.basicConfig(level=logging.INFO)
 
