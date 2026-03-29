@@ -1,74 +1,108 @@
 import os
 import logging
 import asyncio
+import subprocess
 from aiogram import Bot, Dispatcher, executor, types
-import yt_dlp
+from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher.filters.state import State, StatesGroup
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
 # BOT TOKEN
 API_TOKEN = '8766647589:AAHmY6x59GgKA25K3e737-7jomufi9wRv2Y'
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=API_TOKEN)
-dp = Dispatcher(bot)
+storage = MemoryStorage()
+dp = Dispatcher(bot, storage=storage)
 
-def download_video(url, chat_id):
-    file_name = f"video_{chat_id}.mp4"
-    cookie_path = 'cookies.txt' if os.path.exists('cookies.txt') else None
+# Holatlarni boshqarish
+class CompressState(StatesGroup):
+    waiting_for_size = State()
+
+# Video davomiyligini aniqlash funksiyasi
+def get_video_duration(file_path):
+    result = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", file_path],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT
+    )
+    return float(result.stdout)
+
+# Videoni siqish funksiyasi
+def compress_video(input_path, output_path, target_size_mb):
+    duration = get_video_duration(input_path)
+    # Bitreytni hisoblash: (Hajm * 8192) / vaqt (sekundda)
+    # 8192 = 1024 * 8 (megabaytdan kilobitga o'tkazish)
+    target_total_bitrate = (target_size_mb * 8192) / duration
     
-    # Yuklab olish sozlamalari: 20MB limit va eng yaxshi mp4
-    ydl_opts = {
-        'format': 'best[ext=mp4][filesize<20M]/best[ext=mp4]/best', # 20MB dan kichik eng yaxshisi
-        'outtmpl': file_name,
-        'cookiefile': cookie_path,
-        'quiet': True,
-        'no_warnings': True,
-        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-    }
-
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        # Avval ma'lumotni olamiz (Hajmni tekshirish uchun)
-        info = ydl.extract_info(url, download=False)
-        filesize = info.get('filesize') or info.get('filesize_approx') or 0
-        size_mb = round(filesize / (1024 * 1024), 2)
-
-        if size_mb > 20:
-            return None, f"❌ Video juda katta ({size_mb} MB). Limit: 20 MB."
-
-        # Yuklab olish
-        ydl.download([url])
-        return file_name, size_mb
+    # Audio uchun 128k ajratamiz, qolgani video uchun
+    video_bitrate = max(target_total_bitrate - 128, 10) # Kamida 10k bo'lsin
+    
+    cmd = [
+        "ffmpeg", "-y", "-i", input_path,
+        "-b:v", f"{video_bitrate}k",
+        "-vcodec", "libx264",
+        "-preset", "medium",
+        "-acodec", "aac",
+        "-b:a", "128k",
+        output_path
+    ]
+    subprocess.run(cmd)
 
 @dp.message_handler(commands=['start'])
 async def start(message: types.Message):
-    await message.answer("Salom! 🎬 Link yuboring, men uni darhol (max 20MB) yuklab beraman.")
+    await message.answer("Salom! 🎬 Menga video yuboring, men uni siz xohlagan hajmgacha siqib beraman.")
 
-@dp.message_handler(regexp=r'(https?://.+)')
-async def auto_download(message: types.Message):
-    url = message.text
-    status = await message.answer("⏳ Video tahlil qilinmoqda va yuklanmoqda...")
+@dp.message_handler(content_types=['video'])
+async def handle_video(message: types.Message, state: FSMContext):
+    msg = await message.answer("📥 Video qabul qilindi. Uni yuklab olyapman...")
+    
+    file_id = message.video.file_id
+    input_path = f"video_{message.chat.id}.mp4"
+    
+    # Videoni serverga yuklab olish
+    await bot.download_file_by_id(file_id, input_path)
+    
+    await state.update_data(video_path=input_path)
+    await CompressState.waiting_for_size.set()
+    
+    await msg.edit_text("✅ Video yuklandi.\n\nBu video necha Megabayt (MB) bo'lsin? (Faqat raqam yozing, masalan: 15)")
+
+@dp.message_handler(state=CompressState.waiting_for_size)
+async def process_size(message: types.Message, state: FSMContext):
+    if not message.text.isdigit():
+        await message.answer("Iltimos, faqat raqam yozing (masalan: 10, 15, 20).")
+        return
+
+    target_mb = int(message.text)
+    user_data = await state.get_data()
+    input_path = user_data['video_path']
+    output_path = f"compressed_{message.chat.id}.mp4"
+    
+    status_msg = await message.answer(f"⏳ Video {target_mb} MB gacha siqilmoqda. Bu biroz vaqt olishi mumkin...")
     
     try:
-        # Videoni yuklash funksiyasini chaqiramiz
+        # Videoni siqish (bloklamaslik uchun loopda ishlatamiz)
         loop = asyncio.get_event_loop()
-        file_path, size = await loop.run_in_executor(None, download_video, url, message.chat.id)
-
-        if file_path:
-            await status.edit_text(f"📤 Telegramga yuborilmoqda... ({size} MB)")
-            with open(file_path, 'rb') as video:
-                # Siz so'ragandek sifatni har doim 240p deb ko'rsatish
-                caption_text = f"🎬 Sifati: 240p\n📁 Hajmi: {size} MB\n✅ Tayyor!"
-                await bot.send_video(message.chat.id, video, caption=caption_text)
+        await loop.run_in_executor(None, compress_video, input_path, output_path, target_mb)
+        
+        await status_msg.edit_text("📤 Tayyor! Telegramga yuborilmoqda...")
+        
+        with open(output_path, 'rb') as video:
+            await bot.send_video(message.chat.id, video, caption=f"✅ Video {target_mb} MB gacha siqildi.")
             
-            os.remove(file_path)
-            await status.delete()
-        else:
-            await status.edit_text(size) # Bu yerda xatolik xabari (hajm katta bo'lsa)
+        # Fayllarni tozalash
+        os.remove(input_path)
+        os.remove(output_path)
+        await status_msg.delete()
+        await state.finish()
 
     except Exception as e:
         logging.error(e)
-        await status.edit_text("❌ Xatolik! Video topilmadi yoki Instagram botni blokladi.")
-        if os.path.exists(f"video_{message.chat.id}.mp4"):
-            os.remove(f"video_{message.chat.id}.mp4")
+        await status_msg.edit_text("❌ Xatolik yuz berdi. Video juda qisqa yoki hajm juda kichik tanlangan bo'lishi mumkin.")
+        if os.path.exists(input_path): os.remove(input_path)
+        if os.path.exists(output_path): os.remove(output_path)
+        await state.finish()
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
