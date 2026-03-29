@@ -1,102 +1,105 @@
 import os
 import asyncio
 from aiogram import Bot, Dispatcher, types
-from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, FSInputFile
 from aiogram.filters import CommandStart
 import yt_dlp
 
-TOKEN = "8766647589:AAHmY6x59GgKA25K3e737-7jomufi9wRv2Y"
+TOKEN = os.getenv("TOKEN")  # Railway uchun
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# video info olish
-def get_video_formats(url):
+# VIDEO FORMATLARNI OLISH
+def get_formats(url):
     ydl_opts = {
-        'quiet': True,
-        'no_warnings': True
+        "quiet": True,
+        "noplaylist": True,
+        "cookiefile": "cookies.txt",  # Instagram fix
     }
+
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
-        formats = info.get("formats", [])
-        
-        results = []
-        for f in formats:
-            if f.get("height"):
-                size = f.get("filesize") or 0
-                if size:
-                    size_mb = round(size / 1024 / 1024, 2)
-                else:
-                    size_mb = "?"
-                
-                results.append({
-                    "format_id": f["format_id"],
+
+        formats = []
+        for f in info.get("formats", []):
+            if f.get("height") and f.get("filesize"):
+                size = round(f["filesize"] / 1024 / 1024, 2)
+                formats.append({
+                    "id": f["format_id"],
                     "quality": f"{f['height']}p",
-                    "size": size_mb
+                    "size": size
                 })
-        
-        return results[:6]  # eng kerakli 6 ta format
+
+        # faqat eng yaxshilarini olish
+        return sorted(formats, key=lambda x: int(x["quality"][:-1]))[-5:]
 
 
-# video yuklash
-def download_video(url, format_id):
+# VIDEO YUKLASH
+def download(url, format_id):
     ydl_opts = {
-        'format': format_id,
-        'outtmpl': 'video.%(ext)s'
+        "format": format_id,
+        "outtmpl": "video.%(ext)s",
+        "cookiefile": "cookies.txt"
     }
+
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([url])
 
 
+# START
 @dp.message(CommandStart())
 async def start(message: Message):
     await message.answer("📥 Link yubor (Instagram / YouTube)")
 
 
+# LINK QABUL QILISH
 @dp.message()
-async def handle_link(message: Message):
+async def link_handler(message: Message):
     url = message.text
 
     await message.answer("⏳ Tekshirilmoqda...")
 
     try:
-        formats = get_video_formats(url)
+        formats = get_formats(url)
+
+        if not formats:
+            await message.answer("❌ Format topilmadi")
+            return
 
         buttons = []
         for f in formats:
             text = f"{f['quality']} - {f['size']} MB"
-            buttons.append([
-                InlineKeyboardButton(
-                    text=text,
-                    callback_data=f"{f['format_id']}|{url}"
-                )
-            ])
+            data = f"{f['id']}|{url}"
+            buttons.append([InlineKeyboardButton(text=text, callback_data=data)])
 
-        keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+        kb = InlineKeyboardMarkup(inline_keyboard=buttons)
 
-        await message.answer("🎬 Formatni tanla:", reply_markup=keyboard)
+        await message.answer("🎬 Formatni tanla:", reply_markup=kb)
 
     except Exception as e:
+        print(e)
         await message.answer("❌ Xatolik yoki noto‘g‘ri link")
 
 
+# BOSILGANDA VIDEO YUBORISH
 @dp.callback_query()
-async def download_callback(callback: types.CallbackQuery):
+async def send_video(callback: types.CallbackQuery):
     format_id, url = callback.data.split("|")
 
     await callback.message.answer("📥 Yuklanmoqda...")
 
     try:
-        download_video(url, format_id)
+        download(url, format_id)
 
-        # topilgan faylni yuborish
         for file in os.listdir():
             if file.startswith("video."):
-                await bot.send_video(callback.from_user.id, types.FSInputFile(file))
+                await bot.send_video(callback.from_user.id, FSInputFile(file))
                 os.remove(file)
                 break
 
     except Exception as e:
+        print(e)
         await callback.message.answer("❌ Yuklashda xato")
 
 
