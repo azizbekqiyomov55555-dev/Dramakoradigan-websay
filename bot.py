@@ -227,7 +227,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 def main():
-    token = os.environ.get("BOT_TOKEN")
+    token = ("8766647589:AAHmY6x59GgKA25K3e737-7jomufi9wRv2Y")
     if not token:
         raise ValueError("BOT_TOKEN muhit o'zgaruvchisi topilmadi")
 
