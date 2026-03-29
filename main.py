@@ -6,7 +6,7 @@ from pyrogram import Client, filters
 # SIZNING API MA'LUMOTLARINGIZ
 API_ID = 37366974
 API_HASH = "08d09c7ed8b7cb414ed6a99c104f1bd6"
-BOT_TOKEN = "8766647589:AAHmY6x59GgKA25K3e737-7jomufi9wRv2Y"
+BOT_TOKEN = "8229730974:AAF-aDQkGu6wCO1uT2Rjbbr-6F_blnxc880"
 
 app = Client("video_compressor", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
