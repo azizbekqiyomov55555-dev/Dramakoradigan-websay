@@ -9,16 +9,11 @@ from telegram.ext import (
 )
 import yt_dlp
 
-# Log sozlamalari
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
+logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Holatlar
 WAITING_LINK, SELECTING_QUALITY = range(2)
 
-# Yt-dlp sozlamalari (instagram va youtube uchun)
 YDL_OPTS = {
     'quiet': True,
     'no_warnings': True,
@@ -27,29 +22,24 @@ YDL_OPTS = {
     'no_color': True,
 }
 
-# Qabul qilinadigan platformalar
 ALLOWED_DOMAINS = ['youtube.com', 'youtu.be', 'instagram.com', 'www.instagram.com']
 
 def is_valid_link(text: str) -> bool:
-    """Linkni tekshirish - YouTube yoki Instagram"""
     return any(domain in text for domain in ALLOWED_DOMAINS)
 
 def extract_video_info(url: str):
-    """Video ma'lumotlarini olish (formatlar, o'lchamlar)"""
     with yt_dlp.YoutubeDL(YDL_OPTS) as ydl:
         try:
             info = ydl.extract_info(url, download=False)
             if info is None:
                 return None, None
             formats = []
-            # video+audio birgalikda bo'lgan formatlarni filtrlash
             for f in info.get('formats', []):
                 vcodec = f.get('vcodec', 'none')
                 acodec = f.get('acodec', 'none')
                 height = f.get('height')
                 filesize = f.get('filesize') or f.get('filesize_approx')
                 if vcodec != 'none' and acodec != 'none' and height:
-                    # Sifat nomi (240p, 480p, 1080p va h.k.)
                     if height <= 240:
                         quality = "240p"
                     elif height <= 480:
@@ -59,7 +49,7 @@ def extract_video_info(url: str):
                     elif height <= 1080:
                         quality = "1080p"
                     else:
-                        quality = f"{height}p"  # 1440p, 2160p va h.k.
+                        quality = f"{height}p"
                     formats.append({
                         'format_id': f['format_id'],
                         'quality': quality,
@@ -67,20 +57,17 @@ def extract_video_info(url: str):
                         'filesize': filesize,
                         'ext': f.get('ext', 'mp4')
                     })
-            # Eng yaxshi sifatni alohida qo'shamiz (eng baland height)
             if formats:
                 best = max(formats, key=lambda x: x['height'])
                 best_copy = best.copy()
                 best_copy['quality'] = f"Eng yuqori ({best_copy['quality']})"
                 formats.append(best_copy)
-            # Takrorlanuvchi sifatlarni olib tashlash (faqat bitta 240p, 480p...)
             unique = {}
             for f in formats:
                 q = f['quality']
                 if q not in unique or f['height'] > unique[q]['height']:
                     unique[q] = f
             formats = list(unique.values())
-            # Sifat bo'yicha tartiblash
             def quality_key(q):
                 if '240p' in q: return 1
                 if '480p' in q: return 2
@@ -95,7 +82,6 @@ def extract_video_info(url: str):
             return None, None
 
 def format_size(size_bytes):
-    """Baytni MB ga o'tkazish"""
     if size_bytes is None:
         return "noma'lum"
     return f"{size_bytes / (1024*1024):.2f} MB"
@@ -107,12 +93,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 async def link_received(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Foydalanuvchi link yuborganda"""
     text = update.message.text.strip()
     if not is_valid_link(text):
-        await update.message.reply_text(
-            "❌ Iltimos, faqat YouTube yoki Instagram video linkini yuboring."
-        )
+        await update.message.reply_text("❌ Iltimos, faqat YouTube yoki Instagram video linkini yuboring.")
         return WAITING_LINK
 
     await update.message.reply_text("⏳ Videoni tahlil qilmoqda, biroz kuting...")
@@ -125,12 +108,10 @@ async def link_received(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return WAITING_LINK
 
-    # Ma'lumotlarni saqlash
     context.user_data['link'] = text
     context.user_data['formats'] = formats
-    context.user_data['title'] = title[:50]  # uzun nomni qisqartirish
+    context.user_data['title'] = title[:50]
 
-    # Tugmalar yaratish (sifat + fayl hajmi)
     keyboard = []
     for fmt in formats:
         size_str = format_size(fmt['filesize'])
@@ -147,7 +128,6 @@ async def link_received(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return SELECTING_QUALITY
 
 async def quality_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Foydalanuvchi sifat tugmasini bosganda"""
     query = update.callback_query
     await query.answer()
 
@@ -164,17 +144,12 @@ async def quality_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     link = context.user_data['link']
     title = context.user_data['title']
-
-    # Tanlangan format ma'lumoti
     quality_label = selected['quality']
     size_mb = format_size(selected['filesize'])
     await query.edit_message_text(
-        f"✅ Tanlangan: {quality_label}\n"
-        f"📦 Hajmi: {size_mb}\n"
-        f"⏳ Yuklab olinmoqda, iltimos kuting..."
+        f"✅ Tanlangan: {quality_label}\n📦 Hajmi: {size_mb}\n⏳ Yuklab olinmoqda, iltimos kuting..."
     )
 
-    # Video yuklab olish
     temp_file = NamedTemporaryFile(delete=False, suffix=f".{selected['ext']}")
     temp_path = temp_file.name
     temp_file.close()
@@ -186,13 +161,11 @@ async def quality_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
         'format': format_id,
     }
     try:
-        # Yuklab olish (blokirovka qilmaydigan thread)
         def download():
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([link])
         await asyncio.to_thread(download)
 
-        # Fayl hajmini tekshirish (Telegram video limiti 50MB)
         file_size = os.path.getsize(temp_path)
         if file_size > 50 * 1024 * 1024:
             await query.message.reply_text(
@@ -202,7 +175,6 @@ async def quality_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
             os.unlink(temp_path)
             return ConversationHandler.END
 
-        # Videoni yuborish
         with open(temp_path, 'rb') as video_file:
             await query.message.reply_video(
                 video=video_file,
@@ -215,24 +187,20 @@ async def quality_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.error(f"Download/send error: {e}")
         await query.message.reply_text(f"❌ Xatolik yuz berdi: {str(e)[:100]}")
     finally:
-        # Tozalash
         if os.path.exists(temp_path):
             os.unlink(temp_path)
 
     return ConversationHandler.END
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Suhbatni bekor qilish"""
     await update.message.reply_text("❌ Bekor qilindi. Yangi link yuborishingiz mumkin.")
     return ConversationHandler.END
 
 def main():
-    token = ("8766647589:AAHmY6x59GgKA25K3e737-7jomufi9wRv2Y")
+    token = os.environ.get("BOT_TOKEN")
     if not token:
         raise ValueError("BOT_TOKEN muhit o'zgaruvchisi topilmadi")
-
     app = Application.builder().token(token).build()
-
     conv_handler = ConversationHandler(
         entry_points=[MessageHandler(filters.TEXT & ~filters.COMMAND, link_received)],
         states={
@@ -241,11 +209,8 @@ def main():
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
-
     app.add_handler(CommandHandler("start", start))
     app.add_handler(conv_handler)
-
-    # Railway'da webhook emas, polling ishlatamiz
     app.run_polling()
 
 if __name__ == "__main__":
