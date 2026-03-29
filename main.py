@@ -96,8 +96,7 @@ async def process_link(message: types.Message):
                 reply_markup=reply_markup
             )
         else:
-            await message.answer(caption, reply_markup=reply_markup)
-    except Exception as e:
+            await message.answer(caption, reply_markup=reply_markup)    except Exception as e:
         await status_msg.edit_text(f"❌ Xatolik: {str(e)[:100]}")
 
 @dp.callback_query(F.data.startswith("dl_"))
@@ -146,8 +145,7 @@ async def download_video(callback: types.CallbackQuery):
                 os.remove(filename)
                 return
             await bot.send_video(
-                chat_id=callback.message.chat.id,
-                video=types.FSInputFile(filename),
+                chat_id=callback.message.chat.id,                video=types.FSInputFile(filename),
                 caption="✅ Tayyor!"
             )
             
