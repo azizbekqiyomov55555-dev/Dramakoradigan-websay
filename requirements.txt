@@ -1,4 +1,1 @@
-aiogram==3.3.0
-yt-dlp
-python-dotenv
-pydantic>=2.0
+pip install aiogram==2.25.1 yt-dlp ffmpeg-python
