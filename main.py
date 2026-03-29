@@ -1,217 +1,108 @@
 import os
-import logging
 import asyncio
-from tempfile import NamedTemporaryFile
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import (
-    Application, CommandHandler, MessageHandler, CallbackQueryHandler,
-    ConversationHandler, filters, ContextTypes
-)
+from aiogram import Bot, Dispatcher, types
+from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.filters import CommandStart
 import yt_dlp
 
-logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
-logger = logging.getLogger(__name__)
+TOKEN = "SENING_BOT_TOKENING"
 
-WAITING_LINK, SELECTING_QUALITY = range(2)
+bot = Bot(token=TOKEN)
+dp = Dispatcher()
 
-YDL_OPTS = {
-    'quiet': True,
-    'no_warnings': True,
-    'extract_flat': False,
-    'ignoreerrors': True,
-    'no_color': True,
-}
-
-ALLOWED_DOMAINS = ['youtube.com', 'youtu.be', 'instagram.com', 'www.instagram.com']
-
-def is_valid_link(text: str) -> bool:
-    return any(domain in text for domain in ALLOWED_DOMAINS)
-
-def extract_video_info(url: str):
-    with yt_dlp.YoutubeDL(YDL_OPTS) as ydl:
-        try:
-            info = ydl.extract_info(url, download=False)
-            if info is None:
-                return None, None
-            formats = []
-            for f in info.get('formats', []):
-                vcodec = f.get('vcodec', 'none')
-                acodec = f.get('acodec', 'none')
-                height = f.get('height')
-                filesize = f.get('filesize') or f.get('filesize_approx')
-                if vcodec != 'none' and acodec != 'none' and height:
-                    if height <= 240:
-                        quality = "240p"
-                    elif height <= 480:
-                        quality = "480p"
-                    elif height <= 720:
-                        quality = "720p"
-                    elif height <= 1080:
-                        quality = "1080p"
-                    else:
-                        quality = f"{height}p"
-                    formats.append({
-                        'format_id': f['format_id'],
-                        'quality': quality,
-                        'height': height,
-                        'filesize': filesize,
-                        'ext': f.get('ext', 'mp4')
-                    })
-            if formats:
-                best = max(formats, key=lambda x: x['height'])
-                best_copy = best.copy()
-                best_copy['quality'] = f"Eng yuqori ({best_copy['quality']})"
-                formats.append(best_copy)
-            unique = {}
-            for f in formats:
-                q = f['quality']
-                if q not in unique or f['height'] > unique[q]['height']:
-                    unique[q] = f
-            formats = list(unique.values())
-            def quality_key(q):
-                if '240p' in q: return 1
-                if '480p' in q: return 2
-                if '720p' in q: return 3
-                if '1080p' in q: return 4
-                if 'Eng yuqori' in q: return 10
-                return 5
-            formats.sort(key=lambda x: quality_key(x['quality']))
-            return formats, info.get('title', 'Video')
-        except Exception as e:
-            logger.error(f"Extract error: {e}")
-            return None, None
-
-def format_size(size_bytes):
-    if size_bytes is None:
-        return "noma'lum"
-    return f"{size_bytes / (1024*1024):.2f} MB"
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "👋 Salom! Menga Instagram yoki YouTube video linkini yuboring.\n"
-        "Men sizga kerakli sifat va fayl hajmini ko'rsatib, videoni yuklab beraman."
-    )
-
-async def link_received(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text.strip()
-    if not is_valid_link(text):
-        await update.message.reply_text("❌ Iltimos, faqat YouTube yoki Instagram video linkini yuboring.")
-        return WAITING_LINK
-
-    await update.message.reply_text("⏳ Videoni tahlil qilmoqda, biroz kuting...")
-    formats, title = await asyncio.to_thread(extract_video_info, text)
-
-    if not formats:
-        await update.message.reply_text(
-            "❌ Video ma'lumotlarini olishning iloji bo'lmadi.\n"
-            "Link to'g'riligini tekshiring yoki video omma uchun ochiqmi?"
-        )
-        return WAITING_LINK
-
-    context.user_data['link'] = text
-    context.user_data['formats'] = formats
-    context.user_data['title'] = title[:50]
-
-    keyboard = []
-    for fmt in formats:
-        size_str = format_size(fmt['filesize'])
-        label = f"{fmt['quality']} ({size_str})"
-        callback_data = f"quality_{fmt['format_id']}"
-        keyboard.append([InlineKeyboardButton(label, callback_data=callback_data)])
-    keyboard.append([InlineKeyboardButton("❌ Bekor qilish", callback_data="cancel")])
-
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text(
-        f"🎬 Video: {title}\n\nKerakli sifatni tanlang (fayl hajmi MB da):",
-        reply_markup=reply_markup
-    )
-    return SELECTING_QUALITY
-
-async def quality_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    if query.data == "cancel":
-        await query.edit_message_text("❌ Bekor qilindi.")
-        return ConversationHandler.END
-
-    format_id = query.data.replace("quality_", "")
-    formats = context.user_data.get('formats', [])
-    selected = next((f for f in formats if f['format_id'] == format_id), None)
-    if not selected:
-        await query.edit_message_text("❌ Xatolik: format topilmadi.")
-        return ConversationHandler.END
-
-    link = context.user_data['link']
-    title = context.user_data['title']
-    quality_label = selected['quality']
-    size_mb = format_size(selected['filesize'])
-    await query.edit_message_text(
-        f"✅ Tanlangan: {quality_label}\n📦 Hajmi: {size_mb}\n⏳ Yuklab olinmoqda, iltimos kuting..."
-    )
-
-    temp_file = NamedTemporaryFile(delete=False, suffix=f".{selected['ext']}")
-    temp_path = temp_file.name
-    temp_file.close()
-
+# video info olish
+def get_video_formats(url):
     ydl_opts = {
         'quiet': True,
-        'no_warnings': True,
-        'outtmpl': temp_path,
-        'format': format_id,
+        'no_warnings': True
     }
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=False)
+        formats = info.get("formats", [])
+        
+        results = []
+        for f in formats:
+            if f.get("height"):
+                size = f.get("filesize") or 0
+                if size:
+                    size_mb = round(size / 1024 / 1024, 2)
+                else:
+                    size_mb = "?"
+                
+                results.append({
+                    "format_id": f["format_id"],
+                    "quality": f"{f['height']}p",
+                    "size": size_mb
+                })
+        
+        return results[:6]  # eng kerakli 6 ta format
+
+
+# video yuklash
+def download_video(url, format_id):
+    ydl_opts = {
+        'format': format_id,
+        'outtmpl': 'video.%(ext)s'
+    }
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
+
+
+@dp.message(CommandStart())
+async def start(message: Message):
+    await message.answer("📥 Link yubor (Instagram / YouTube)")
+
+
+@dp.message()
+async def handle_link(message: Message):
+    url = message.text
+
+    await message.answer("⏳ Tekshirilmoqda...")
+
     try:
-        def download():
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([link])
-        await asyncio.to_thread(download)
+        formats = get_video_formats(url)
 
-        file_size = os.path.getsize(temp_path)
-        if file_size > 50 * 1024 * 1024:
-            await query.message.reply_text(
-                f"⚠️ Video hajmi {file_size/(1024*1024):.1f} MB (50MB dan katta).\n"
-                "Telegram bot orqali 50MB dan katta videolarni galereyaga yuborib bo'lmaydi."
-            )
-            os.unlink(temp_path)
-            return ConversationHandler.END
+        buttons = []
+        for f in formats:
+            text = f"{f['quality']} - {f['size']} MB"
+            buttons.append([
+                InlineKeyboardButton(
+                    text=text,
+                    callback_data=f"{f['format_id']}|{url}"
+                )
+            ])
 
-        with open(temp_path, 'rb') as video_file:
-            await query.message.reply_video(
-                video=video_file,
-                caption=f"🎥 {title}\n📌 Sifat: {quality_label}\n💾 Hajmi: {size_mb}",
-                supports_streaming=True,
-                write_timeout=60
-            )
-        await query.message.reply_text("✅ Video yuborildi! Galereyangizda saqlangan.")
+        keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+
+        await message.answer("🎬 Formatni tanla:", reply_markup=keyboard)
+
     except Exception as e:
-        logger.error(f"Download/send error: {e}")
-        await query.message.reply_text(f"❌ Xatolik yuz berdi: {str(e)[:100]}")
-    finally:
-        if os.path.exists(temp_path):
-            os.unlink(temp_path)
+        await message.answer("❌ Xatolik yoki noto‘g‘ri link")
 
-    return ConversationHandler.END
 
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("❌ Bekor qilindi. Yangi link yuborishingiz mumkin.")
-    return ConversationHandler.END
+@dp.callback_query()
+async def download_callback(callback: types.CallbackQuery):
+    format_id, url = callback.data.split("|")
 
-def main():
-    token = os.environ.get("BOT_TOKEN")
-    if not token:
-        raise ValueError("BOT_TOKEN muhit o'zgaruvchisi topilmadi")
-    app = Application.builder().token(token).build()
-    conv_handler = ConversationHandler(
-        entry_points=[MessageHandler(filters.TEXT & ~filters.COMMAND, link_received)],
-        states={
-            WAITING_LINK: [MessageHandler(filters.TEXT & ~filters.COMMAND, link_received)],
-            SELECTING_QUALITY: [CallbackQueryHandler(quality_selected, pattern="^(quality_|cancel)")],
-        },
-        fallbacks=[CommandHandler("cancel", cancel)],
-    )
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(conv_handler)
-    app.run_polling()
+    await callback.message.answer("📥 Yuklanmoqda...")
+
+    try:
+        download_video(url, format_id)
+
+        # topilgan faylni yuborish
+        for file in os.listdir():
+            if file.startswith("video."):
+                await bot.send_video(callback.from_user.id, types.FSInputFile(file))
+                os.remove(file)
+                break
+
+    except Exception as e:
+        await callback.message.answer("❌ Yuklashda xato")
+
+
+async def main():
+    await dp.start_polling(bot)
+
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
