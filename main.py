@@ -1,170 +1,115 @@
 import os
 import asyncio
-import yt_dlp
-from aiogram import Bot, Dispatcher, types, F
-from aiogram.filters import CommandStart
+import logging
+from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from dotenv import load_dotenv
+import yt_dlp
 
-load_dotenv()
-TOKEN = os.getenv("BOT_TOKEN")
+# Bot tokeningizni bura yozing yoki Railway Env orqali bering
+API_TOKEN = 'BOT_TOKENINGIZNI_YUKLANG'
 
-bot = Bot(token=TOKEN)
-dp = Dispatcher()
+logging.basicConfig(level=logging.INFO)
 
-TEMP_DIR = "downloads"
-os.makedirs(TEMP_DIR, exist_ok=True)
+bot = Bot(token=API_TOKEN)
+dp = Dispatcher(bot)
 
-user_links = {}
+# Video ma'lumotlarini vaqtinchalik saqlash uchun
+video_data = {}
 
-
-@dp.message(CommandStart())
-async def cmd_start(message: types.Message):
-    await message.answer(
-        "Salom! 👋\n\nMen Instagram va YouTube videolarini yuklab olaman.\n"
-        "Menga link yuboring."
-    )
-
-
-@dp.message(F.text.startswith(("http://", "https://")))
-async def process_link(message: types.Message):
-    link = message.text
-    user_id = message.from_user.id
-    user_links[user_id] = link
-    
-    status_msg = await message.answer("🔍 Qidirilmoqda...")
-
-    try:
-        ydl_opts = {'quiet': True, 'no_warnings': True}
+def get_video_info(url):
+    ydl_opts = {'quiet': True, 'noplaylist': True}
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=False)
+        formats = []
         
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(link, download=False)
-
-        title = info.get('title', 'Video')
-        duration = info.get('duration', 0)
-        thumbnail = info.get('thumbnail')
-        
-        formats_list = []
-        seen_heights = set()
-        
-        for f in info.get('formats', []):            height = f.get('height')
-            vcodec = f.get('vcodec')
-            filesize = f.get('filesize') or f.get('filesize_approx', 0)
-            format_id = f.get('format_id')
+        # Sifatlarni saralash (240p, 480p, 720p, 1080p)
+        res_list = [240, 480, 720, 1080]
+        for res in res_list:
+            # Har bir sifat uchun eng mos formatni topish
+            best_f = None
+            for f in info['formats']:
+                if f.get('vcodec') != 'none' and f.get('height') == res:
+                    best_f = f
+                    break
             
-            if height and vcodec != 'none' and height not in seen_heights:
-                seen_heights.add(height)
-                
-                if height <= 240:
-                    label = "240p"
-                elif height <= 480:
-                    label = "480p"
-                elif height <= 720:
-                    label = "720p"
-                elif height <= 1080:
-                    label = "1080p"
-                else:
-                    label = f"{height}p"
-                
-                formats_list.append({
-                    'id': format_id,
-                    'label': label,
-                    'height': height,
-                    'size': filesize,
+            if best_f:
+                filesize = best_f.get('filesize') or best_f.get('filesize_approx') or 0
+                filesize_mb = round(filesize / (1024 * 1024), 2)
+                formats.append({
+                    'format_id': best_f['format_id'],
+                    'res': res,
+                    'size': filesize_mb
                 })
-
-        formats_list.sort(key=lambda x: x['height'])
         
-        if not formats_list:
-            await status_msg.edit_text("❌ Format topilmadi.")
-            return
+        # Agar aniq res topilmasa, borini olish
+        if not formats:
+            f = info['formats'][-1]
+            filesize = f.get('filesize') or f.get('filesize_approx') or 0
+            formats.append({
+                'format_id': f['format_id'],
+                'res': f.get('height', 'Unknown'),
+                'size': round(filesize / (1024 * 1024), 2)
+            })
+            
+        return {'title': info.get('title', 'video'), 'formats': formats, 'url': url}
 
-        keyboard = []
-        for i, fmt in enumerate(formats_list[:6]):
-            size_mb = round(fmt['size'] / (1024 * 1024), 1) if fmt['size'] else "?"
-            btn_text = f"🎬 {fmt['label']} ({size_mb} MB)"
-            callback_data = f"dl_{user_id}_{i}_{fmt['id']}"
-            keyboard.append([InlineKeyboardButton(text=btn_text, callback_data=callback_data)])
+@dp.message_handler(commands=['start'])
+async def send_welcome(message: types.Message):
+    await message.reply("Salom! Instagram yoki YouTube linkini yuboring.")
 
-        reply_markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
-        caption = f"📥 {title}\n⏱ {duration} soniya\n\nSifatni tanlang:"
-        
-        await status_msg.delete()
-        
-        if thumbnail:
-            await message.answer_photo(
-                photo=thumbnail,
-                caption=caption,
-                reply_markup=reply_markup
-            )        else:
-            await message.answer(caption, reply_markup=reply_markup)
-    except Exception as e:
-        await status_msg.edit_text(f"❌ Xatolik: {str(e)[:100]}")
-
-
-@dp.callback_query(F.data.startswith("dl_"))
-async def download_video(callback: types.CallbackQuery):
-    await callback.answer("⏳ Yuklanmoqda...")
+@dp.message_handler(regexp=r'(https?://(www\.)?(youtube\.com|youtu\.be|instagram\.com).+)')
+async def handle_link(message: types.Message):
+    url = message.text
+    msg = await message.answer("Ma'lumotlar olinmoqda, kuting...")
     
     try:
-        parts = callback.data.split("_")
-        user_id = int(parts[1])
-        index = int(parts[2])
-        format_id = parts[3]
+        info = get_video_info(url)
+        video_data[message.chat.id] = info
         
-        link = user_links.get(user_id)
-        if not link:
-            await callback.message.answer("❌ Link topilmadi. Qaytadan yuboring.")
-            return
-
-        edit_msg = await callback.message.edit_text("⬇️ Yuklanmoqda...")
+        keyboard = InlineKeyboardMarkup(row_width=1)
+        for f in info['formats']:
+            btn_text = f"🎬 {f['res']}p - 📁 {f['size']} MB"
+            callback_data = f"dl_{f['format_id']}"
+            keyboard.add(InlineKeyboardButton(text=btn_text, callback_data=callback_data))
         
-        filename = f"{TEMP_DIR}/{format_id}.mp4"
-        
-        ydl_opts = {
-            'format': f"{format_id}+bestaudio/best",
-            'outtmpl': filename,
-            'merge_output_format': 'mp4',
-            'quiet': True,
-        }
-
-        try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([link])
-        except:
-            ydl_opts_single = {
-                'format': format_id,
-                'outtmpl': filename,
-                'quiet': True,
-            }
-            with yt_dlp.YoutubeDL(ydl_opts_single) as ydl:
-                ydl.download([link])
-
-        if os.path.exists(filename):
-            file_size = os.path.getsize(filename)
-            
-            if file_size > 50 * 1024 * 1024:
-                await edit_msg.edit_text("⚠️ Video 50MB dan katta.")
-                os.remove(filename)                return
-                
-            await bot.send_video(
-                chat_id=callback.message.chat.id,
-                video=types.FSInputFile(filename),
-                caption="✅ Tayyor!"
-            )
-            
-            os.remove(filename)
-            await edit_msg.delete()
-        else:
-            await edit_msg.edit_text("❌ Yuklash xatosi.")
-            
+        await msg.delete()
+        await message.answer(f"Sarlavha: {info['title']}\nSifatni tanlang:", reply_markup=keyboard)
     except Exception as e:
-        await callback.message.answer(f"❌ Xatolik: {str(e)[:100]}")
+        await msg.edit_text(f"Xatolik yuz berdi: {str(e)}")
 
+@dp.callback_query_handler(lambda c: c.data.startswith('dl_'))
+async def process_download(callback_query: types.CallbackQuery):
+    format_id = callback_query.data.split('_')[1]
+    chat_id = callback_query.message.chat.id
+    
+    if chat_id not in video_data:
+        await callback_query.answer("Ma'lumot eskirgan, linkni qayta yuboring.")
+        return
 
-async def main():
-    await dp.start_polling(bot)
+    url = video_data[chat_id]['url']
+    await bot.answer_callback_query(callback_query.id, text="Yuklab olish boshlandi...")
+    await bot.send_message(chat_id, "Video yuklanmoqda va Telegramga yuborilmoqda...")
 
+    file_path = f"{chat_id}_{format_id}.mp4"
+    
+    ydl_opts = {
+        'format': f"{format_id}+bestaudio/best",
+        'outtmpl': file_path,
+        'merge_output_format': 'mp4',
+    }
 
-if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+        
+        with open(file_path, 'rb') as video:
+            await bot.send_video(chat_id, video, caption="Tayyor! ✅")
+        
+        os.remove(file_path) # Faylni o'chirish
+    except Exception as e:
+        await bot.send_message(chat_id, f"Yuklashda xatolik: {str(e)}")
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+if __name__ == '__main__':
+    executor.start_polling(dp, skip_updates=True)
