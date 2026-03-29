@@ -1,8 +1,9 @@
 import os
 import asyncio
 import aiohttp
+import yt_dlp
 from aiogram import Bot, Dispatcher, types
-from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, FSInputFile
+from aiogram.types import Message, FSInputFile
 from aiogram.filters import CommandStart
 
 TOKEN = os.getenv("TOKEN")
@@ -10,97 +11,96 @@ TOKEN = os.getenv("TOKEN")
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-QUALITIES = [240, 480, 720]
-
 
 @dp.message(CommandStart())
 async def start(message: Message):
-    await message.answer("📥 Link yubor (Instagram / YouTube)")
+    await message.answer("📥 Link yubor (Instagram / YouTube / TikTok)")
 
 
-# INSTAGRAM VIDEO OLISH (API)
-async def get_instagram_video(url):
-    api = f"https://api.cobalt.tools/api/json"
-
-    async with aiohttp.ClientSession() as session:
-        async with session.post(api, json={"url": url}) as resp:
-            data = await resp.json()
-
-            if "url" in data:
-                return data["url"]
-
-    return None
+# 1️⃣ API (cobalt)
+async def api1(url):
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post("https://api.cobalt.tools/api/json", json={"url": url}) as r:
+                data = await r.json()
+                return data.get("url")
+    except:
+        return None
 
 
-# VIDEO DOWNLOAD
-async def download_file(url, filename):
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as resp:
-            with open(filename, "wb") as f:
-                f.write(await resp.read())
+# 2️⃣ API (snapinsta-like fallback)
+async def api2(url):
+    try:
+        api = f"https://api.vevioz.com/api/button/mp4/{url}"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(api) as r:
+                text = await r.text()
+                if "mp4" in text:
+                    return url  # fallback signal
+    except:
+        return None
+
+
+# 3️⃣ yt-dlp (oxirgi variant)
+def api3(url):
+    try:
+        ydl_opts = {
+            "format": "best",
+            "outtmpl": "video.%(ext)s",
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+
+        for f in os.listdir():
+            if f.startswith("video."):
+                return f
+    except:
+        return None
 
 
 # LINK HANDLER
 @dp.message()
-async def handle_link(message: Message):
+async def handle(message: Message):
     url = message.text
+    await message.answer("⏳ Qidirilmoqda...")
 
-    await message.answer("⏳ Tekshirilmoqda...")
+    # 1 urinish
+    video_url = await api1(url)
 
-    try:
-        if "instagram.com" in url:
-            video_url = await get_instagram_video(url)
+    # 2 urinish
+    if not video_url:
+        video_url = await api2(url)
 
-            if not video_url:
-                await message.answer("❌ Video topilmadi")
-                return
+    # 3 urinish (local download)
+    if not video_url:
+        file = api3(url)
+        if file:
+            size = round(os.path.getsize(file) / 1024 / 1024, 2)
+            await bot.send_video(message.chat.id, FSInputFile(file), caption=f"{size} MB")
+            os.remove(file)
+            return
 
-            buttons = []
-            for q in QUALITIES:
-                buttons.append([
-                    InlineKeyboardButton(
-                        text=f"{q}p",
-                        callback_data=f"{q}|{video_url}"
-                    )
-                ])
-
-            kb = InlineKeyboardMarkup(inline_keyboard=buttons)
-
-            await message.answer("🎬 Sifatni tanla:", reply_markup=kb)
-
-        else:
-            await message.answer("❌ Faqat Instagram hozircha")
-
-    except Exception as e:
-        print(e)
-        await message.answer("❌ Xatolik")
-
-
-# CALLBACK
-@dp.callback_query()
-async def process(callback: types.CallbackQuery):
-    quality, video_url = callback.data.split("|")
-    quality = int(quality)
-
-    await callback.message.answer("📥 Yuklanmoqda...")
-
-    try:
+    # agar API orqali kelsa
+    if video_url and video_url.startswith("http"):
         filename = "video.mp4"
-        await download_file(video_url, filename)
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(video_url) as r:
+                with open(filename, "wb") as f:
+                    f.write(await r.read())
 
         size = round(os.path.getsize(filename) / 1024 / 1024, 2)
 
         await bot.send_video(
-            callback.from_user.id,
+            message.chat.id,
             FSInputFile(filename),
-            caption=f"✅ {quality}p | {size} MB"
+            caption=f"✅ {size} MB"
         )
 
         os.remove(filename)
+        return
 
-    except Exception as e:
-        print(e)
-        await callback.message.answer("❌ Xatolik")
+    await message.answer("❌ Hech qaysi usul ishlamadi")
 
 
 async def main():
