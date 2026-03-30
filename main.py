@@ -9,7 +9,7 @@ add_paths()
 
 API_ID = 37366974
 API_HASH = "08d09c7ed8b7cb414ed6a99c104f1bd6"
-BOT_TOKEN = "8487571646:AAFp8EE6lRHeLYhS0v50_her2q-QYBZ3rmI"
+BOT_TOKEN = "8630024708:AAGRE2oY2c74wR4mP3U5C298d3k3a7SUEVU"
 
 app = Client("video_processor", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
