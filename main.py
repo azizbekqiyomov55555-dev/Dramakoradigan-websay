@@ -6,12 +6,11 @@ from pyrogram.types import (
     InlineKeyboardMarkup, 
     InlineKeyboardButton, 
     ReplyKeyboardMarkup, 
-    KeyboardButton,
-    ReplyKeyboardRemove
+    KeyboardButton
 )
 from pyrogram.enums import ParseMode
 from static_ffmpeg import add_paths
-from PIL import Image, ImageOps, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont
 
 add_paths()
 
@@ -21,9 +20,11 @@ API_HASH = "08d09c7ed8b7cb414ed6a99c104f1bd6"
 BOT_TOKEN = "8630024708:AAGRE2oY2c74wR4mP3U5C298d3k3a7SUEVU"
 
 app = Client("video_processor", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+
 user_data = {}
 
-# --- VIDEO FUNKSIYALARI ---
+# --- YORDAMCHI FUNKSIYALAR ---
+
 def get_duration(file_path):
     try:
         cmd = ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", file_path]
@@ -49,43 +50,52 @@ async def split_video(input_path, start_time, duration_part, output_path):
     await process.wait()
     return os.path.exists(output_path)
 
-# --- RASM FUNKSIYALARI (MONTAJ VA O'LCHAM) ---
+# --- RASM FUNKSIYALARI ---
 
-def resize_to_fit(input_path, output_path, target_size=(1080, 1080)):
-    """Rasmni kesmasdan, hamma joyini ko'rsatib fonga joylashtirish"""
+def compress_image(input_path, output_path, quality=85):
     try:
         img = Image.open(input_path).convert("RGB")
-        img.thumbnail(target_size, Image.Resampling.LANCZOS)
-        
-        # Yangi fon yaratish (qora)
-        new_img = Image.new("RGB", target_size, (0, 0, 0))
-        # Markazga qo'yish
-        offset = ((target_size[0] - img.size[0]) // 2, (target_size[1] - img.size[1]) // 2)
+        img.save(output_path, 'JPEG', quality=quality, optimize=True)
+        return True
+    except: return False
+
+def crop_image_square(input_path, output_path):
+    try:
+        img = Image.open(input_path).convert("RGB")
+        width, height = img.size
+        min_side = min(width, height)
+        left = (width - min_side) // 2
+        top = (height - min_side) // 2
+        img.crop((left, top, left + min_side, top + min_side)).save(output_path, 'JPEG', quality=95)
+        return True
+    except: return False
+
+def resize_image_fit(input_path, output_path, width, height):
+    """Rasmni kesmasdan, hamma joyini ko'rsatib fonga joylash (Fit-mode)"""
+    try:
+        img = Image.open(input_path).convert("RGB")
+        img.thumbnail((width, height), Image.Resampling.LANCZOS)
+        new_img = Image.new("RGB", (width, height), (0, 0, 0)) # Qora fon
+        offset = ((width - img.size[0]) // 2, (height - img.size[1]) // 2)
         new_img.paste(img, offset)
         new_img.save(output_path, "JPEG", quality=95)
         return True
-    except Exception as e:
-        print(f"Xatolik: {e}")
-        return False
+    except: return False
 
 def add_text_to_image(input_path, output_path, text):
     """Rasmga matn yozish (Montaj)"""
     try:
         img = Image.open(input_path).convert("RGB")
         draw = ImageDraw.Draw(img)
-        # Standart shrift (agar o'zingizda .ttf fayl bo'lsa yo'lini ko'rsatishingiz mumkin)
-        try:
-            font = ImageFont.truetype("arial.ttf", 40)
-        except:
-            font = ImageFont.load_default()
-            
+        font = ImageFont.load_default() # Railway uchun standart
         w, h = img.size
         draw.text((w/2, h-50), text, fill="white", font=font, anchor="ms", stroke_width=2, stroke_fill="black")
         img.save(output_path, "JPEG", quality=95)
         return True
     except: return False
 
-# --- KLAVIATURALAR ---
+# --- ASOSIY MENYU ---
+
 def get_main_keyboard():
     return ReplyKeyboardMarkup(
         [[KeyboardButton("🎬 Video yuborish"), KeyboardButton("🖼 Rasm yuborish")],
@@ -93,98 +103,124 @@ def get_main_keyboard():
         resize_keyboard=True
     )
 
-# --- HANDLERLAR ---
-
 @app.on_message(filters.command("start"))
 async def start(client, message):
-    await message.reply_text("👋 **Assalomu alaykum!**\nRasm va videolarni professional qayta ishlash botiga xush kelibsiz!", reply_markup=get_main_keyboard())
+    await message.reply_text("👋 **Assalomu alaykum!**\nMedia fayllarni qayta ishlash botiga xush kelibsiz!", reply_markup=get_main_keyboard())
+
+# --- STATISTIKA VA YORDAM ---
+
+@app.on_message(filters.regex("📊 Statistika"))
+async def stats_button(client, message):
+    total_users = len(user_data)
+    await message.reply_text(f"📊 **Statistika:**\n\n👥 Faol foydalanuvchilar (seansda): {total_users}\n🤖 Bot holati: Ishlamoqda ✅")
+
+@app.on_message(filters.regex("❓ Yordam"))
+async def help_button(client, message):
+    await message.reply_text("❓ **Yordam:**\n\n1. Video yoki rasm yuboring.\n2. Tugmalardan birini tanlang.\n3. Kerakli o'lcham yoki hajmni yozing.")
+
+# --- RASM ISHLASH ---
 
 @app.on_message(filters.photo)
 async def handle_photo(client, message):
     msg = await message.reply_text("📥 Rasm yuklanmoqda...")
-    file_path = await message.download(file_name=f"downloads/{message.from_user.id}_{message.id}.jpg")
+    file_path = await message.download(file_name=f"downloads/img_{message.from_user.id}.jpg")
+    user_data[message.from_user.id] = {"path": file_path, "type": "photo", "orig_size": round(os.path.getsize(file_path)/(1024*1024),2)}
     
-    user_data[message.from_user.id] = {"path": file_path, "type": "photo"}
-    
-    buttons = InlineKeyboardMarkup([
-        [InlineKeyboardButton("📐 O'lchamni tanlash (Fit)", callback_data="photo_fit_size")],
-        [InlineKeyboardButton("✍️ Matn yozish (Montaj)", callback_data="photo_add_text")],
-        [InlineKeyboardButton("🗜 Siqish", callback_data="photo_compress")]
+    kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("📐 O'lcham (Kesmasdan Fit)", callback_data="p_fit"), InlineKeyboardButton("✂️ Kvadrat qirqish", callback_data="p_crop")],
+        [InlineKeyboardButton("✍️ Matn yozish (Montaj)", callback_data="p_text"), InlineKeyboardButton("🗜 Siqish", callback_data="p_comp")]
     ])
-    
-    await msg.edit_text("✅ Rasm yuklandi. Tanlang:", reply_markup=buttons)
+    await msg.edit_text("✅ Rasm yuklandi. Amallardan birini tanlang:", reply_markup=kb)
 
-@app.on_callback_query(filters.regex("^photo_"))
-async def photo_callback(client, callback_query):
-    user_id = callback_query.from_user.id
-    action = callback_query.data.split("_")[1]
-    
-    if action == "fit_size":
-        await callback_query.message.edit_text(
-            "📐 **O'lchamni kiriting:**\n\nMasalan:\n`1080x1080` (Kvadrat)\n`1280x720` (YouTube)\n`1920x1080` (Full HD)\n\n"
-            "Rasm kesilmaydi, hamma joyi ko'rinadi!", parse_mode=ParseMode.MARKDOWN)
-        user_data[user_id]["action"] = "waiting_size"
-    
-    elif action == "add_text":
-        await callback_query.message.edit_text("✍️ **Rasmga yoziladigan matnni kiriting:**")
-        user_data[user_id]["action"] = "waiting_text"
+# --- VIDEO ISHLASH ---
 
-@app.on_message(filters.text & filters.private)
-async def handle_text_input(client, message):
-    user_id = message.from_user.id
-    if user_id not in user_data: return
-
-    data = user_data[user_id]
-    
-    # O'lcham kiritilganda (masalan 1280x720)
-    if data.get("action") == "waiting_size":
-        try:
-            w, h = map(int, message.text.lower().split('x'))
-            status = await message.reply_text("⏳ Ishlanmoqda...")
-            out = f"downloads/fit_{user_id}.jpg"
-            
-            if resize_to_fit(data["path"], out, (w, h)):
-                await message.reply_document(out, caption=f"✅ O'lcham: {w}x{h} (Hamma joyi ko'rinadi)")
-                await status.delete()
-            else:
-                await message.reply_text("❌ Xatolik yuz berdi.")
-        except:
-            await message.reply_text("❌ Noto'g'ri format. Masalan: `1280x720` deb yozing.")
-        clean_user(user_id)
-
-    # Matn kiritilganda
-    elif data.get("action") == "waiting_text":
-        status = await message.reply_text("⏳ Matn yozilmoqda...")
-        out = f"downloads/text_{user_id}.jpg"
-        if add_text_to_image(data["path"], out, message.text):
-            await message.reply_photo(out, caption="✅ Matn qo'shildi!")
-            await status.delete()
-        else:
-            await message.reply_text("❌ Xatolik.")
-        clean_user(user_id)
-
-# --- VIDEO HANDLERLAR (AVVALGI KODINGIZDAN) ---
 @app.on_message(filters.video | filters.document)
 async def handle_video(client, message):
     if message.document and not message.document.mime_type.startswith("video/"): return
     msg = await message.reply_text("📥 Video yuklanmoqda...")
-    file_path = await message.download(file_name=f"downloads/{message.from_user.id}_{message.id}.mp4")
+    file_path = await message.download(file_name=f"downloads/vid_{message.from_user.id}.mp4")
     user_data[message.from_user.id] = {"path": file_path, "type": "video", "orig_size": round(os.path.getsize(file_path)/(1024*1024),2)}
     
-    buttons = InlineKeyboardMarkup([[InlineKeyboardButton("🗜 Siqish", callback_data="v_compress"), InlineKeyboardButton("✂️ Bo'lish", callback_data="v_split")]])
-    await msg.edit_text("📹 Video yuklandi. Nima qilamiz?", reply_markup=buttons)
+    kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🗜 Siqish", callback_data="v_comp"), InlineKeyboardButton("✂️ Bo'lish", callback_data="v_split")],
+        [InlineKeyboardButton("⚡️ Siqish + Bo'lish", callback_data="v_both")]
+    ])
+    await msg.edit_text("✅ Video yuklandi. Tanlang:", reply_markup=kb)
 
-@app.on_callback_query(filters.regex("^v_"))
-async def video_callback(client, callback_query):
-    user_id = callback_query.from_user.id
-    action = callback_query.data.split("_")[1]
-    user_data[user_id]["action"] = action
-    await callback_query.message.edit_text("Raqam kiriting (Masalan: 50 MB gacha siqish uchun 50 yoki 3 qismga bo'lish uchun 3)")
+# --- CALLBACKS ---
 
-def clean_user(user_id):
-    if user_id in user_data:
-        if os.path.exists(user_data[user_id]["path"]): os.remove(user_data[user_id]["path"])
-        del user_data[user_id]
+@app.on_callback_query()
+async def callback_handler(client, q):
+    uid = q.from_user.id
+    if uid not in user_data:
+        await q.answer("Ma'lumot topilmadi, qaytadan yuboring.", show_alert=True)
+        return
+
+    data = q.data
+    if data == "p_fit":
+        await q.message.edit_text("📐 **O'lchamni kiriting** (masalan: `1280x720` yoki `1080x1080`):")
+        user_data[uid]["action"] = "wait_size"
+    elif data == "p_text":
+        await q.message.edit_text("✍️ **Rasmga yoziladigan matnni kiriting:**")
+        user_data[uid]["action"] = "wait_text"
+    elif data == "p_crop":
+        status = await q.message.edit_text("⏳ Qirqilmoqda...")
+        out = f"downloads/crop_{uid}.jpg"
+        if crop_image_square(user_data[uid]["path"], out):
+            await client.send_photo(uid, out, caption="✅ Kvadrat qilib qirqildi!")
+            await status.delete()
+        clean_user(uid)
+    elif data == "v_comp":
+        await q.message.edit_text("🗜 **Necha MB bo'lsin?** (Faqat raqam yozing):")
+        user_data[uid]["action"] = "wait_v_size"
+    elif data == "v_split":
+        await q.message.edit_text("✂️ **Nechta qismga bo'linsin?** (Faqat raqam):")
+        user_data[uid]["action"] = "wait_v_split"
+
+# --- MATN KIRITISHNI BOSHQARISH ---
+
+@app.on_message(filters.text & filters.private & ~filters.regex("^(🎬|🖼|📊|❓)"))
+async def text_input(client, message):
+    uid = message.from_user.id
+    if uid not in user_data or "action" not in user_data[uid]: return
+    
+    action = user_data[uid]["action"]
+    path = user_data[uid]["path"]
+
+    if action == "wait_size":
+        try:
+            w, h = map(int, message.text.lower().split('x'))
+            st = await message.reply_text("⏳ Ishlanmoqda...")
+            out = f"downloads/fit_{uid}.jpg"
+            if resize_image_fit(path, out, w, h):
+                await message.reply_document(out, caption=f"✅ O'lcham: {w}x{h} (Hamma joyi ko'rinadi)")
+                await st.delete()
+            clean_user(uid)
+        except: await message.reply_text("❌ Xato! Format: `1280x720` deb yozing.")
+
+    elif action == "wait_text":
+        st = await message.reply_text("⏳ Montaj qilinmoqda...")
+        out = f"downloads/montaj_{uid}.jpg"
+        if add_text_to_image(path, out, message.text):
+            await message.reply_photo(out, caption=f"✅ Matn qo'shildi: {message.text}")
+            await st.delete()
+        clean_user(uid)
+
+    elif action == "wait_v_size":
+        try:
+            target = int(message.text)
+            st = await message.reply_text(f"⏳ {target}MB ga siqilmoqda...")
+            out = f"downloads/res_{uid}.mp4"
+            if await compress_video(path, out, target):
+                await message.reply_video(out, caption=f"✅ Tayyor! Hajmi: {target}MB")
+                await st.delete()
+            clean_user(uid)
+        except: await message.reply_text("❌ Faqat son kiriting!")
+
+def clean_user(uid):
+    if uid in user_data:
+        if os.path.exists(user_data[uid]["path"]): os.remove(user_data[uid]["path"])
+        del user_data[uid]
 
 if __name__ == "__main__":
     if not os.path.exists("downloads"): os.makedirs("downloads")
