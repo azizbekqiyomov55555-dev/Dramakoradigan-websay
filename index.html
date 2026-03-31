@@ -3288,16 +3288,74 @@
 
             } else if(info.type === 'telegram') {
                 v.style.display = 'none'; v.src = '';
-                iframe.style.display = 'block';
-                if(contentProtectEnabled) {
-                    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation');
-                } else {
-                    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox');
-                }
+                iframe.style.display = 'none'; iframe.src = '';
                 showVideoLoading('Telegram video yuklanmoqda...');
-                iframe.onload = () => { setTimeout(hideVideoLoading, 2000); };
-                iframe.src = `https://t.me/${info.channel}/${info.postId}?embed=1&origin=${encodeURIComponent(window.location.origin || 'https://web.telegram.org')}`;
-                if(contentProtectEnabled) { _addIframeProtectionLayer(true); }
+                // Bot orqali real stream URL olish (iframe o'rniga)
+                (async () => {
+                    try {
+                        const token = (await db.settings.get('token'))?.value;
+                        const adminId = (await db.settings.get('admin_id'))?.value;
+                        if (!token || !adminId) throw new Error('Token yoki Admin ID yo\'q');
+
+                        // Kanal postidan video olish (forward usuli)
+                        const fwd = await fetch(`https://api.telegram.org/bot${token}/forwardMessage`, {
+                            method: 'POST',
+                            headers: {'Content-Type':'application/json'},
+                            body: JSON.stringify({
+                                chat_id: adminId,
+                                from_chat_id: '@' + info.channel,
+                                message_id: parseInt(info.postId)
+                            })
+                        });
+                        const fwdData = await fwd.json();
+                        if (!fwdData.ok || !fwdData.result.video) throw new Error('Video topilmadi yoki kanal private');
+
+                        const fileId = fwdData.result.video.file_id;
+                        const fileSizeMB = (fwdData.result.video.file_size || 0) / 1024 / 1024;
+
+                        let streamUrl;
+                        if (fileSizeMB <= 19.5) {
+                            try {
+                                const gf = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${encodeURIComponent(fileId)}`);
+                                const gd = await gf.json();
+                                streamUrl = gd.ok
+                                    ? `https://api.telegram.org/file/bot${token}/${gd.result.file_path}`
+                                    : `${RAILWAY_BASE}/stream?file_id=${encodeURIComponent(fileId)}&token=${encodeURIComponent(token)}`;
+                            } catch(e) {
+                                streamUrl = `${RAILWAY_BASE}/stream?file_id=${encodeURIComponent(fileId)}&token=${encodeURIComponent(token)}`;
+                            }
+                        } else {
+                            streamUrl = `${RAILWAY_BASE}/stream?file_id=${encodeURIComponent(fileId)}&token=${encodeURIComponent(token)}`;
+                        }
+
+                        // Video tag orqali ijro etish
+                        hideVideoLoading();
+                        v.style.display = 'block';
+                        v.src = streamUrl;
+                        v.autoplay = true;
+                        v.controls = true;
+                        v.setAttribute('controlslist', 'nodownload noremoteplayback');
+                        v.setAttribute('disablepictureinpicture', '');
+                        v.play().catch(() => {});
+                        // Fullscreen tugmasini ko'rsatish
+                        const fsOverlay = document.getElementById('fsOverlayBtn');
+                        if(fsOverlay) fsOverlay.style.display = 'none'; // video o'z kontroliga ega
+
+                    } catch(e) {
+                        console.warn('Telegram bot usuli ishlamadi, iframe urinilmoqda:', e.message);
+                        // Fallback: embed iframe
+                        showVideoLoading('Iframe orqali urinilmoqda...');
+                        iframe.style.display = 'block';
+                        if(contentProtectEnabled) {
+                            iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation');
+                        } else {
+                            iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox');
+                        }
+                        iframe.onload = () => { setTimeout(hideVideoLoading, 2000); };
+                        iframe.src = `https://t.me/${info.channel}/${info.postId}?embed=1&origin=${encodeURIComponent(window.location.origin || 'https://web.telegram.org')}`;
+                        if(contentProtectEnabled) { _addIframeProtectionLayer(true); }
+                    }
+                })();
 
             } else if(info.type === 'instagram') {
                 v.style.display = 'none'; v.src = '';
