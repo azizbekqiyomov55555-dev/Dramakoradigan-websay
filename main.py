@@ -7,7 +7,6 @@ from pyrogram.types import (
     InlineKeyboardButton, 
     ReplyKeyboardMarkup, 
     KeyboardButton,
-    KeyboardButtonRequestUsers,
     ReplyKeyboardRemove
 )
 from pyrogram.enums import ParseMode
@@ -130,16 +129,16 @@ def crop_image_square(input_path, output_path):
         return False
 
 def get_main_keyboard():
-    """Rangli pastki menyu tugmalari"""
+    """Asosiy menyu tugmalari (button_color olib tashlandi, chunki u xatolik beradi)"""
     keyboard = ReplyKeyboardMarkup(
         [
             [
-                KeyboardButton("🎬 Video yuborish", button_color="#3390ec"),
-                KeyboardButton("🖼 Rasm yuborish", button_color="#e8733a")
+                KeyboardButton("🎬 Video yuborish"),
+                KeyboardButton("🖼 Rasm yuborish")
             ],
             [
-                KeyboardButton("📊 Statistika", button_color="#2ea02e"),
-                KeyboardButton("❓ Yordam", button_color="#a23de8")
+                KeyboardButton("📊 Statistika"),
+                KeyboardButton("❓ Yordam")
             ]
         ],
         resize_keyboard=True,
