@@ -790,6 +790,17 @@
             </div>
 
             <div class="modal-content">
+                <h3>📞 Admin Lichkalar</h3>
+                <div style="font-size:12px;color:#888;margin-bottom:10px;">Foydalanuvchilar "Adminga murojat" tugmasini bosganda ushbu adminlar ro'yxati chiqadi</div>
+                <div id="adminLinksList" style="margin-bottom:10px;"></div>
+                <div style="display:flex;gap:8px;margin-bottom:10px;">
+                    <input type="text" id="newAdminName" placeholder="Admin ismi (masalan: Admin 1)" style="margin-bottom:0;flex:1;">
+                    <input type="text" id="newAdminLink" placeholder="t.me/username" style="margin-bottom:0;flex:1.5;">
+                </div>
+                <button class="btn-adm" onclick="addAdminLink()">➕ ADMIN QO'SHISH</button>
+            </div>
+
+            <div class="modal-content">
                 <h3>Premium Tarif Qo'shish</h3>
                 <input type="text" id="pName" placeholder="Tarif nomi">
                 <input type="number" id="pTime" placeholder="Vaqt miqdori">
@@ -1259,6 +1270,8 @@
             <div id="helpFaqList">
                 <div style="text-align:center; color:#555; padding:30px;">Savollar yuklanmoqda...</div>
             </div>
+            <!-- Adminga murojat -->
+            <div id="adminContactSection" style="margin-top:18px;"></div>
         </div>
     </div>
 
@@ -3501,7 +3514,7 @@
                 closeModal('loginModal');
                 document.getElementById('adminPassInput').value = '';
                 document.getElementById('adminPanel').style.display = 'block';
-                loadPromoList(); loadPendingList(); loadRefAdminInfo(); loadFaqAdmin(); loadPlanAdmin(); loadNakrutkaAdminList(); loadNkApis();
+                loadPromoList(); loadPendingList(); loadRefAdminInfo(); loadFaqAdmin(); loadPlanAdmin(); loadNakrutkaAdminList(); loadNkApis(); loadAdminLinks();
                 initVFields();
             } else {
                 const err = document.getElementById('adminPassErr');
@@ -4527,16 +4540,41 @@
                 const faqs = data.faqs || [];
                 if(!faqs.length) {
                     el.innerHTML = '<div style="text-align:center; color:#555; padding:30px; font-size:14px;">Hali savollar qo\'shilmagan</div>';
-                    return;
+                } else {
+                    el.innerHTML = faqs.map((f, i) => `
+                    <div style="background:#1a1a1a; border:1.5px solid #2a2a2a; border-radius:18px; margin-bottom:10px; overflow:hidden;">
+                        <div onclick="toggleFaq(${i})" style="padding:16px 18px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none;">
+                            <span style="font-size:15px; font-weight:700; flex:1; padding-right:10px;">${f.question}</span>
+                            <span id="faqArrow${i}" style="font-size:22px; color:#555; transition:transform 0.3s; display:inline-block;">⌄</span>
+                        </div>
+                        <div id="faqAns${i}" style="display:none; padding:0 18px 16px; font-size:14px; color:#aaa; line-height:1.6; border-top:1px solid #222; padding-top:14px; margin-top:0;">${f.answer}</div>
+                    </div>`).join('');
                 }
-                el.innerHTML = faqs.map((f, i) => `
-                <div style="background:#1a1a1a; border:1.5px solid #2a2a2a; border-radius:18px; margin-bottom:10px; overflow:hidden;">
-                    <div onclick="toggleFaq(${i})" style="padding:16px 18px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none;">
-                        <span style="font-size:15px; font-weight:700; flex:1; padding-right:10px;">${f.question}</span>
-                        <span id="faqArrow${i}" style="font-size:22px; color:#555; transition:transform 0.3s; display:inline-block;">⌄</span>
-                    </div>
-                    <div id="faqAns${i}" style="display:none; padding:0 18px 16px; font-size:14px; color:#aaa; line-height:1.6; border-top:1px solid #222; padding-top:14px; margin-top:0;">${f.answer}</div>
-                </div>`).join('');
+
+                // Admin contact section
+                const adminLinks = data.adminLinks || [];
+                const contactEl = document.getElementById('adminContactSection');
+                if(contactEl) {
+                    if(adminLinks.length > 0) {
+                        contactEl.innerHTML = `
+                            <div style="border-top:1px solid #222;padding-top:18px;margin-top:6px;">
+                                <div style="font-size:13px;color:#888;font-weight:700;letter-spacing:1px;margin-bottom:12px;text-align:center;">💬 ADMINGA MUROJAT</div>
+                                ${adminLinks.map(a => `
+                                <a href="${a.link.startsWith('http') ? a.link : 'https://' + a.link}" target="_blank"
+                                    style="display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#0d1e2e,#111);border:1.5px solid rgba(100,180,255,0.25);border-radius:16px;padding:14px 16px;margin-bottom:10px;text-decoration:none;transition:transform 0.15s;"
+                                    ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
+                                    <div style="width:42px;height:42px;background:rgba(100,180,255,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;border:1.5px solid rgba(100,180,255,0.25);flex-shrink:0;">👤</div>
+                                    <div style="flex:1;">
+                                        <div style="font-size:15px;font-weight:900;color:#fff;">${a.name}</div>
+                                        <div style="font-size:11px;color:#64b4ff;margin-top:2px;">${a.link}</div>
+                                    </div>
+                                    <div style="font-size:22px;color:#64b4ff;">›</div>
+                                </a>`).join('')}
+                            </div>`;
+                    } else {
+                        contactEl.innerHTML = '';
+                    }
+                }
             } catch(e) {
                 el.innerHTML = '<div style="text-align:center; color:#ff453a; padding:30px; font-size:14px;">❌ Internet xatosi</div>';
             }
@@ -4549,6 +4587,54 @@
             ans.style.display = isOpen ? 'none' : 'block';
             arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
             arrow.style.color = isOpen ? '#555' : 'var(--accent)';
+        }
+
+        async function addAdminLink() {
+            const name = document.getElementById('newAdminName').value.trim();
+            const link = document.getElementById('newAdminLink').value.trim();
+            if(!name || !link) return showToast("⚠️ Ism va link kiriting!", 'error');
+            try {
+                const data = await binGet();
+                if(!data.adminLinks) data.adminLinks = [];
+                const id = Date.now();
+                data.adminLinks.push({ id, name, link });
+                await binSet(data);
+                document.getElementById('newAdminName').value = '';
+                document.getElementById('newAdminLink').value = '';
+                loadAdminLinks();
+                showToast("✅ Admin qo'shildi!", 'success');
+            } catch(e) { showToast("❌ Xatolik: " + e.message, 'error'); }
+        }
+
+        async function deleteAdminLink(id) {
+            try {
+                const data = await binGet();
+                if(data.adminLinks) { data.adminLinks = data.adminLinks.filter(a => a.id !== id); await binSet(data); }
+                loadAdminLinks();
+                showToast("🗑️ Admin o'chirildi!", '');
+            } catch(e) { showToast("❌ Xatolik!", 'error'); }
+        }
+
+        async function loadAdminLinks() {
+            const el = document.getElementById('adminLinksList');
+            if(!el) return;
+            el.innerHTML = '<div style="color:#888;font-size:13px;padding:5px 0;">⏳ Yuklanmoqda...</div>';
+            try {
+                const data = await binGet();
+                const links = data.adminLinks || [];
+                if(!links.length) { el.innerHTML = '<div style="color:#555;font-size:13px;">Hali admin qo\'shilmagan</div>'; return; }
+                el.innerHTML = links.map(a => `
+                    <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;">
+                        <div style="font-size:20px;">👤</div>
+                        <div style="flex:1;">
+                            <div style="font-weight:900;font-size:14px;">${a.name}</div>
+                            <div style="font-size:11px;color:#888;margin-top:2px;">${a.link}</div>
+                        </div>
+                        <button onclick="deleteAdminLink(${a.id})" style="background:#2a0000;color:#ff453a;border:1px solid #500;padding:8px 12px;border-radius:10px;font-weight:900;flex-shrink:0;">✕</button>
+                    </div>`).join('');
+            } catch(e) {
+                el.innerHTML = '<div style="color:#ff453a;font-size:13px;">❌ Internet xatosi</div>';
+            }
         }
 
         async function addFaq() {
@@ -4653,9 +4739,27 @@
                                 <button onclick="deleteEpisode(${i})" style="background:#2a0000;color:#ff453a;border:1px solid #500;padding:5px 10px;border-radius:8px;font-weight:900;font-size:12px;flex-shrink:0;">🗑️</button>
                             </div>
                             <div id="epEditBox_${i}" style="display:none;margin-top:10px;">
-                                <div style="font-size:11px;color:#888;margin-bottom:5px;">Yangi video URL yoki t.me havolasi:</div>
+                                <div style="font-size:11px;color:#888;margin-bottom:6px;">Yangi video URL yoki t.me havolasi:</div>
                                 <input type="text" id="epEditInput_${i}" value="${v}" placeholder="https://... yoki t.me/kanal/123"
                                     style="width:100%;padding:11px 12px;background:#111;border:1.5px solid #333;color:#fff;border-radius:10px;font-size:13px;box-sizing:border-box;margin-bottom:8px;">
+                                <!-- Galereya video tanlash -->
+                                <label id="epEditGalleryLabel_${i}" style="display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#0d1f14,#111);border:2px dashed rgba(0,255,115,0.35);border-radius:12px;padding:12px 14px;cursor:pointer;margin-bottom:8px;">
+                                    <span style="font-size:22px;">🎬</span>
+                                    <div style="flex:1;">
+                                        <div id="epEditGalleryName_${i}" style="font-size:13px;color:var(--accent);font-weight:900;">Galereya dan video tanlang</div>
+                                        <div style="font-size:10px;color:#555;margin-top:2px;">Bot orqali Telegram ga yuklanadi</div>
+                                    </div>
+                                    <input type="file" accept="video/*" style="display:none;" onchange="uploadEpFileEdit(this, ${i})">
+                                </label>
+                                <div id="epEditProgWrap_${i}" style="display:none;margin-bottom:8px;">
+                                    <div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-bottom:3px;">
+                                        <span>Yuklanmoqda...</span><span id="epEditPct_${i}">0%</span>
+                                    </div>
+                                    <div style="background:#222;border-radius:6px;height:7px;overflow:hidden;">
+                                        <div id="epEditBar_${i}" style="height:100%;background:linear-gradient(90deg,#00ff73,#00cc5c);border-radius:6px;width:0%;transition:width 0.2s;"></div>
+                                    </div>
+                                </div>
+                                <div id="epEditDone_${i}" style="display:none;background:#0d1f14;border:1.5px solid rgba(0,255,115,0.4);border-radius:10px;padding:9px 12px;margin-bottom:8px;font-size:12px;color:var(--accent);font-weight:900;word-break:break-all;"></div>
                                 <div style="display:flex;gap:8px;">
                                     <button onclick="saveEditEp(${i})" style="flex:1;background:var(--accent);color:#000;border:none;padding:11px;border-radius:10px;font-weight:900;font-size:13px;">💾 Saqlash</button>
                                     <button onclick="toggleEditEp(${i})" style="background:#1a1a1a;color:#888;border:1px solid #333;padding:11px 16px;border-radius:10px;font-weight:900;font-size:13px;">✕</button>
@@ -4712,6 +4816,86 @@
                 setTimeout(() => { toggleEditEp(i); msg.textContent=''; }, 1500);
             } catch(e) {
                 msg.style.color='#ff453a'; msg.textContent='❌ Xato: ' + e.message;
+            }
+        }
+
+        async function uploadEpFileEdit(input, i) {
+            const file = input.files[0];
+            if(!file) return;
+            if(file.size / 1024 / 1024 / 1024 > 2) { showToast('❌ Maksimum fayl hajmi 2GB!', 'error'); return; }
+
+            const token   = (await db.settings.get('token'))?.value;
+            const adminId = (await db.settings.get('admin_id'))?.value;
+            if(!token || !adminId) { showToast('⚠️ Bot Token va Admin ID ni sozlamalarga kiriting!', 'error'); return; }
+
+            const nameEl  = document.getElementById(`epEditGalleryName_${i}`);
+            const progWr  = document.getElementById(`epEditProgWrap_${i}`);
+            const bar     = document.getElementById(`epEditBar_${i}`);
+            const pct     = document.getElementById(`epEditPct_${i}`);
+            const doneEl  = document.getElementById(`epEditDone_${i}`);
+            const urlInp  = document.getElementById(`epEditInput_${i}`);
+
+            const mb = (file.size/1024/1024).toFixed(1);
+            nameEl.textContent = file.name + ` (${mb} MB)`;
+            nameEl.style.color = '#fff';
+            progWr.style.display = 'block';
+            doneEl.style.display = 'none';
+            bar.style.width = '1%'; pct.textContent = '1%';
+
+            try {
+                const fd = new FormData();
+                fd.append('chat_id', adminId);
+                fd.append('video', file);
+                fd.append('supports_streaming', 'true');
+
+                const uploadData = await new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', `https://api.telegram.org/bot${token}/sendVideo`);
+                    xhr.upload.onprogress = (e) => {
+                        if(e.lengthComputable) {
+                            const p = Math.max(1, Math.round((e.loaded / e.total) * 90));
+                            bar.style.width = p + '%'; pct.textContent = p + '%';
+                        }
+                    };
+                    xhr.onload = () => { try { resolve(JSON.parse(xhr.responseText)); } catch(e) { reject(new Error('Javob xatosi')); } };
+                    xhr.onerror = () => reject(new Error('Tarmoq xatosi'));
+                    xhr.timeout = 300000;
+                    xhr.ontimeout = () => reject(new Error('Vaqt tugadi'));
+                    xhr.send(fd);
+                });
+
+                if(!uploadData.ok) throw new Error(uploadData.description || 'Telegram xatosi');
+
+                bar.style.width = '92%'; pct.textContent = '92%';
+                const fileId = uploadData.result.video.file_id;
+                const fileSizeMB = file.size / 1024 / 1024;
+                let videoUrl = '';
+
+                if(fileSizeMB <= 19.5) {
+                    try {
+                        const fr = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`);
+                        const fd2 = await fr.json();
+                        if(fd2.ok) { videoUrl = `https://api.telegram.org/file/bot${token}/${fd2.result.file_path}`; }
+                        else { videoUrl = `${RAILWAY_BASE}/stream?file_id=${encodeURIComponent(fileId)}&token=${encodeURIComponent(token)}`; }
+                    } catch(e) { videoUrl = `${RAILWAY_BASE}/stream?file_id=${encodeURIComponent(fileId)}&token=${encodeURIComponent(token)}`; }
+                } else {
+                    videoUrl = `${RAILWAY_BASE}/stream?file_id=${encodeURIComponent(fileId)}&token=${encodeURIComponent(token)}`;
+                }
+
+                if(urlInp) urlInp.value = videoUrl;
+                bar.style.width = '100%'; pct.textContent = '100%';
+                setTimeout(() => {
+                    progWr.style.display = 'none';
+                    doneEl.style.display = 'block';
+                    doneEl.innerHTML = `✅ ${file.name} • ${mb} MB<br><span style="font-size:10px;color:#888;word-break:break-all;">${videoUrl.slice(0,55)}...</span>`;
+                    showToast('✅ Video yuklandi! Saqlash tugmasini bosing.', 'success');
+                }, 300);
+            } catch(err) {
+                progWr.style.display = 'none';
+                bar.style.width = '0%';
+                nameEl.style.color = '#ff453a';
+                nameEl.textContent = '❌ ' + err.message;
+                showToast('❌ Yuklash xatosi: ' + err.message, 'error');
             }
         }
 
