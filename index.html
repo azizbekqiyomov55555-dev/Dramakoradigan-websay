@@ -3219,6 +3219,11 @@
             if(tgMatch) return { type: 'telegram', channel: tgMatch[1], postId: tgMatch[2] };
             const igMatch = src.match(/instagram\.com\/(?:reel|p|tv)\/([^\/\?]+)/);
             if(igMatch) return { type: 'instagram', id: igMatch[1] };
+            // tgfile://FILE_ID — eskirmas Telegram file_id formati
+            if(src.startsWith('tgfile://')) return { type: 'tgfile', fileId: src.slice(9) };
+            // Eski api.telegram.org/file/bot URL — file_id ni ajratib olish
+            const tgFileMatch = src.match(/api\.telegram\.org\/file\/bot[^\/]+\/(.+)/);
+            if(tgFileMatch) return { type: 'tgfile_legacy', filePath: tgFileMatch[1], src };
             return { type: 'direct', src };
         }
 
@@ -3393,6 +3398,70 @@
                     </div>`;
                 igViewer._igUrl = igOrigUrl;
 
+            } else if(info.type === 'tgfile' || info.type === 'tgfile_legacy') {
+                // Eskirmas Telegram file_id — har safar yangi URL olinadi
+                v.style.display = 'none'; v.src = '';
+                iframe.style.display = 'none'; iframe.src = '';
+                showVideoLoading('Telegram video tayyorlanmoqda...');
+                (async () => {
+                    try {
+                        const token = (await db.settings.get('token'))?.value;
+                        if(!token) throw new Error('Bot token topilmadi');
+                        let fileId = '';
+                        if(info.type === 'tgfile') {
+                            fileId = info.fileId;
+                        } else {
+                            // Eski URL — file_path orqali getFile qilamiz (token bilan)
+                            // file_path'dan to'g'ri URL yasash
+                            // Avval eski URL'ni sinab ko'ramiz, agar eskirgan bo'lsa file_id yo'q,
+                            // shuning uchun Cloudflare proxy orqali stream qilamiz
+                            const freshUrl = `https://api.telegram.org/file/bot${token}/${info.filePath}`;
+                            hideVideoLoading();
+                            v.style.display = 'block';
+                            v.onerror = null; v.oncanplay = null;
+                            let _lt = setTimeout(() => { if(v.readyState < 3) showVideoError('Video juda sekin yuklanmoqda. Qayta urining.'); }, 15000);
+                            v.oncanplay = () => { clearTimeout(_lt); hideVideoLoading(); v.oncanplay = null; };
+                            v.onerror = () => {
+                                clearTimeout(_lt);
+                                showVideoError('Video muddati o\'tgan. Kinoni qayta saqlang yoki admin bilan bog\'laning.');
+                            };
+                            v.src = freshUrl;
+                            v.controls = true;
+                            v.autoplay = true;
+                            v.setAttribute('controlslist', 'nodownload noremoteplayback');
+                            v.setAttribute('disablepictureinpicture', '');
+                            v.play().catch(() => {});
+                            return;
+                        }
+                        // tgfile:// — file_id bilan yangi URL
+                        const gf = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${encodeURIComponent(fileId)}`);
+                        const gd = await gf.json();
+                        if(!gd.ok) throw new Error('getFile: ' + (gd.description || 'xato'));
+                        const freshUrl = `https://api.telegram.org/file/bot${token}/${gd.result.file_path}`;
+                        hideVideoLoading();
+                        v.style.display = 'block';
+                        v.onerror = null; v.oncanplay = null;
+                        let _lt = setTimeout(() => { if(v.readyState < 3) showVideoError('Video juda sekin yuklanmoqda. Qayta urining.'); }, 15000);
+                        v.oncanplay = () => { clearTimeout(_lt); hideVideoLoading(); v.oncanplay = null; };
+                        v.onerror = () => {
+                            clearTimeout(_lt);
+                            // Fallback: Cloudflare proxy
+                            showVideoLoading('Proxy orqali urinilmoqda...');
+                            v.onerror = (e2) => { showVideoError('Video yuklanmadi. Internet yoki server muammosi.'); };
+                            v.src = `${RAILWAY_BASE}/stream?file_id=${encodeURIComponent(fileId)}&token=${encodeURIComponent(token)}`;
+                            v.play().catch(() => {});
+                        };
+                        v.src = freshUrl;
+                        v.controls = true;
+                        v.autoplay = true;
+                        v.setAttribute('controlslist', 'nodownload noremoteplayback');
+                        v.setAttribute('disablepictureinpicture', '');
+                        v.play().catch(() => {});
+                    } catch(e) {
+                        showVideoError('Video yuklanmadi: ' + e.message);
+                    }
+                })();
+
             } else {
                 // Direct video
                 iframe.style.display = 'none'; iframe.src = '';
@@ -3439,7 +3508,7 @@
             // iframe bo'lsa mini tugma yashiriladi, direct video uchun ko'rinadi
             const miniBtn = document.getElementById('miniBtn');
             if(miniBtn) {
-                miniBtn.style.display = (info.type === 'direct') ? 'flex' : 'none';
+                miniBtn.style.display = (info.type === 'direct' || info.type === 'tgfile' || info.type === 'tgfile_legacy') ? 'flex' : 'none';
             }
             // Pastki o'ng fullscreen overlay — YouTube va boshqa iframe uchun
             const fsOverlay = document.getElementById('fsBtnOverlay');
@@ -3458,7 +3527,7 @@
             // Seek div'lari faqat oddiy video uchun — iframe da touch eventlarni bloklamaydi
             const seekL = document.getElementById('seekLeft');
             const seekR = document.getElementById('seekRight');
-            if(info.type === 'direct') {
+            if(info.type === 'direct' || info.type === 'tgfile' || info.type === 'tgfile_legacy') {
                 if(seekL) seekL.style.pointerEvents = 'auto';
                 if(seekR) seekR.style.pointerEvents = 'auto';
             } else {
@@ -4064,21 +4133,10 @@
                 const fileSizeMB = file.size / 1024 / 1024;
 
                 if(fileSizeMB <= 19.5) {
-                    // Kichik fayl — getFile orqali to'g'ridan URL
-                    try {
-                        const gfResp = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`);
-                        const gfData = await gfResp.json();
-                        if(gfData.ok) {
-                            videoUrl = `https://api.telegram.org/file/bot${token}/${gfData.result.file_path}`;
-                        } else {
-                            throw new Error('getFile: ' + gfData.description);
-                        }
-                    } catch(e) {
-                        // Fallback: Railway proxy
-                        videoUrl = `${RAILWAY_BASE}/stream?file_id=${encodeURIComponent(fileId)}&token=${encodeURIComponent(token)}`;
-                    }
+                    // Kichik fayl — file_id ni tgfile:// formatida saqlash (eskirmaydi!)
+                    videoUrl = `tgfile://${fileId}`;
                 } else {
-                    // Katta fayl (>20MB) — Railway proxy orqali stream
+                    // Katta fayl (>20MB) — Cloudflare proxy orqali stream
                     videoUrl = `${RAILWAY_BASE}/stream?file_id=${encodeURIComponent(fileId)}&token=${encodeURIComponent(token)}`;
                     txt.textContent = 'Katta fayl — proxy URL tayyor!';
                 }
@@ -5002,12 +5060,7 @@
                 let videoUrl = '';
 
                 if(fileSizeMB <= 19.5) {
-                    try {
-                        const fr = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`);
-                        const fd2 = await fr.json();
-                        if(fd2.ok) { videoUrl = `https://api.telegram.org/file/bot${token}/${fd2.result.file_path}`; }
-                        else { videoUrl = `${RAILWAY_BASE}/stream?file_id=${encodeURIComponent(fileId)}&token=${encodeURIComponent(token)}`; }
-                    } catch(e) { videoUrl = `${RAILWAY_BASE}/stream?file_id=${encodeURIComponent(fileId)}&token=${encodeURIComponent(token)}`; }
+                    videoUrl = `tgfile://${fileId}`;
                 } else {
                     videoUrl = `${RAILWAY_BASE}/stream?file_id=${encodeURIComponent(fileId)}&token=${encodeURIComponent(token)}`;
                 }
@@ -5290,17 +5343,7 @@
                 let videoUrl = '';
 
                 if(fileSizeMB <= 19.5) {
-                    try {
-                        const fr = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`);
-                        const fd2 = await fr.json();
-                        if(fd2.ok) {
-                            videoUrl = `https://api.telegram.org/file/bot${token}/${fd2.result.file_path}`;
-                        } else {
-                            videoUrl = `${RAILWAY_BASE}/stream?file_id=${encodeURIComponent(fileId)}&token=${encodeURIComponent(token)}`;
-                        }
-                    } catch(e) {
-                        videoUrl = `${RAILWAY_BASE}/stream?file_id=${encodeURIComponent(fileId)}&token=${encodeURIComponent(token)}`;
-                    }
+                    videoUrl = `tgfile://${fileId}`;
                 } else {
                     // Katta fayl — Railway proxy
                     videoUrl = `${RAILWAY_BASE}/stream?file_id=${encodeURIComponent(fileId)}&token=${encodeURIComponent(token)}`;
