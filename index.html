@@ -97,22 +97,29 @@
         }
 
         /* DETAIL PAGE */
-        .detail-page { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 2000; display: none; overflow-y: auto; }
-        .detail-hero { position: relative; width: 100%; height: 500px; }
-        .detail-hero img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.8); }
+        .detail-page { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 2000; display: none; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .detail-hero { position: relative; width: 100%; height: 320px; flex-shrink: 0; }
+        .detail-hero img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.75); }
         .detail-overlay {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(0deg, #000 15%, transparent 70%);
-            display: flex; flex-direction: column; justify-content: flex-end; padding: 30px 20px; box-sizing: border-box;
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            background: linear-gradient(0deg, #000 30%, transparent 100%);
+            padding: 20px 20px 16px; box-sizing: border-box;
         }
-        .d-title { font-size: 40px; font-weight: 900; margin: 0; text-transform: uppercase; line-height: 1; }
+        .d-title { font-size: 32px; font-weight: 900; margin: 0; text-transform: uppercase; line-height: 1.1; }
+        .detail-body { padding: 0 16px 100px; background: #000; }
         
-        .part-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0; }
+        .part-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 16px 0; }
         .part-btn { 
             background: #111; border: 1.5px solid #333; color: white; padding: 14px; 
             border-radius: 12px; font-weight: 900; text-align: center; font-size: 13px;
         }
         .part-btn.selected { background: var(--accent); color: #000; border-color: var(--accent); }
+        /* KO'RISH tugmasi pastda fixed */
+        .detail-play-bar {
+            position: sticky; bottom: 0; left: 0; width: 100%;
+            background: linear-gradient(0deg, #000 70%, transparent 100%);
+            padding: 10px 16px 24px; box-sizing: border-box; z-index: 10;
+        }
 
         .btn-play-green {
             background: linear-gradient(90deg, #00ff73, #00cc5c);
@@ -1256,7 +1263,11 @@
     </div>
 
     <div id="detailPage" class="detail-page">
-        <i class="fa fa-arrow-left" onclick="closeDetail()" style="position:fixed; top:25px; left:20px; z-index:2100; font-size:22px;"></i>
+        <div style="position:sticky; top:0; left:0; width:100%; z-index:2100; pointer-events:none; height:0;">
+            <div onclick="closeDetail()" style="pointer-events:auto; position:absolute; top:16px; left:16px; width:40px; height:40px; background:rgba(0,0,0,0.65); border-radius:50%; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.12); cursor:pointer;">
+                <i class="fa fa-arrow-left" style="font-size:17px; color:#fff;"></i>
+            </div>
+        </div>
         <div id="detailContent"></div>
     </div>
 
@@ -2887,26 +2898,38 @@
                 const isPaid = epPrice !== undefined && epPrice > 0 && !hasPremium && !alreadyPurchased;
                 const priceLabel = (epPrice !== undefined && epPrice > 0 && !alreadyPurchased)
                     ? `<div style="font-size:10px;font-weight:900;color:#00ff73;text-align:center;margin-bottom:3px;text-shadow:0 0 8px rgba(0,255,115,0.8);">${epPrice.toLocaleString()} so'm</div>`
-                    : (epPrice === 0 || alreadyPurchased ? `<div style="font-size:10px;font-weight:900;color:#00ff73;text-align:center;margin-bottom:3px;text-shadow:0 0 8px rgba(0,255,115,0.8);">${alreadyPurchased && epPrice > 0 ? '✅' : 'BEPUL'}</div>` : '');
+                    : (epPrice === 0 || alreadyPurchased ? `<div style="font-size:10px;font-weight:900;color:#00ff73;text-align:center;margin-bottom:3px;">${alreadyPurchased && epPrice > 0 ? '✅' : 'BEPUL'}</div>` : '');
                 const clickHandler = isPaid
                     ? `onclick="showBuyEpisodeModal('${m.id}', ${i}, ${epPrice}, '${m.title.replace(/'/g,"\\'")}')"`
                     : `onclick="setPart(${i})"`;
-                const lockIcon = isPaid
-                    ? `<span class="green-lock"></span>`
-                    : '';
+                const lockIcon = isPaid ? `<span class="green-lock"></span>` : '';
                 const btnStyle = isPaid
                     ? `style="background:#0d1f14; border:1.5px solid #00ff73; color:#00ff73; box-shadow:0 0 12px rgba(0,255,115,0.25);" `
                     : '';
-                return `<div style="display:flex;flex-direction:column;">${priceLabel}<div class="part-btn tap-active ${i===0?'selected':''} ${isPaid?'locked':''}" id="part-${i}" ${btnStyle}${clickHandler}>${lockIcon}${i+1}-qism</div></div>`;
+                const isSelected = i === 0 ? 'selected' : '';
+                return `<div style="display:flex;flex-direction:column;">${priceLabel}<div class="part-btn tap-active ${isSelected} ${isPaid?'locked':''}" id="part-${i}" ${btnStyle}${clickHandler}>${lockIcon}${i+1}-qism</div></div>`;
             }).join('');
+
             document.getElementById('detailContent').innerHTML = `
-                <div class="detail-hero"><img src="${poster}"><div class="detail-overlay">
-                <h1 class="d-title">${m.title}</h1>
-                <div style="color:#ccc; margin-bottom:15px;">Janr: ${m.genre||'—'}</div>
-                <div class="part-grid">${parts}</div>
-                <button class="btn-play-green tap-active" onclick="checkPlay('${m.id}')"><i class="fa fa-play"></i> KO'RISH</button>
-                </div></div>`;
-            document.getElementById('detailPage').style.display = 'block';
+                <div class="detail-hero">
+                    <img src="${poster}">
+                    <div class="detail-overlay">
+                        <h1 class="d-title">${m.title}</h1>
+                        <div style="color:#aaa;font-size:13px;margin-top:5px;">Janr: ${m.genre||'—'} &nbsp;•&nbsp; ${(m.videos||[]).length} ta qism</div>
+                    </div>
+                </div>
+                <div class="detail-body">
+                    <div style="font-size:11px;font-weight:900;color:#555;letter-spacing:2px;margin-bottom:12px;padding-top:4px;">QISMLAR</div>
+                    <div class="part-grid">${parts}</div>
+                    <div style="height:80px;"></div>
+                </div>
+                <div class="detail-play-bar">
+                    <button class="btn-play-green tap-active" onclick="checkPlay('${m.id}')"><i class="fa fa-play"></i> KO'RISH</button>
+                </div>`;
+
+            const dp = document.getElementById('detailPage');
+            dp.scrollTop = 0;
+            dp.style.display = 'block';
         }
 
         // === CHIROYLI SOTIB OLISH MODALI ===
