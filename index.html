@@ -214,7 +214,7 @@
         .swiper-pagination-bullet-active { opacity:1 !important; transform:scale(1.4) !important; }
         .del-item { display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; padding: 12px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #333;}
 
-        /* PREMIUM PLAN CARDS */
+        @keyframes spinLoader { to { transform: rotate(360deg); } }
         .plan-card {
             background: linear-gradient(135deg, #111 0%, #1a1a1a 100%);
             border: 1.5px solid #333;
@@ -1326,6 +1326,23 @@
             scrolling="no"
             frameborder="0">
         </iframe>
+
+        <!-- YUKLANISH OVERLAY -->
+        <div id="videoLoadingOverlay" style="display:none;position:absolute;inset:0;z-index:3035;background:#000;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
+            <div style="width:56px;height:56px;border:4px solid #222;border-top:4px solid #00ff73;border-radius:50%;animation:spinLoader 0.9s linear infinite;"></div>
+            <div style="color:#888;font-size:14px;font-weight:700;" id="videoLoadingText">Video yuklanmoqda...</div>
+        </div>
+
+        <!-- XATO OVERLAY -->
+        <div id="videoErrorOverlay" style="display:none;position:absolute;inset:0;z-index:3036;background:#000;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:30px;text-align:center;">
+            <div style="font-size:52px;">😕</div>
+            <div style="font-size:18px;font-weight:900;color:#fff;">Video yuklanmadi</div>
+            <div style="font-size:13px;color:#888;line-height:1.6;" id="videoErrorText">Video URL muammosi yoki internet aloqasi zaif</div>
+            <div style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:300px;margin-top:8px;">
+                <button onclick="retryVideo()" style="background:linear-gradient(90deg,#00ff73,#00cc5c);color:#000;border:none;padding:15px;border-radius:14px;font-size:15px;font-weight:900;">🔄 Qayta urinish</button>
+                <button onclick="closePlayer()" style="background:#1a1a1a;color:#888;border:1.5px solid #333;padding:14px;border-radius:14px;font-size:14px;font-weight:700;">← Orqaga</button>
+            </div>
+        </div>
 
         <!-- WATERMARK OVERLAY -->
         <div id="wmContainer" style="position:absolute;inset:0;pointer-events:none;z-index:3010;overflow:hidden;"></div>
@@ -3205,10 +3222,40 @@
             return { type: 'direct', src };
         }
 
+        let _currentVideoSrc = '';
+
+        function showVideoLoading(text) {
+            const el = document.getElementById('videoLoadingOverlay');
+            const txt = document.getElementById('videoLoadingText');
+            if(el) { el.style.display = 'flex'; if(txt) txt.textContent = text || 'Video yuklanmoqda...'; }
+            const err = document.getElementById('videoErrorOverlay');
+            if(err) err.style.display = 'none';
+        }
+        function hideVideoLoading() {
+            const el = document.getElementById('videoLoadingOverlay');
+            if(el) el.style.display = 'none';
+        }
+        function showVideoError(msg) {
+            hideVideoLoading();
+            const el = document.getElementById('videoErrorOverlay');
+            const txt = document.getElementById('videoErrorText');
+            if(el) { el.style.display = 'flex'; if(txt) txt.textContent = msg || 'Video URL muammosi yoki internet aloqasi zaif'; }
+        }
+        function hideVideoError() {
+            const el = document.getElementById('videoErrorOverlay');
+            if(el) el.style.display = 'none';
+        }
+        function retryVideo() {
+            if(_currentVideoSrc) { hideVideoError(); playVideo(_currentVideoSrc); }
+        }
+
         function playVideo(videoSrc) {
+            _currentVideoSrc = videoSrc;
             const v = document.getElementById('mainVideo');
             const iframe = document.getElementById('tgEmbedFrame');
             const info = getVideoType(videoSrc);
+
+            hideVideoError();
 
             // Iframe ni tozalash
             iframe.style.width = '100%';
@@ -3227,38 +3274,36 @@
             if(info.type === 'youtube') {
                 v.style.display = 'none'; v.src = '';
                 iframe.style.display = 'block';
-                // sandbox — YouTube saytiga o'tishni bloklaydi, faqat embed ishlaydi
                 iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation allow-popups');
+                showVideoLoading('YouTube yuklanmoqda...');
+                iframe.onload = () => { setTimeout(hideVideoLoading, 1500); };
                 iframe.src = `https://www.youtube.com/embed/${info.id}?autoplay=1&rel=0&modestbranding=1&playsinline=1&fs=1&iv_load_policy=3&enablejsapi=0`;
 
             } else if(info.type === 'gdrive') {
                 v.style.display = 'none'; v.src = '';
                 iframe.style.display = 'block';
+                showVideoLoading('Google Drive yuklanmoqda...');
+                iframe.onload = () => { setTimeout(hideVideoLoading, 1500); };
                 iframe.src = `https://drive.google.com/file/d/${info.id}/preview`;
 
             } else if(info.type === 'telegram') {
                 v.style.display = 'none'; v.src = '';
                 iframe.style.display = 'block';
-                // Himoya yoqilgan bo'lsa — saqlashni bloklash uchun sandbox cheklash
                 if(contentProtectEnabled) {
                     iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation');
                 } else {
                     iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox');
                 }
+                showVideoLoading('Telegram video yuklanmoqda...');
+                iframe.onload = () => { setTimeout(hideVideoLoading, 2000); };
                 iframe.src = `https://t.me/${info.channel}/${info.postId}?embed=1&origin=${encodeURIComponent(window.location.origin || 'https://web.telegram.org')}`;
-                // Himoya yoqilganda iframe ustiga shaffof qatlam
-                if(contentProtectEnabled) {
-                    _addIframeProtectionLayer(true);
-                }
+                if(contentProtectEnabled) { _addIframeProtectionLayer(true); }
 
             } else if(info.type === 'instagram') {
-                // Instagram tashqi iframe'ga video o'ynashni bloklaydi (X-Frame-Options: SAMEORIGIN)
-                // Shuning uchun iframe o'rniga ichki brauzerda ochish yondashuvi ishlatiladi
-
                 v.style.display = 'none'; v.src = '';
                 iframe.style.display = 'none'; iframe.src = '';
+                hideVideoLoading();
 
-                // Instagram viewer overlay ko'rsatish
                 let igViewer = document.getElementById('igViewer');
                 if(!igViewer) {
                     igViewer = document.createElement('div');
@@ -3266,9 +3311,7 @@
                     igViewer.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000;z-index:10;';
                     document.getElementById('player').appendChild(igViewer);
                 }
-
                 const igOrigUrl = 'https://www.instagram.com/reel/' + info.id + '/';
-
                 igViewer.style.display = 'flex';
                 igViewer.innerHTML = `
                     <div style="text-align:center;padding:30px 24px;">
@@ -3288,17 +3331,39 @@
                             </svg>
                             Instagram da Tomosha Et
                         </button>
-                        <div style="margin-top:16px;font-size:11px;color:#444;">
-                            Telegram ichki brauzeri orqali ochiladi
-                        </div>
+                        <div style="margin-top:16px;font-size:11px;color:#444;">Telegram ichki brauzeri orqali ochiladi</div>
                     </div>`;
-
-                // igViewer ni yopganda ham player yopilsin
                 igViewer._igUrl = igOrigUrl;
 
             } else {
+                // Direct video
                 iframe.style.display = 'none'; iframe.src = '';
                 v.style.display = 'block';
+                showVideoLoading('Video yuklanmoqda...');
+
+                // Eski event handlerlarni tozalash
+                v.onerror = null; v.oncanplay = null; v.onstalled = null; v.onwaiting = null;
+
+                v.oncanplay = () => { hideVideoLoading(); v.oncanplay = null; };
+
+                v.onerror = (e) => {
+                    const code = v.error ? v.error.code : 0;
+                    let msg = 'Video yuklanmadi';
+                    if(code === 1) msg = 'Yuklab olish to\'xtatildi';
+                    else if(code === 2) msg = 'Tarmoq xatosi — internet aloqasini tekshiring';
+                    else if(code === 3) msg = 'Video formati noto\'g\'ri yoki buzilgan';
+                    else if(code === 4) msg = 'Video URL yaroqsiz yoki muddati o\'tgan';
+                    showVideoError(msg);
+                };
+
+                // 15 soniya ichida yuklanmasa xato ko'rsat
+                let _loadTimer = setTimeout(() => {
+                    if(v.readyState < 3) {
+                        showVideoError('Video juda sekin yuklanmoqda. Internet aloqasini tekshiring yoki qayta urining.');
+                    }
+                }, 15000);
+                v.oncanplay = () => { clearTimeout(_loadTimer); hideVideoLoading(); v.oncanplay = null; };
+
                 v.src = videoSrc;
                 v.play().catch(() => {});
             }
@@ -4054,10 +4119,12 @@
         function closePlayer() {
             const v = document.getElementById('mainVideo');
             v.pause(); v.src = '';
+            v.onerror = null; v.oncanplay = null;
             const iframeEl = document.getElementById('tgEmbedFrame');
             if(iframeEl) {
                 iframeEl.src = '';
                 iframeEl.style.display = 'none';
+                iframeEl.onload = null;
                 iframeEl.style.width = '100%';
                 iframeEl.style.height = '100%';
                 iframeEl.style.top = '0';
@@ -4066,6 +4133,11 @@
                 iframeEl.style.transformOrigin = '';
                 iframeEl.style.position = 'absolute';
             }
+            // Loading/Error overlaylarni yashirish
+            hideVideoLoading();
+            hideVideoError();
+            _currentVideoSrc = '';
+
             // Instagram masklarini yashirish
             const mT = document.getElementById('igMaskTop');
             const mB = document.getElementById('igMaskBot');
