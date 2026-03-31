@@ -4645,13 +4645,73 @@
             if(currentEpisodeCount > 0) {
                 existing.innerHTML = '<div style="font-size:12px;color:#888;font-weight:700;margin-bottom:8px;">MAVJUD QISMLAR</div>' +
                     m.videos.map((v,i) => `
-                        <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
-                            <span style="font-size:12px;color:var(--accent);font-weight:900;min-width:42px;">${i+1}-qism</span>
-                            <span style="font-size:11px;color:#666;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${v}</span>
-                            <button onclick="deleteEpisode(${i})" style="background:#2a0000;color:#ff453a;border:1px solid #500;padding:6px 10px;border-radius:8px;font-weight:900;font-size:13px;flex-shrink:0;">🗑️</button>
+                        <div id="epRow_${i}" style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:10px 12px;margin-bottom:6px;">
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <span style="font-size:12px;color:var(--accent);font-weight:900;min-width:42px;">${i+1}-qism</span>
+                                <span id="epUrlLabel_${i}" style="font-size:11px;color:#666;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${v.length > 50 ? v.slice(0,50)+'...' : v}</span>
+                                <button onclick="toggleEditEp(${i})" style="background:#1a1f2a;color:#64b4ff;border:1px solid #2a3a50;padding:5px 10px;border-radius:8px;font-weight:900;font-size:12px;flex-shrink:0;">✏️</button>
+                                <button onclick="deleteEpisode(${i})" style="background:#2a0000;color:#ff453a;border:1px solid #500;padding:5px 10px;border-radius:8px;font-weight:900;font-size:12px;flex-shrink:0;">🗑️</button>
+                            </div>
+                            <div id="epEditBox_${i}" style="display:none;margin-top:10px;">
+                                <div style="font-size:11px;color:#888;margin-bottom:5px;">Yangi video URL yoki t.me havolasi:</div>
+                                <input type="text" id="epEditInput_${i}" value="${v}" placeholder="https://... yoki t.me/kanal/123"
+                                    style="width:100%;padding:11px 12px;background:#111;border:1.5px solid #333;color:#fff;border-radius:10px;font-size:13px;box-sizing:border-box;margin-bottom:8px;">
+                                <div style="display:flex;gap:8px;">
+                                    <button onclick="saveEditEp(${i})" style="flex:1;background:var(--accent);color:#000;border:none;padding:11px;border-radius:10px;font-weight:900;font-size:13px;">💾 Saqlash</button>
+                                    <button onclick="toggleEditEp(${i})" style="background:#1a1a1a;color:#888;border:1px solid #333;padding:11px 16px;border-radius:10px;font-weight:900;font-size:13px;">✕</button>
+                                </div>
+                                <div id="epEditMsg_${i}" style="font-size:12px;margin-top:6px;min-height:16px;"></div>
+                            </div>
                         </div>`).join('');
             } else {
                 existing.innerHTML = '<div style="font-size:12px;color:#555;padding:8px 0;">Hali qism yo\'q</div>';
+            }
+        }
+
+        function toggleEditEp(i) {
+            const box = document.getElementById(`epEditBox_${i}`);
+            if(!box) return;
+            box.style.display = box.style.display === 'none' ? 'block' : 'none';
+        }
+
+        async function saveEditEp(i) {
+            const inp = document.getElementById(`epEditInput_${i}`);
+            const msg = document.getElementById(`epEditMsg_${i}`);
+            if(!inp) return;
+            let url = inp.value.trim();
+            if(!url) { msg.style.color='#ff453a'; msg.textContent='⚠️ URL kiriting!'; return; }
+            if(url.startsWith('blob:')) { msg.style.color='#ff453a'; msg.textContent='⚠️ Blob URL ishlamaydi!'; return; }
+
+            msg.style.color='#888'; msg.textContent='⏳ Saqlanmoqda...';
+
+            // t.me havolasini konvert qilamiz
+            const tgMatch = url.match(/(?:https?:\/\/)?t\.me\/([^\/]+)\/(\d+)/);
+            if(tgMatch) {
+                msg.textContent='⏳ Telegram dan video olinmoqda...';
+                url = await convertTgUrl(url);
+            }
+
+            try {
+                const movies = await moviesGet(true);
+                const mIdx = movies.findIndex(x => x.id === currentEpisodeMovieId);
+                if(mIdx === -1) { msg.style.color='#ff453a'; msg.textContent='❌ Kino topilmadi!'; return; }
+
+                movies[mIdx].videos[i] = url;
+                if(movies[mIdx].videoKeys) movies[mIdx].videoKeys[i] = url;
+
+                await moviesSet(movies);
+                msg.style.color='var(--accent)'; msg.textContent='✅ Saqlandi!';
+
+                // Labelni yangilash
+                const label = document.getElementById(`epUrlLabel_${i}`);
+                if(label) label.textContent = url.length > 50 ? url.slice(0,50)+'...' : url;
+
+                showToast(`✅ ${i+1}-qism URL yangilandi!`, 'success');
+                loadContent();
+
+                setTimeout(() => { toggleEditEp(i); msg.textContent=''; }, 1500);
+            } catch(e) {
+                msg.style.color='#ff453a'; msg.textContent='❌ Xato: ' + e.message;
             }
         }
 
