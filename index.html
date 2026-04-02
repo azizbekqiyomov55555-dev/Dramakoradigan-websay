@@ -3411,21 +3411,49 @@
                         if(info.type === 'tgfile') {
                             fileId = info.fileId;
                         } else {
-                            // Eski URL — file_path orqali getFile qilamiz (token bilan)
-                            // file_path'dan to'g'ri URL yasash
-                            // Avval eski URL'ni sinab ko'ramiz, agar eskirgan bo'lsa file_id yo'q,
-                            // shuning uchun Cloudflare proxy orqali stream qilamiz
+                            // Eski URL (tgfile_legacy) — file_path dan file_id ni ajratib olamiz
+                            // Avval eski URL ni sinab ko'ramiz
                             const freshUrl = `https://api.telegram.org/file/bot${token}/${info.filePath}`;
+                            // Eski URL ishlaydimi tekshir
+                            showVideoLoading('Video tekshirilmoqda...');
+                            try {
+                                const testResp = await fetch(freshUrl, { method: 'HEAD', signal: AbortSignal.timeout(5000) });
+                                if(testResp.ok) {
+                                    // Hali ishlayapti
+                                    hideVideoLoading();
+                                    v.style.display = 'block';
+                                    v.onerror = null; v.oncanplay = null;
+                                    let _lt = setTimeout(() => { if(v.readyState < 3) showVideoError('Video juda sekin yuklanmoqda. Qayta urining.'); }, 15000);
+                                    v.oncanplay = () => { clearTimeout(_lt); hideVideoLoading(); v.oncanplay = null; };
+                                    v.onerror = () => {
+                                        clearTimeout(_lt);
+                                        // Eskirgan — Railway proxy orqali urinib ko'ramiz
+                                        showVideoLoading('Proxy orqali urinilmoqda...');
+                                        v.onerror = (e2) => { showVideoError('Video muddati o\'tgan. Kinoni qayta saqlang yoki admin bilan bog\'laning.'); };
+                                        v.src = `${RAILWAY_BASE}/stream?path=${encodeURIComponent(info.filePath)}&token=${encodeURIComponent(token)}`;
+                                        v.play().catch(() => {});
+                                    };
+                                    v.src = freshUrl;
+                                    v.controls = true;
+                                    v.autoplay = true;
+                                    v.setAttribute('controlslist', 'nodownload noremoteplayback');
+                                    v.setAttribute('disablepictureinpicture', '');
+                                    v.play().catch(() => {});
+                                    return;
+                                }
+                            } catch(e) { /* URL eskirgan yoki tarmoq xatosi */ }
+                            // URL eskirgan — Railway proxy orqali urinib ko'ramiz
+                            showVideoLoading('Proxy orqali yuklanmoqda...');
                             hideVideoLoading();
                             v.style.display = 'block';
                             v.onerror = null; v.oncanplay = null;
-                            let _lt = setTimeout(() => { if(v.readyState < 3) showVideoError('Video juda sekin yuklanmoqda. Qayta urining.'); }, 15000);
+                            let _lt = setTimeout(() => { if(v.readyState < 3) showVideoError('Video yuklanmadi. Internet yoki server muammosi.'); }, 20000);
                             v.oncanplay = () => { clearTimeout(_lt); hideVideoLoading(); v.oncanplay = null; };
                             v.onerror = () => {
                                 clearTimeout(_lt);
                                 showVideoError('Video muddati o\'tgan. Kinoni qayta saqlang yoki admin bilan bog\'laning.');
                             };
-                            v.src = freshUrl;
+                            v.src = `${RAILWAY_BASE}/stream?path=${encodeURIComponent(info.filePath)}&token=${encodeURIComponent(token)}`;
                             v.controls = true;
                             v.autoplay = true;
                             v.setAttribute('controlslist', 'nodownload noremoteplayback');
@@ -3433,25 +3461,38 @@
                             v.play().catch(() => {});
                             return;
                         }
-                        // tgfile:// — file_id bilan yangi URL
-                        const gf = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${encodeURIComponent(fileId)}`);
-                        const gd = await gf.json();
-                        if(!gd.ok) throw new Error('getFile: ' + (gd.description || 'xato'));
-                        const freshUrl = `https://api.telegram.org/file/bot${token}/${gd.result.file_path}`;
+                        // tgfile:// — DOIM Railway proxy orqali o'ynat (hech qachon eskirmaydi!)
+                        // getFile URL faqat 1 soat amal qiladi, Railway proxy esa file_id bilan har doim yangi URL oladi
+                        const proxyUrl = `${RAILWAY_BASE}/stream?file_id=${encodeURIComponent(fileId)}&token=${encodeURIComponent(token)}`;
                         hideVideoLoading();
                         v.style.display = 'block';
                         v.onerror = null; v.oncanplay = null;
-                        let _lt = setTimeout(() => { if(v.readyState < 3) showVideoError('Video juda sekin yuklanmoqda. Qayta urining.'); }, 15000);
+                        let _lt = setTimeout(() => { if(v.readyState < 3) showVideoError('Video juda sekin yuklanmoqda. Qayta urining.'); }, 20000);
                         v.oncanplay = () => { clearTimeout(_lt); hideVideoLoading(); v.oncanplay = null; };
                         v.onerror = () => {
                             clearTimeout(_lt);
-                            // Fallback: Cloudflare proxy
-                            showVideoLoading('Proxy orqali urinilmoqda...');
-                            v.onerror = (e2) => { showVideoError('Video yuklanmadi. Internet yoki server muammosi.'); };
-                            v.src = `${RAILWAY_BASE}/stream?file_id=${encodeURIComponent(fileId)}&token=${encodeURIComponent(token)}`;
-                            v.play().catch(() => {});
+                            // Fallback: getFile URL orqali sinab ko'ramiz
+                            showVideoLoading('Telegram orqali urinilmoqda...');
+                            (async () => {
+                                try {
+                                    const gf2 = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${encodeURIComponent(fileId)}`);
+                                    const gd2 = await gf2.json();
+                                    if(gd2.ok) {
+                                        const fbUrl = `https://api.telegram.org/file/bot${token}/${gd2.result.file_path}`;
+                                        hideVideoLoading();
+                                        v.onerror = () => showVideoError('Video yuklanmadi. Internet yoki server muammosi.');
+                                        v.oncanplay = () => { hideVideoLoading(); v.oncanplay = null; };
+                                        v.src = fbUrl;
+                                        v.play().catch(() => {});
+                                    } else {
+                                        showVideoError('Video yuklanmadi. Qayta urinib koring.');
+                                    }
+                                } catch(e2) {
+                                    showVideoError('Video yuklanmadi. Internet yoki server muammosi.');
+                                }
+                            })();
                         };
-                        v.src = freshUrl;
+                        v.src = proxyUrl;
                         v.controls = true;
                         v.autoplay = true;
                         v.setAttribute('controlslist', 'nodownload noremoteplayback');
@@ -4132,12 +4173,10 @@
                 // 20MB dan katta: Railway proxy orqali file_id bilan stream
                 const fileSizeMB = file.size / 1024 / 1024;
 
-                if(fileSizeMB <= 19.5) {
-                    // Kichik fayl — file_id ni tgfile:// formatida saqlash (eskirmaydi!)
-                    videoUrl = `tgfile://${fileId}`;
-                } else {
-                    // Katta fayl (>20MB) — Cloudflare proxy orqali stream
-                    videoUrl = `${RAILWAY_BASE}/stream?file_id=${encodeURIComponent(fileId)}&token=${encodeURIComponent(token)}`;
+                // BARCHA fayllar uchun Railway proxy — hech qachon eskirmaydi!
+                // (file_id doimiy, proxy har safar yangi URL oladi)
+                videoUrl = `${RAILWAY_BASE}/stream?file_id=${encodeURIComponent(fileId)}&token=${encodeURIComponent(token)}`;
+                if(fileSizeMB > 19.5) {
                     txt.textContent = 'Katta fayl — proxy URL tayyor!';
                 }
 
@@ -5059,11 +5098,8 @@
                 const fileSizeMB = file.size / 1024 / 1024;
                 let videoUrl = '';
 
-                if(fileSizeMB <= 19.5) {
-                    videoUrl = `tgfile://${fileId}`;
-                } else {
-                    videoUrl = `${RAILWAY_BASE}/stream?file_id=${encodeURIComponent(fileId)}&token=${encodeURIComponent(token)}`;
-                }
+                // BARCHA fayllar uchun Railway proxy — hech qachon eskirmaydi!
+                videoUrl = `${RAILWAY_BASE}/stream?file_id=${encodeURIComponent(fileId)}&token=${encodeURIComponent(token)}`;
 
                 if(urlInp) urlInp.value = videoUrl;
                 bar.style.width = '100%'; pct.textContent = '100%';
@@ -5342,12 +5378,8 @@
                 const fileSizeMB = file.size / 1024 / 1024;
                 let videoUrl = '';
 
-                if(fileSizeMB <= 19.5) {
-                    videoUrl = `tgfile://${fileId}`;
-                } else {
-                    // Katta fayl — Railway proxy
-                    videoUrl = `${RAILWAY_BASE}/stream?file_id=${encodeURIComponent(fileId)}&token=${encodeURIComponent(token)}`;
-                }
+                // BARCHA fayllar uchun Railway proxy — hech qachon eskirmaydi!
+                videoUrl = `${RAILWAY_BASE}/stream?file_id=${encodeURIComponent(fileId)}&token=${encodeURIComponent(token)}`;
 
                 if(urlInp) urlInp.value = videoUrl;
                 // Ishonchli saqlash: row ga data-videourl attribute
