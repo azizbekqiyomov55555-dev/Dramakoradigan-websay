@@ -1,11 +1,12 @@
 import os
 import asyncio
 import subprocess
+import time
 from pyrogram import Client, filters
 from pyrogram.types import (
-    InlineKeyboardMarkup, 
-    InlineKeyboardButton, 
-    ReplyKeyboardMarkup, 
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+    ReplyKeyboardMarkup,
     KeyboardButton
 )
 from pyrogram.enums import ParseMode
@@ -67,22 +68,45 @@ async def split_video(input_path, start_time, duration_part, output_path):
     await process.wait()
     return os.path.exists(output_path)
 
-# --- VIDEO BIRLASHTIRISH FUNKSIYASI ---
+# --- PROGRESS BAR HELPER ---
 
-async def merge_videos(video_paths: list, output_path: str) -> bool:
+def make_progress_bar(percent, length=10):
+    filled = int(length * percent / 100)
+    bar = "█" * filled + "░" * (length - filled)
+    return bar
+
+# --- VIDEO BIRLASHTIRISH (PROGRESS BILAN) ---
+
+async def merge_videos_with_progress(video_paths: list, output_path: str, status_msg) -> bool:
     """
-    100 tagacha (max 150) videoni birlashtirib, bitta MP4 faylga chiqaradi.
-    Barcha videolar avval qayta kodlanadi (re-encode) — format farqlari muammo bo'lmaydi.
+    Videolarni birlashtiradi va har qadam uchun status xabarini yangilaydi.
     """
     if not video_paths:
         return False
 
+    total = len(video_paths)
     temp_dir = os.path.dirname(output_path)
     reencoded_files = []
+    last_edit_time = [0.0]  # throttle uchun
 
-    # 1-qadam: Har bir videoni bir xil formatga keltirish (720p, libx264)
+    async def safe_edit(text):
+        now = time.time()
+        if now - last_edit_time[0] >= 2.5:
+            try:
+                await status_msg.edit_text(text, parse_mode=ParseMode.MARKDOWN)
+                last_edit_time[0] = now
+            except:
+                pass
+
+    # 1-qadam: Har bir videoni re-encode qilish + ffmpeg progress o'qish
     for i, vpath in enumerate(video_paths):
         temp_out = os.path.join(temp_dir, f"_merge_temp_{i}.mp4")
+        video_num = i + 1
+        overall_pct = int((i / total) * 90)  # 90% gacha re-encode, 10% concat uchun
+
+        # Videoning davomiyligini olish
+        vid_duration = get_duration(vpath)
+
         cmd = [
             "ffmpeg", "-y", "-i", vpath,
             "-vf", "scale=-2:720",
@@ -90,36 +114,113 @@ async def merge_videos(video_paths: list, output_path: str) -> bool:
             "-pix_fmt", "yuv420p",
             "-c:a", "aac", "-b:a", "128k",
             "-movflags", "+faststart",
+            "-progress", "pipe:1",  # progress stdout ga
+            "-nostats",
             temp_out
         ]
-        proc = await asyncio.create_subprocess_exec(*cmd,
-            stdout=asyncio.subprocess.DEVNULL,
-            stderr=asyncio.subprocess.DEVNULL)
+
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL
+        )
+
+        # ffmpeg progress o'qish
+        while True:
+            line = await proc.stdout.readline()
+            if not line:
+                break
+            line = line.decode("utf-8", errors="ignore").strip()
+
+            if line.startswith("out_time_ms=") and vid_duration > 0:
+                try:
+                    out_time_s = int(line.split("=")[1]) / 1_000_000
+                    vid_pct = min(int((out_time_s / vid_duration) * 100), 100)
+
+                    # Umumiy foiz: i-video uchun hissa + joriy video foizi
+                    current_overall = int(overall_pct + (vid_pct / total))
+                    bar = make_progress_bar(current_overall)
+
+                    await safe_edit(
+                        f"🔄 **Birlashtirmoqda...**\n\n"
+                        f"📹 Video: {video_num}/{total} ({vid_pct}%)\n"
+                        f"📊 Umumiy: `{bar}` {current_overall}%\n\n"
+                        f"_Iltimos, kuting..._"
+                    )
+                except:
+                    pass
+
         await proc.wait()
+
         if os.path.exists(temp_out):
             reencoded_files.append(temp_out)
+
+        # Har video tugaganda aniq yangilanish
+        done_pct = int(((i + 1) / total) * 90)
+        bar = make_progress_bar(done_pct)
+        await safe_edit(
+            f"🔄 **Birlashtirmoqda...**\n\n"
+            f"✅ Tayyor: {i + 1}/{total}\n"
+            f"📊 Umumiy: `{bar}` {done_pct}%\n\n"
+            f"_Iltimos, kuting..._"
+        )
 
     if not reencoded_files:
         return False
 
-    # 2-qadam: concat ro'yxat faylini yaratish
+    # 2-qadam: concat ro'yxat fayli
     list_file = os.path.join(temp_dir, "_merge_list.txt")
     with open(list_file, "w", encoding="utf-8") as f:
         for fp in reencoded_files:
             f.write(f"file '{os.path.abspath(fp)}'\n")
 
-    # 3-qadam: FFmpeg concat demuxer bilan birlashtirish
+    await safe_edit(
+        f"⚡️ **Yakuniy birlashtirish boshlandi...**\n\n"
+        f"📊 `{'█' * 9 + '░'}` 90%\n\n"
+        f"_Deyarli tayyor..._"
+    )
+
+    # 3-qadam: FFmpeg concat demuxer
     cmd = [
         "ffmpeg", "-y",
         "-f", "concat", "-safe", "0",
         "-i", list_file,
         "-c", "copy",
         "-movflags", "+faststart",
+        "-progress", "pipe:1",
+        "-nostats",
         output_path
     ]
-    proc = await asyncio.create_subprocess_exec(*cmd,
-        stdout=asyncio.subprocess.DEVNULL,
-        stderr=asyncio.subprocess.DEVNULL)
+
+    # Concat uchun umumiy davomiylikni hisoblash
+    total_duration = sum(get_duration(fp) for fp in reencoded_files)
+
+    proc = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.DEVNULL
+    )
+
+    while True:
+        line = await proc.stdout.readline()
+        if not line:
+            break
+        line = line.decode("utf-8", errors="ignore").strip()
+
+        if line.startswith("out_time_ms=") and total_duration > 0:
+            try:
+                out_time_s = int(line.split("=")[1]) / 1_000_000
+                concat_pct = min(int((out_time_s / total_duration) * 10), 10)
+                final_pct = 90 + concat_pct
+                bar = make_progress_bar(final_pct)
+                await safe_edit(
+                    f"⚡️ **Yakuniy birlashtirish...**\n\n"
+                    f"📊 `{bar}` {final_pct}%\n\n"
+                    f"_Deyarli tayyor..._"
+                )
+            except:
+                pass
+
     await proc.wait()
 
     # 4-qadam: Vaqtinchalik fayllarni tozalash
@@ -227,7 +328,6 @@ async def help_button(client, message):
 @app.on_message(filters.regex("🔗 Videolarni birlashtirish"))
 async def start_merge_mode(client, message):
     uid = message.from_user.id
-    # Avvalgi ma'lumotlarni tozalash
     clean_user(uid)
     user_data[uid] = {
         "mode": "merge",
@@ -235,7 +335,7 @@ async def start_merge_mode(client, message):
         "type": "merge"
     }
     kb = InlineKeyboardMarkup([
-        [InlineKeyboardButton(f"✅ Birlashtir ({0} ta video)", callback_data="do_merge")],
+        [InlineKeyboardButton(f"✅ Birlashtir (0 ta video)", callback_data="do_merge")],
         [InlineKeyboardButton("❌ Bekor qilish", callback_data="cancel_merge")]
     ])
     await message.reply_text(
@@ -267,6 +367,23 @@ async def handle_photo(client, message):
 
 # --- VIDEO ISHLASH ---
 
+# Download progress callback
+async def download_progress(current, total, msg, label):
+    if total == 0:
+        return
+    pct = int(current * 100 / total)
+    bar = make_progress_bar(pct)
+    # Har 10% da yangilansin (throttle)
+    if pct % 10 == 0 or pct >= 99:
+        try:
+            await msg.edit_text(
+                f"📥 **{label} yuklanmoqda...**\n\n"
+                f"`{bar}` {pct}%",
+                parse_mode=ParseMode.MARKDOWN
+            )
+        except:
+            pass
+
 @app.on_message(filters.video | filters.document)
 async def handle_video(client, message):
     if message.document and not message.document.mime_type.startswith("video/"):
@@ -285,15 +402,27 @@ async def handle_video(client, message):
             return
 
         idx = len(videos)
-        file_path = await message.download(
-            file_name=f"downloads/merge_{uid}_{idx}.mp4"
+        video_num = idx + 1
+
+        # ── Yuklanmoqda xabari ──
+        status_msg = await message.reply_text(
+            f"📥 **{video_num}-video qabul qilindi!**\n\n"
+            f"`{'░' * 10}` 0%",
+            parse_mode=ParseMode.MARKDOWN
         )
+
+        file_path = await message.download(
+            file_name=f"downloads/merge_{uid}_{idx}.mp4",
+            progress=download_progress,
+            progress_args=(status_msg, f"{video_num}-video")
+        )
+
         videos.append(file_path)
         count = len(videos)
 
-        # Keyingi qism haqida xabar
+        # ── Qabul qilindi xabari ──
         if count < MAX_MERGE_VIDEOS:
-            next_msg = f"📤 **{count + 1}-qismni yuboring** yoki birlashtiring."
+            next_msg = f"📤 **{count + 1}-videoni yuboring** yoki birlashtiring."
         else:
             next_msg = f"⚠️ Maksimal {MAX_MERGE_VIDEOS} ta. Endi birlashtiring."
 
@@ -304,15 +433,26 @@ async def handle_video(client, message):
             )],
             [InlineKeyboardButton("❌ Bekor qilish", callback_data="cancel_merge")]
         ])
-        await message.reply_text(
-            f"✅ **{count}-qism qabul qilindi.**\n{next_msg}",
-            reply_markup=kb
+
+        await status_msg.edit_text(
+            f"✅ **{video_num}-video yuklandi!** ({count} ta jami)\n\n"
+            f"`{'█' * 10}` 100%\n\n"
+            f"{next_msg}",
+            reply_markup=kb,
+            parse_mode=ParseMode.MARKDOWN
         )
         return
 
     # ── ODDIY VIDEO ISHLASH REJIMI ────────────────────────────────────────────
-    msg = await message.reply_text("📥 Video yuklanmoqda...")
-    file_path = await message.download(file_name=f"downloads/vid_{uid}.mp4")
+    msg = await message.reply_text(
+        "📥 **Video yuklanmoqda...**\n\n`░░░░░░░░░░` 0%",
+        parse_mode=ParseMode.MARKDOWN
+    )
+    file_path = await message.download(
+        file_name=f"downloads/vid_{uid}.mp4",
+        progress=download_progress,
+        progress_args=(msg, "Video")
+    )
     user_data[uid] = {
         "path": file_path,
         "type": "video",
@@ -347,21 +487,33 @@ async def callback_handler(client, q):
             await q.answer("⚠️ Kamida 2 ta video yuboring!", show_alert=True)
             return
 
+        total = len(videos)
         status = await q.message.edit_text(
-            f"⏳ **{len(videos)} ta video birlashtirilmoqda...**\n"
-            f"Bu biroz vaqt olishi mumkin, kuting..."
+            f"⏳ **{total} ta video birlashtirish boshlandi...**\n\n"
+            f"📊 `{'░' * 10}` 0%\n\n"
+            f"_Iltimos, kuting..._",
+            parse_mode=ParseMode.MARKDOWN
         )
+
         out_path = f"downloads/merged_{uid}.mp4"
-        success = await merge_videos(videos, out_path)
+        success = await merge_videos_with_progress(videos, out_path, status)
 
         if success:
             size_mb = round(os.path.getsize(out_path) / (1024 * 1024), 2)
+            await status.edit_text(
+                f"✅ **Birlashtirish tugadi!**\n\n"
+                f"📊 `{'█' * 10}` 100%\n\n"
+                f"📤 Video yuborilmoqda...",
+                parse_mode=ParseMode.MARKDOWN
+            )
             await client.send_video(
                 uid,
                 out_path,
-                caption=f"✅ **Birlashtirish tayyor!**\n"
-                        f"📹 Video soni: {len(videos)} ta\n"
-                        f"📦 Hajmi: {size_mb} MB",
+                caption=(
+                    f"✅ **Birlashtirish tayyor!**\n"
+                    f"📹 Video soni: {total} ta\n"
+                    f"📦 Hajmi: {size_mb} MB"
+                ),
                 supports_streaming=True
             )
             await status.delete()
@@ -370,7 +522,9 @@ async def callback_handler(client, q):
             except:
                 pass
         else:
-            await status.edit_text("❌ Birlashtirish muvaffaqiyatsiz bo'ldi. Qaytadan urinib ko'ring.")
+            await status.edit_text(
+                "❌ Birlashtirish muvaffaqiyatsiz bo'ldi. Qaytadan urinib ko'ring."
+            )
 
         # Fayllarni tozalash
         for vp in videos:
@@ -452,14 +606,12 @@ async def text_input(client, message):
 
 def clean_user(uid):
     if uid in user_data:
-        # Oddiy fayl
         if "path" in user_data[uid]:
             try:
                 if os.path.exists(user_data[uid]["path"]):
                     os.remove(user_data[uid]["path"])
             except:
                 pass
-        # Merge videolar ro'yxati
         for vp in user_data[uid].get("videos", []):
             try:
                 if os.path.exists(vp):
