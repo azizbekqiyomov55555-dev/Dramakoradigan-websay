@@ -284,24 +284,28 @@ async def handle_video(client, message):
             )
             return
 
-        msg = await message.reply_text(f"📥 Video yuklanmoqda ({len(videos)+1}-chi)...")
         idx = len(videos)
         file_path = await message.download(
             file_name=f"downloads/merge_{uid}_{idx}.mp4"
         )
         videos.append(file_path)
+        count = len(videos)
 
-        # Tugmani yangilash
+        # Keyingi qism haqida xabar
+        if count < MAX_MERGE_VIDEOS:
+            next_msg = f"📤 **{count + 1}-qismni yuboring** yoki birlashtiring."
+        else:
+            next_msg = f"⚠️ Maksimal {MAX_MERGE_VIDEOS} ta. Endi birlashtiring."
+
         kb = InlineKeyboardMarkup([
             [InlineKeyboardButton(
-                f"✅ Birlashtir ({len(videos)} ta video)",
+                f"✅ Birlashtir ({count} ta video)",
                 callback_data="do_merge"
             )],
             [InlineKeyboardButton("❌ Bekor qilish", callback_data="cancel_merge")]
         ])
-        await msg.edit_text(
-            f"✅ **{len(videos)}-chi video qabul qilindi.**\n"
-            f"Yana video yuboring yoki birlashtiring.",
+        await message.reply_text(
+            f"✅ **{count}-qism qabul qilindi.**\n{next_msg}",
             reply_markup=kb
         )
         return
