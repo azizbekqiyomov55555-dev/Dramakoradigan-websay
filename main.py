@@ -3,9 +3,9 @@ import asyncio
 import subprocess
 from pyrogram import Client, filters
 from pyrogram.types import (
-    InlineKeyboardMarkup,
-    InlineKeyboardButton,
-    ReplyKeyboardMarkup,
+    InlineKeyboardMarkup, 
+    InlineKeyboardButton, 
+    ReplyKeyboardMarkup, 
     KeyboardButton
 )
 from pyrogram.enums import ParseMode
@@ -22,17 +22,8 @@ BOT_TOKEN = "8630024708:AAGRE2oY2c74wR4mP3U5C298d3k3a7SUEVU"
 app = Client("video_processor", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 user_data = {}
-user_locks = {}  # Har bir user uchun alohida Lock
 
-MAX_MERGE_VIDEOS = 150
-
-
-def get_user_lock(uid):
-    """Har bir foydalanuvchi uchun asyncio.Lock qaytaradi."""
-    if uid not in user_locks:
-        user_locks[uid] = asyncio.Lock()
-    return user_locks[uid]
-
+MAX_MERGE_VIDEOS = 150  # Maksimal birlashtiriladigan video soni
 
 # --- YORDAMCHI FUNKSIYALAR ---
 
@@ -44,7 +35,6 @@ def get_duration(file_path):
         return float(res.stdout.strip())
     except:
         return 0
-
 
 async def compress_video(input_path, output_path, target_mb):
     duration = get_duration(input_path)
@@ -67,7 +57,6 @@ async def compress_video(input_path, output_path, target_mb):
     await process.wait()
     return os.path.exists(output_path)
 
-
 async def split_video(input_path, start_time, duration_part, output_path):
     cmd = [
         "ffmpeg", "-y", "-ss", str(start_time), "-t", str(duration_part),
@@ -78,18 +67,21 @@ async def split_video(input_path, start_time, duration_part, output_path):
     await process.wait()
     return os.path.exists(output_path)
 
-
-# --- VIDEO BIRLASHTIRISH ---
+# --- VIDEO BIRLASHTIRISH FUNKSIYASI ---
 
 async def merge_videos(video_paths: list, output_path: str) -> bool:
+    """
+    100 tagacha (max 150) videoni birlashtirib, bitta MP4 faylga chiqaradi.
+    Barcha videolar avval qayta kodlanadi (re-encode) — format farqlari muammo bo'lmaydi.
+    """
     if not video_paths:
         return False
 
     temp_dir = os.path.dirname(output_path)
     reencoded_files = []
 
-    # Parallel re-encode: barcha videolarni bir vaqtda qayta kodlash
-    async def reencode(i, vpath):
+    # 1-qadam: Har bir videoni bir xil formatga keltirish (720p, libx264)
+    for i, vpath in enumerate(video_paths):
         temp_out = os.path.join(temp_dir, f"_merge_temp_{i}.mp4")
         cmd = [
             "ffmpeg", "-y", "-i", vpath,
@@ -100,38 +92,23 @@ async def merge_videos(video_paths: list, output_path: str) -> bool:
             "-movflags", "+faststart",
             temp_out
         ]
-        proc = await asyncio.create_subprocess_exec(
-            *cmd,
+        proc = await asyncio.create_subprocess_exec(*cmd,
             stdout=asyncio.subprocess.DEVNULL,
-            stderr=asyncio.subprocess.DEVNULL
-        )
+            stderr=asyncio.subprocess.DEVNULL)
         await proc.wait()
-        return (i, temp_out) if os.path.exists(temp_out) else (i, None)
-
-    # Bir vaqtda max 8 ta ffmpeg jarayoni (server resurs limiti)
-    semaphore = asyncio.Semaphore(8)
-
-    async def reencode_limited(i, vpath):
-        async with semaphore:
-            return await reencode(i, vpath)
-
-    tasks = [reencode_limited(i, vpath) for i, vpath in enumerate(video_paths)]
-    results = await asyncio.gather(*tasks)
-
-    # Tartibni saqlagan holda fayllarni yig'ish
-    results_sorted = sorted(results, key=lambda x: x[0])
-    reencoded_files = [r[1] for r in results_sorted if r[1] is not None]
+        if os.path.exists(temp_out):
+            reencoded_files.append(temp_out)
 
     if not reencoded_files:
         return False
 
-    # Concat ro'yxat fayli
+    # 2-qadam: concat ro'yxat faylini yaratish
     list_file = os.path.join(temp_dir, "_merge_list.txt")
     with open(list_file, "w", encoding="utf-8") as f:
         for fp in reencoded_files:
             f.write(f"file '{os.path.abspath(fp)}'\n")
 
-    # Birlashtirish
+    # 3-qadam: FFmpeg concat demuxer bilan birlashtirish
     cmd = [
         "ffmpeg", "-y",
         "-f", "concat", "-safe", "0",
@@ -140,14 +117,12 @@ async def merge_videos(video_paths: list, output_path: str) -> bool:
         "-movflags", "+faststart",
         output_path
     ]
-    proc = await asyncio.create_subprocess_exec(
-        *cmd,
+    proc = await asyncio.create_subprocess_exec(*cmd,
         stdout=asyncio.subprocess.DEVNULL,
-        stderr=asyncio.subprocess.DEVNULL
-    )
+        stderr=asyncio.subprocess.DEVNULL)
     await proc.wait()
 
-    # Tozalash
+    # 4-qadam: Vaqtinchalik fayllarni tozalash
     for fp in reencoded_files:
         try:
             os.remove(fp)
@@ -160,7 +135,6 @@ async def merge_videos(video_paths: list, output_path: str) -> bool:
 
     return os.path.exists(output_path)
 
-
 # --- RASM FUNKSIYALARI ---
 
 def compress_image(input_path, output_path, quality=85):
@@ -170,7 +144,6 @@ def compress_image(input_path, output_path, quality=85):
         return True
     except:
         return False
-
 
 def crop_image_square(input_path, output_path):
     try:
@@ -184,7 +157,6 @@ def crop_image_square(input_path, output_path):
     except:
         return False
 
-
 def resize_image_fit(input_path, output_path, width, height):
     try:
         img = Image.open(input_path).convert("RGB")
@@ -197,19 +169,17 @@ def resize_image_fit(input_path, output_path, width, height):
     except:
         return False
 
-
 def add_text_to_image(input_path, output_path, text):
     try:
         img = Image.open(input_path).convert("RGB")
         draw = ImageDraw.Draw(img)
         font = ImageFont.load_default()
         w, h = img.size
-        draw.text((w / 2, h - 50), text, fill="white", font=font, anchor="ms", stroke_width=2, stroke_fill="black")
+        draw.text((w/2, h-50), text, fill="white", font=font, anchor="ms", stroke_width=2, stroke_fill="black")
         img.save(output_path, "JPEG", quality=95)
         return True
     except:
         return False
-
 
 # --- ASOSIY MENYU ---
 
@@ -223,14 +193,12 @@ def get_main_keyboard():
         resize_keyboard=True
     )
 
-
 @app.on_message(filters.command("start"))
 async def start(client, message):
     await message.reply_text(
         "👋 **Assalomu alaykum!**\nMedia fayllarni qayta ishlash botiga xush kelibsiz!",
         reply_markup=get_main_keyboard()
     )
-
 
 # --- STATISTIKA VA YORDAM ---
 
@@ -241,7 +209,6 @@ async def stats_button(client, message):
         f"📊 **Statistika:**\n\n👥 Faol foydalanuvchilar (seansda): {total_users}\n🤖 Bot holati: Ishlamoqda ✅"
     )
 
-
 @app.on_message(filters.regex("❓ Yordam"))
 async def help_button(client, message):
     await message.reply_text(
@@ -251,133 +218,34 @@ async def help_button(client, message):
         "3. Kerakli o'lcham yoki hajmni yozing.\n\n"
         "🔗 **Videolarni birlashtirish:**\n"
         "• «🔗 Videolarni birlashtirish» tugmasini bosing.\n"
-        f"• Kanaldan 100-150 ta videoni tanlang va **forward** qiling (birdaniga).\n"
-        "• Bot ularni parallel yuklab oladi.\n"
-        f"• Yuklash tugagach «✅ Birlashtir» tugmasini bosing.\n"
-        f"• Maksimal: {MAX_MERGE_VIDEOS} ta video."
+        f"• Birma-bir video yuboring (max {MAX_MERGE_VIDEOS} ta).\n"
+        "• Tayyor bo'lgach «✅ Birlashtir» tugmasini bosing."
     )
 
-
-# --- BIRLASHTIRISH REJIMINI BOSHLASH ---
+# --- VIDEOLARNI BIRLASHTIRISH REJIMI ---
 
 @app.on_message(filters.regex("🔗 Videolarni birlashtirish"))
 async def start_merge_mode(client, message):
     uid = message.from_user.id
-    async with get_user_lock(uid):
-        clean_user(uid)
-        user_data[uid] = {
-            "mode": "merge",
-            "videos": [],        # (index, path) juftliklari
-            "recv_count": 0,     # Qabul qilingan video soni (tartib uchun)
-            "type": "merge",
-            "status_msg_id": None
-        }
-
-    kb = InlineKeyboardMarkup([
-        [InlineKeyboardButton("✅ Birlashtir (0 ta video)", callback_data="do_merge")],
-        [InlineKeyboardButton("❌ Bekor qilish", callback_data="cancel_merge")]
-    ])
-    sent = await message.reply_text(
-        f"🔗 **Video birlashtirish rejimi yoqildi!**\n\n"
-        f"Kanaldan {MAX_MERGE_VIDEOS} tagacha videoni tanlang va **forward** qiling.\n"
-        f"Bot ularni bir vaqtda yuklab oladi ⚡\n\n"
-        f"📥 Yuklangan: **0** ta",
-        reply_markup=kb
-    )
-    # Status xabarini eslab qolish (keyinchalik yangilash uchun)
-    async with get_user_lock(uid):
-        if uid in user_data:
-            user_data[uid]["status_msg_id"] = sent.id
-            user_data[uid]["status_msg"] = sent
-
-
-# --- VIDEO QABUL QILISH (PARALLEL) ---
-
-@app.on_message(filters.video | filters.document)
-async def handle_video(client, message):
-    if message.document and not message.document.mime_type.startswith("video/"):
-        return
-
-    uid = message.from_user.id
-
-    # ── BIRLASHTIRISH REJIMI ──────────────────────────────────────────────────
-    if uid in user_data and user_data[uid].get("mode") == "merge":
-
-        # Lock bilan video indeksini atomik olish
-        async with get_user_lock(uid):
-            if uid not in user_data or user_data[uid].get("mode") != "merge":
-                return
-            videos = user_data[uid]["videos"]
-            if len(videos) >= MAX_MERGE_VIDEOS:
-                await message.reply_text(
-                    f"⚠️ Maksimal {MAX_MERGE_VIDEOS} ta to'ldi! «✅ Birlashtir» tugmasini bosing."
-                )
-                return
-            # Ushbu video uchun joy ajratish (tartib saqlash uchun)
-            idx = user_data[uid]["recv_count"]
-            user_data[uid]["recv_count"] += 1
-            user_data[uid]["videos"].append(None)  # placeholder
-
-        # ── PARALLEL YUKLASH: Lock tashqarisida ──────────────────────────────
-        file_path = await message.download(
-            file_name=f"downloads/merge_{uid}_{idx}.mp4"
-        )
-
-        # Yuklash tugagach — natijani joyiga qo'yish
-        async with get_user_lock(uid):
-            if uid not in user_data or user_data[uid].get("mode") != "merge":
-                # Rejim o'chirilgan — faylni o'chirish
-                try:
-                    if file_path and os.path.exists(file_path):
-                        os.remove(file_path)
-                except:
-                    pass
-                return
-
-            user_data[uid]["videos"][idx] = file_path
-            count = sum(1 for v in user_data[uid]["videos"] if v is not None)
-            total_reserved = len(user_data[uid]["videos"])
-
-            # Status xabarini yangilash
-            kb = InlineKeyboardMarkup([
-                [InlineKeyboardButton(
-                    f"✅ Birlashtir ({count} ta tayyor / {total_reserved} ta yuklanyapti)",
-                    callback_data="do_merge"
-                )],
-                [InlineKeyboardButton("❌ Bekor qilish", callback_data="cancel_merge")]
-            ])
-            status_msg = user_data[uid].get("status_msg")
-            if status_msg:
-                try:
-                    await status_msg.edit_text(
-                        f"🔗 **Video birlashtirish rejimi**\n\n"
-                        f"📥 Yuklangan: **{count}** ta ✅\n"
-                        f"⏳ Yuklanmoqda: **{total_reserved - count}** ta\n"
-                        f"📊 Jami: {total_reserved} / {MAX_MERGE_VIDEOS}",
-                        reply_markup=kb
-                    )
-                except:
-                    pass
-
-        return
-
-    # ── ODDIY VIDEO ISHLASH REJIMI ────────────────────────────────────────────
-    msg = await message.reply_text("📥 Video yuklanmoqda...")
-    file_path = await message.download(file_name=f"downloads/vid_{uid}.mp4")
+    # Avvalgi ma'lumotlarni tozalash
+    clean_user(uid)
     user_data[uid] = {
-        "path": file_path,
-        "type": "video",
-        "orig_size": round(os.path.getsize(file_path) / (1024 * 1024), 2)
+        "mode": "merge",
+        "videos": [],
+        "type": "merge"
     }
     kb = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🗜 Siqish", callback_data="v_comp"),
-         InlineKeyboardButton("✂️ Bo'lish", callback_data="v_split")],
-        [InlineKeyboardButton("⚡️ Siqish + Bo'lish", callback_data="v_both")]
+        [InlineKeyboardButton(f"✅ Birlashtir ({0} ta video)", callback_data="do_merge")],
+        [InlineKeyboardButton("❌ Bekor qilish", callback_data="cancel_merge")]
     ])
-    await msg.edit_text("✅ Video yuklandi. Tanlang:", reply_markup=kb)
+    await message.reply_text(
+        f"🔗 **Video birlashtirish rejimi yoqildi!**\n\n"
+        f"Endi videolarni yuboravering (max {MAX_MERGE_VIDEOS} ta).\n"
+        f"Hammasi yuborilgach **«✅ Birlashtir»** tugmasini bosing.",
+        reply_markup=kb
+    )
 
-
-# --- RASM QABUL QILISH ---
+# --- RASM ISHLASH ---
 
 @app.on_message(filters.photo)
 async def handle_photo(client, message):
@@ -397,6 +265,65 @@ async def handle_photo(client, message):
     ])
     await msg.edit_text("✅ Rasm yuklandi. Amallardan birini tanlang:", reply_markup=kb)
 
+# --- VIDEO ISHLASH ---
+
+@app.on_message(filters.video | filters.document)
+async def handle_video(client, message):
+    if message.document and not message.document.mime_type.startswith("video/"):
+        return
+
+    uid = message.from_user.id
+
+    # ── BIRLASHTIRISH REJIMI ──────────────────────────────────────────────────
+    if uid in user_data and user_data[uid].get("mode") == "merge":
+        videos = user_data[uid]["videos"]
+        if len(videos) >= MAX_MERGE_VIDEOS:
+            await message.reply_text(
+                f"⚠️ Maksimal {MAX_MERGE_VIDEOS} ta video yuborishingiz mumkin!\n"
+                f"«✅ Birlashtir» tugmasini bosing."
+            )
+            return
+
+        idx = len(videos)
+        file_path = await message.download(
+            file_name=f"downloads/merge_{uid}_{idx}.mp4"
+        )
+        videos.append(file_path)
+        count = len(videos)
+
+        # Keyingi qism haqida xabar
+        if count < MAX_MERGE_VIDEOS:
+            next_msg = f"📤 **{count + 1}-qismni yuboring** yoki birlashtiring."
+        else:
+            next_msg = f"⚠️ Maksimal {MAX_MERGE_VIDEOS} ta. Endi birlashtiring."
+
+        kb = InlineKeyboardMarkup([
+            [InlineKeyboardButton(
+                f"✅ Birlashtir ({count} ta video)",
+                callback_data="do_merge"
+            )],
+            [InlineKeyboardButton("❌ Bekor qilish", callback_data="cancel_merge")]
+        ])
+        await message.reply_text(
+            f"✅ **{count}-qism qabul qilindi.**\n{next_msg}",
+            reply_markup=kb
+        )
+        return
+
+    # ── ODDIY VIDEO ISHLASH REJIMI ────────────────────────────────────────────
+    msg = await message.reply_text("📥 Video yuklanmoqda...")
+    file_path = await message.download(file_name=f"downloads/vid_{uid}.mp4")
+    user_data[uid] = {
+        "path": file_path,
+        "type": "video",
+        "orig_size": round(os.path.getsize(file_path) / (1024 * 1024), 2)
+    }
+    kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🗜 Siqish", callback_data="v_comp"),
+         InlineKeyboardButton("✂️ Bo'lish", callback_data="v_split")],
+        [InlineKeyboardButton("⚡️ Siqish + Bo'lish", callback_data="v_both")]
+    ])
+    await msg.edit_text("✅ Video yuklandi. Tanlang:", reply_markup=kb)
 
 # --- CALLBACKS ---
 
@@ -405,40 +332,20 @@ async def callback_handler(client, q):
     uid = q.from_user.id
     data = q.data
 
-    # ── BIRLASHTIRISH BEKOR QILISH ───────────────────────────────────────────
+    # ── BIRLASHTIRISH CALLBACK'LARI ──────────────────────────────────────────
     if data == "cancel_merge":
-        async with get_user_lock(uid):
-            clean_user(uid)
+        clean_user(uid)
         await q.message.edit_text("❌ Birlashtirish bekor qilindi.")
         return
 
-    # ── BIRLASHTIRISH BOSHLASH ───────────────────────────────────────────────
     if data == "do_merge":
-        async with get_user_lock(uid):
-            if uid not in user_data or user_data[uid].get("mode") != "merge":
-                await q.answer("Ma'lumot topilmadi, qaytadan boshlang.", show_alert=True)
-                return
-
-            videos_raw = user_data[uid].get("videos", [])
-            # Faqat yuklab bo'lingan (None bo'lmagan) fayllarni olish
-            videos = [v for v in videos_raw if v is not None]
-
-        if len(videos) < 2:
-            await q.answer("⚠️ Kamida 2 ta video yuklanishi kerak! Kuting...", show_alert=True)
+        if uid not in user_data or user_data[uid].get("mode") != "merge":
+            await q.answer("Ma'lumot topilmadi, qaytadan boshlang.", show_alert=True)
             return
-
-        # Hali yuklanayotgan bor-yo'qligini tekshirish
-        async with get_user_lock(uid):
-            total_reserved = len(user_data[uid]["videos"]) if uid in user_data else 0
-            still_loading = total_reserved - len(videos)
-
-        if still_loading > 0:
-            await q.answer(
-                f"⏳ Hali {still_loading} ta video yuklanmoqda. Kuting yoki hozirgi {len(videos)} ta bilan davom eting.",
-                show_alert=True
-            )
-            # Agar foydalanuvchi birlashtirish tugmasini bosgan bo'lsa,
-            # faqat yuklab bo'linganlarni birlashtirish uchun davom etamiz
+        videos = user_data[uid].get("videos", [])
+        if len(videos) < 2:
+            await q.answer("⚠️ Kamida 2 ta video yuboring!", show_alert=True)
+            return
 
         status = await q.message.edit_text(
             f"⏳ **{len(videos)} ta video birlashtirilmoqda...**\n"
@@ -452,11 +359,9 @@ async def callback_handler(client, q):
             await client.send_video(
                 uid,
                 out_path,
-                caption=(
-                    f"✅ **Birlashtirish tayyor!**\n"
-                    f"📹 Video soni: {len(videos)} ta\n"
-                    f"📦 Hajmi: {size_mb} MB"
-                ),
+                caption=f"✅ **Birlashtirish tayyor!**\n"
+                        f"📹 Video soni: {len(videos)} ta\n"
+                        f"📦 Hajmi: {size_mb} MB",
                 supports_streaming=True
             )
             await status.delete()
@@ -467,8 +372,14 @@ async def callback_handler(client, q):
         else:
             await status.edit_text("❌ Birlashtirish muvaffaqiyatsiz bo'ldi. Qaytadan urinib ko'ring.")
 
-        async with get_user_lock(uid):
-            clean_user(uid)
+        # Fayllarni tozalash
+        for vp in videos:
+            try:
+                os.remove(vp)
+            except:
+                pass
+        if uid in user_data:
+            del user_data[uid]
         return
 
     # ── ODDIY CALLBACK'LAR ───────────────────────────────────────────────────
@@ -496,8 +407,7 @@ async def callback_handler(client, q):
         await q.message.edit_text("✂️ **Nechta qismga bo'linsin?** (Faqat raqam):")
         user_data[uid]["action"] = "wait_v_split"
 
-
-# --- MATN KIRITISH ---
+# --- MATN KIRITISHNI BOSHQARISH ---
 
 @app.on_message(filters.text & filters.private & ~filters.regex("^(🎬|🖼|📊|❓|🔗)"))
 async def text_input(client, message):
@@ -540,26 +450,23 @@ async def text_input(client, message):
         except:
             await message.reply_text("❌ Faqat son kiriting!")
 
-
-# --- TOZALASH ---
-
 def clean_user(uid):
     if uid in user_data:
+        # Oddiy fayl
         if "path" in user_data[uid]:
             try:
                 if os.path.exists(user_data[uid]["path"]):
                     os.remove(user_data[uid]["path"])
             except:
                 pass
+        # Merge videolar ro'yxati
         for vp in user_data[uid].get("videos", []):
-            if vp:
-                try:
-                    if os.path.exists(vp):
-                        os.remove(vp)
-                except:
-                    pass
+            try:
+                if os.path.exists(vp):
+                    os.remove(vp)
+            except:
+                pass
         del user_data[uid]
-
 
 if __name__ == "__main__":
     if not os.path.exists("downloads"):
