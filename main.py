@@ -297,24 +297,21 @@ async def bypass_contentid(video_path: str, level: str, status_msg) -> str | Non
 # ──────────────────────────────────────────────
 
 def acr_check(audio_bytes: bytes) -> dict:
+    """audd.io orqali musiqa aniqlash — API key shart emas"""
     try:
         resp = requests.post(
-            "https://shazam.p.rapidapi.com/songs/v2/detect",
-            headers={
-                "content-type": "text/plain",
-                "X-RapidAPI-Key": RAPIDAPI_KEY,
-                "X-RapidAPI-Host": "shazam.p.rapidapi.com"
-            },
-            data=base64.b64encode(audio_bytes).decode(),
-            timeout=20
+            "https://api.audd.io/",
+            data={"api_token": "", "return": "apple_music,spotify"},
+            files={"file": ("audio.mp3", audio_bytes, "audio/mpeg")},
+            timeout=25
         )
-        res   = resp.json()
-        track = res.get("track")
-        if track:
+        res    = resp.json()
+        result = res.get("result")
+        if result:
             return {
                 "found":  True,
-                "title":  track.get("title", "Noma'lum"),
-                "artist": track.get("subtitle", "?"),
+                "title":  result.get("title", "Noma'lum"),
+                "artist": result.get("artist", "?"),
             }
     except: pass
     return {"found": False}
@@ -599,19 +596,16 @@ async def handle_video(client, message):
         await status.edit_text(
             "✅ *Video yuklandi!*\n\n"
             "Qaysi usulni tanlaysiz?\n\n"
-            "🔇 *Ovozni o'chirish* — butun audio o'chiriladi\n"
-            "_(100% ishonchli, taqiq bo'lmaydi)_\n\n"
+            "🔍 *Avtomatik aniqlash + kesish* — musiqa topilsa\n"
+            "o'sha qism kesib tashlanadi _(tavsiya)_\n\n"
             "🔧 *Bypass* — audio ohangni biroz o'zgartiradi\n"
             "_(ovoz saqlanadi, ContentID topolmaydi)_\n\n"
-            "✂️ *Kesib tashlash* — taqiqlangan qismni kesadi\n"
-            "_(Shazam orqali aniqlaydi)_",
+            "🔇 *Butun ovozni o'chirish* — hamma ovoz o'chadi",
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🔇 Ovozni o'chirish (tavsiya)", callback_data="cr_mute_full")],
+                [InlineKeyboardButton("🔍 Avtomatik aniqlash + kesish", callback_data="cr_cut")],
                 [InlineKeyboardButton("🔧 Bypass", callback_data="cr_bypass")],
-                [
-                    InlineKeyboardButton("✂️ Kesib tashlash", callback_data="cr_cut"),
-                ],
+                [InlineKeyboardButton("🔇 Butun ovozni o'chirish", callback_data="cr_mute_full")],
                 [InlineKeyboardButton("❌ Bekor qilish", callback_data="cr_cancel")]
             ])
         )
