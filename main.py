@@ -592,20 +592,14 @@ async def handle_video(client, message):
         )
         user_data[uid]["path"] = file_path
 
-        # To'g'ridan-to'g'ri usul tanlash
+        # Avtomatik bypass boshlash
         await status.edit_text(
             "✅ *Video yuklandi!*\n\n"
-            "Qaysi usulni tanlaysiz?\n\n"
-            "🔍 *Avtomatik aniqlash + kesish* — musiqa topilsa\n"
-            "o'sha qism kesib tashlanadi _(tavsiya)_\n\n"
-            "🔧 *Bypass* — audio ohangni biroz o'zgartiradi\n"
-            "_(ovoz saqlanadi, ContentID topolmaydi)_\n\n"
-            "🔇 *Butun ovozni o'chirish* — hamma ovoz o'chadi",
+            "🔧 *Bypass* — YouTube taqiqini chetlab o'tish\n"
+            "_(audio ohang biroz o'zgartiriladi, ContentID topolmaydi)_",
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🔍 Avtomatik aniqlash + kesish", callback_data="cr_cut")],
-                [InlineKeyboardButton("🔧 Bypass", callback_data="cr_bypass")],
-                [InlineKeyboardButton("🔇 Butun ovozni o'chirish", callback_data="cr_mute_full")],
+                [InlineKeyboardButton("🔧 Taqiqni olib tashlash", callback_data="bp_medium")],
                 [InlineKeyboardButton("❌ Bekor qilish", callback_data="cr_cancel")]
             ])
         )
