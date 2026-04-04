@@ -98,24 +98,82 @@ async def dl_progress(current, total, msg, label):
 #  BIRLASHTIRISH
 # ──────────────────────────────────────────────
 
+def get_video_info(path):
+    """Video resolution va bitrate ni olish"""
+    try:
+        r = subprocess.run(
+            ["ffprobe", "-v", "error",
+             "-select_streams", "v:0",
+             "-show_entries", "stream=width,height,bit_rate",
+             "-of", "default=noprint_wrappers=1:nokey=1", path],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+        )
+        lines = r.stdout.strip().split("\n")
+        width  = int(lines[0]) if len(lines) > 0 and lines[0].isdigit() else 1920
+        height = int(lines[1]) if len(lines) > 1 and lines[1].isdigit() else 1080
+        return width, height
+    except:
+        return 1920, 1080
+
+def calc_target_bitrate(total_duration_sec: float, max_size_mb: float = 1900.0) -> int:
+    """
+    Jami vaqtdan kelib chiqib maqsad video bitrate hisoblash.
+    max_size_mb = 1900 (2GB dan xavfsiz chegarada qolish uchun)
+    audio 128k ajratib qoldiriladi.
+    """
+    if total_duration_sec <= 0:
+        return 2000
+    audio_kbps  = 128
+    total_kbits = max_size_mb * 1024 * 8          # MB → kbit
+    audio_kbits = audio_kbps * total_duration_sec
+    video_kbits = total_kbits - audio_kbits
+    vbr = int(video_kbits / total_duration_sec)
+    # Minimal 400k, maksimal 8000k
+    return max(400, min(vbr, 8000))
+
 async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> bool:
     total   = len(video_paths)
     tmp_dir = os.path.dirname(out_path)
     reenc   = []
     t       = [time.time()]
 
+    # ── 1-QADAM: Jami davomiylikni oldindan hisoblash ──
+    await safe_edit(
+        status_msg,
+        f"📐 *Hajm hisoblanmoqda...*\n\n`{make_bar(0)}` 0%",
+        last_t=t, min_gap=0
+    )
+    total_duration = sum(get_duration(vp) for vp in video_paths)
+    target_vbr     = calc_target_bitrate(total_duration, max_size_mb=1900)
+
+    await safe_edit(
+        status_msg,
+        f"📐 *Maqsad sifat:* `{target_vbr}k` video bitrate\n"
+        f"⏱ Jami davomiylik: `{int(total_duration//60)}:{int(total_duration%60):02d}`\n\n"
+        f"`{make_bar(2)}` 2%",
+        last_t=t, min_gap=0
+    )
+
+    # ── 2-QADAM: Har qismni encode qilish ──
     for i, vpath in enumerate(video_paths):
         part_n  = i + 1
         tmp_out = os.path.join(tmp_dir, f"_p{i}.mp4")
         dur     = get_duration(vpath)
+        w, h    = get_video_info(vpath)
+
+        # Original resolution saqlash, lekin 1080p dan oshmasin
+        scale = "scale=-2:min(ih\\,1080)" if h > 1080 else "scale=-2:trunc(ih/2)*2"
 
         cmd = [
             "ffmpeg", "-y", "-i", vpath,
-            "-vf", "scale=-2:1080",
-            "-c:v", "libx264", "-preset", "slow",
-            "-crf", "16",
+            "-vf", scale,
+            "-c:v", "libx264",
+            "-preset", "medium",
+            "-b:v", f"{target_vbr}k",
+            "-maxrate", f"{int(target_vbr * 1.5)}k",
+            "-bufsize", f"{target_vbr * 2}k",
             "-pix_fmt", "yuv420p",
-            "-c:a", "aac", "-b:a", "192k",
+            "-c:a", "aac", "-b:a", "128k",
             "-movflags", "+faststart",
             "-progress", "pipe:1", "-nostats",
             tmp_out
@@ -137,7 +195,8 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
                         f"⚙️ *Tayyorlanmoqda...*\n\n"
                         f"🎞 Qism: *{part_n}/{total}*  —  {part_pct}%\n"
                         f"`{make_bar(part_pct)}`\n\n"
-                        f"📊 Umumiy: `{make_bar(overall)}` {overall}%",
+                        f"📊 Umumiy: `{make_bar(overall)}` {overall}%\n"
+                        f"🎯 Bitrate: `{target_vbr}k`",
                         last_t=t
                     )
                 except: pass
@@ -157,6 +216,7 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
     if not reenc:
         return False
 
+    # ── 3-QADAM: Concat birlashtirish ──
     list_file = os.path.join(tmp_dir, "_list.txt")
     with open(list_file, "w", encoding="utf-8") as f:
         for fp in reenc:
@@ -199,6 +259,57 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
         except: pass
     try: os.remove(list_file)
     except: pass
+
+    # ── 4-QADAM: Hajmni tekshirish ──
+    if os.path.exists(out_path):
+        final_mb = os.path.getsize(out_path) / (1024 * 1024)
+        if final_mb > 2000:
+            # Hajm oshib ketdi — qayta siqish
+            await safe_edit(
+                status_msg,
+                f"⚠️ *Hajm {final_mb:.0f} MB — 2GB dan oshdi!*\n\n"
+                f"🗜 Qayta siqilmoqda...\n`{make_bar(0)}` 0%",
+                last_t=t, min_gap=0
+            )
+            compressed = out_path.replace(".mp4", "_c.mp4")
+            new_vbr    = int(target_vbr * 1900 / final_mb * 0.95)
+            new_vbr    = max(300, new_vbr)
+            compress_cmd = [
+                "ffmpeg", "-y", "-i", out_path,
+                "-c:v", "libx264", "-preset", "medium",
+                "-b:v", f"{new_vbr}k",
+                "-maxrate", f"{int(new_vbr * 1.5)}k",
+                "-bufsize", f"{new_vbr * 2}k",
+                "-pix_fmt", "yuv420p",
+                "-c:a", "aac", "-b:a", "128k",
+                "-movflags", "+faststart",
+                "-progress", "pipe:1", "-nostats",
+                compressed
+            ]
+            proc2 = await asyncio.create_subprocess_exec(
+                *compress_cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.DEVNULL
+            )
+            while True:
+                line = await proc2.stdout.readline()
+                if not line: break
+                line = line.decode("utf-8", errors="ignore").strip()
+                if line.startswith("out_time_ms=") and total_dur > 0:
+                    try:
+                        done_s = int(line.split("=")[1]) / 1_000_000
+                        pct    = min(int(done_s / total_dur * 100), 100)
+                        await safe_edit(
+                            status_msg,
+                            f"🗜 *Qayta siqilmoqda...*\n\n`{make_bar(pct)}` {pct}%",
+                            last_t=t
+                        )
+                    except: pass
+            await proc2.wait()
+            try: os.remove(out_path)
+            except: pass
+            if os.path.exists(compressed):
+                os.rename(compressed, out_path)
 
     return os.path.exists(out_path)
 
@@ -656,14 +767,25 @@ async def on_callback(client, q):
 
         if ok:
             size_mb = round(os.path.getsize(out_path) / (1024*1024), 2)
+            size_ok = "✅" if size_mb < 2000 else "⚠️"
             await status.edit_text(
-                f"✅ *Birlashtirish tugadi!*\n\n📹 {total} ta qism\n📦 {size_mb} MB\n\n📤 Yuborilmoqda...",
+                f"✅ *Birlashtirish tugadi!*\n\n"
+                f"📹 {total} ta qism\n"
+                f"📦 Hajmi: {size_ok} *{size_mb} MB*\n\n"
+                f"📤 Yuborilmoqda...",
                 parse_mode=ParseMode.MARKDOWN
             )
             await client.send_video(
                 uid, out_path,
-                caption=f"🎬 *Kino tayyor!*\n📹 {total} ta qism\n📦 {size_mb} MB",
-                supports_streaming=True, parse_mode=ParseMode.MARKDOWN
+                caption=(
+                    f"🎬 *Kino tayyor!*\n"
+                    f"📹 {total} ta qism\n"
+                    f"📦 {size_mb} MB"
+                ),
+                supports_streaming=True, parse_mode=ParseMode.MARKDOWN,
+                progress=lambda c, tot: asyncio.ensure_future(
+                    dl_progress(c, tot, status, "Yuborilmoqda")
+                )
             )
             await status.delete()
             try: os.remove(out_path)
