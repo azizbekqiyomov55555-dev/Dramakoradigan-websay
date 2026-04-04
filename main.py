@@ -1,7 +1,5 @@
 import os
 import math
-import hmac
-import hashlib
 import base64
 import asyncio
 import subprocess
@@ -24,10 +22,8 @@ API_ID    = 37366974
 API_HASH  = "08d09c7ed8b7cb414ed6a99c104f1bd6"
 BOT_TOKEN = "8630024708:AAGRE2oY2c74wR4mP3U5C298d3k3a7SUEVU"
 
-# ACRCloud (bepul ro'yxat: https://console.acrcloud.com/)
-ACR_HOST   = "identify-eu-west-1.acrcloud.com"
-ACR_KEY    = "ACR_KEY_NI_BU_YERGA_QO'YING"
-ACR_SECRET = "ACR_SECRET_NI_BU_YERGA_QO'YING"
+# Shazam RapidAPI kaliti (rapidapi.com dan olingan)
+RAPIDAPI_KEY = "30f65179admsh07b2707861cb0f6p104a91jsn2bb1ee84511f"
 
 # Har bir audio segment uzunligi (soniya)
 SEGMENT_SEC = 15
@@ -226,60 +222,43 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
     return os.path.exists(out_path)
 
 # ──────────────────────────────────────────────
-#  ACRCloud — AUDIO TEKSHIRISH
+#  SHAZAM — AUDIO TEKSHIRISH
 # ──────────────────────────────────────────────
 
 def acr_check(audio_bytes: bytes) -> dict:
     """
-    ACRCloud orqali audio segmentni tekshiradi.
+    Shazam (RapidAPI) orqali audio segmentni tekshiradi.
     Qaytaradi: {'found': True/False, 'title': ..., 'artist': ...}
     """
-    timestamp = str(int(time.time()))
-    string_to_sign = "\n".join([
-        "POST", "/v1/identify", ACR_KEY,
-        "audio", "1", timestamp
-    ])
-    sig = base64.b64encode(
-        hmac.new(
-            ACR_SECRET.encode(),
-            string_to_sign.encode(),
-            digestmod=hashlib.sha1
-        ).digest()
-    ).decode()
-
     try:
         resp = requests.post(
-            f"https://{ACR_HOST}/v1/identify",
-            files={"sample": ("seg.mp3", audio_bytes, "audio/mpeg")},
-            data={
-                "access_key": ACR_KEY,
-                "sample_bytes": len(audio_bytes),
-                "timestamp": timestamp,
-                "signature": sig,
-                "data_type": "audio",
-                "signature_version": "1",
+            "https://shazam.p.rapidapi.com/songs/v2/detect",
+            headers={
+                "content-type": "text/plain",
+                "X-RapidAPI-Key": RAPIDAPI_KEY,
+                "X-RapidAPI-Host": "shazam.p.rapidapi.com"
             },
+            data=base64.b64encode(audio_bytes).decode(),
             timeout=20
         )
         res = resp.json()
-        if res.get("status", {}).get("code") == 0:
-            m = res["metadata"]["music"][0]
+        track = res.get("track")
+        if track:
             return {
                 "found": True,
-                "title":  m.get("title", "Noma'lum"),
-                "artist": m.get("artists", [{}])[0].get("name", "?"),
+                "title":  track.get("title", "Noma'lum"),
+                "artist": track.get("subtitle", "?"),
             }
-    except Exception as e:
+    except:
         pass
     return {"found": False}
 
 
+# ──────────────────────────────────────────────
+#  COPYRIGHT OLIB TASHLASH
+# ──────────────────────────────────────────────
+
 async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
-    """
-    video_path — kiruvchi video
-    mode       — 'mute' yoki 'cut'
-    Qaytaradi: (out_path | None, found_list)
-    """
     total_dur = get_duration(video_path)
     num_seg   = math.ceil(total_dur / SEGMENT_SEC)
     found_ranges = []
@@ -336,7 +315,6 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
     out_path = os.path.join(tmp_dir, f"_cr_out_{os.path.basename(video_path)}")
 
     if mode == "mute":
-        # Ovozni o'chirish — video uzunligi o'zgarmaydi
         parts = []
         for s, e in found_ranges:
             parts.append(f"volume=enable='between(t,{s},{e})':volume=0")
@@ -371,7 +349,6 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
         await proc.wait()
 
     else:
-        # Kesib tashlash — taqiqlangan joylar butunlay olib tashlanadi
         keep = []
         prev = 0.0
         for s, e in sorted(found_ranges):
@@ -482,7 +459,6 @@ async def start_copyright(client, message):
         "🚫 *YT taqiqini olib tashlash rejimi yoqildi!*\n\n"
         "📌 Video yuboring — bot taqiqlangan musiqalarni aniqlab,\n"
         "tanlagan usulingiz bilan olib tashlaydi.\n\n"
-        "⚠️ *ACRCloud API* orqali tekshiriladi.\n"
         "_(Katta videolarda biroz vaqt ketadi)_",
         parse_mode=ParseMode.MARKDOWN,
         reply_markup=main_kb()
@@ -513,18 +489,15 @@ async def handle_video(client, message):
             return
 
         part_n = count + 1
-
         status = await message.reply_text(
             f"📥 *{part_n}-qism yuklanmoqda...*\n`{make_bar(0)}` 0%",
             parse_mode=ParseMode.MARKDOWN
         )
-
         file_path = await message.download(
             file_name=f"downloads/merge_{uid}_{count}.mp4",
             progress=dl_progress,
             progress_args=(status, f"{part_n}-qism yuklanmoqda")
         )
-
         videos.append(file_path)
         new_count = len(videos)
 
@@ -534,7 +507,6 @@ async def handle_video(client, message):
             hint = f"⚠️ Maksimal {MAX_MERGE_VIDEOS} ta. Endi birlashtiring."
 
         parts_txt = parts_list_text(videos)
-
         await status.edit_text(
             f"✅ *{part_n}-qism qabul qilindi!*\n\n"
             f"📋 *Qabul qilingan qismlar:*\n{parts_txt}\n\n"
@@ -556,7 +528,6 @@ async def handle_video(client, message):
             progress_args=(status, "Video yuklanmoqda")
         )
         user_data[uid]["path"] = file_path
-
         await status.edit_text(
             "✅ *Video yuklandi!*\n\n"
             "Qanday usulda taqiqlangan joyni olib tashlasin?",
@@ -675,8 +646,8 @@ async def on_callback(client, q):
             await q.answer("Fayl topilmadi, qaytadan yuboring.", show_alert=True)
             return
 
-        mode      = "mute" if data == "cr_mute" else "cut"
-        mode_text = "Ovoz o'chirish" if mode == "mute" else "Kesib tashlash"
+        mode       = "mute" if data == "cr_mute" else "cut"
+        mode_text  = "Ovoz o'chirish" if mode == "mute" else "Kesib tashlash"
         video_path = user_data[uid]["path"]
 
         status = await q.message.edit_text(
@@ -707,7 +678,7 @@ async def on_callback(client, q):
             clean_user(uid)
             return
 
-        size_mb = round(os.path.getsize(out_path) / (1024*1024), 2)
+        size_mb    = round(os.path.getsize(out_path) / (1024*1024), 2)
         found_text = "\n".join(found_list)
 
         await status.edit_text(
@@ -770,7 +741,7 @@ async def text_input(client, message):
     if action == "wait_v_size":
         try:
             target = int(message.text.strip())
-            st = await message.reply_text(f"⏳ {target} MB ga siqilmoqda...")
+            st  = await message.reply_text(f"⏳ {target} MB ga siqilmoqda...")
             out = f"downloads/res_{uid}.mp4"
             dur = get_duration(path)
             if dur > 0:
@@ -802,10 +773,10 @@ async def text_input(client, message):
             if parts < 2 or parts > 20:
                 await message.reply_text("❌ 2 dan 20 gacha son kiriting.")
                 return
-            st   = await message.reply_text(f"⏳ {parts} qismga bo'linmoqda...")
-            dur  = get_duration(path)
+            st       = await message.reply_text(f"⏳ {parts} qismga bo'linmoqda...")
+            dur      = get_duration(path)
             part_dur = dur / parts
-            sent = 0
+            sent     = 0
             for p in range(parts):
                 start = p * part_dur
                 out   = f"downloads/split_{uid}_{p+1}.mp4"
