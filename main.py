@@ -211,11 +211,345 @@ def calc_crf_for_size(total_duration_sec: float, max_size_mb: float = 1900.0) ->
 
 async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> bool:
     """
-    TUZATILGAN merge funksiyasi:
-      1. Avval -c copy bilan tezkor birlashtirish (encode yo'q)
-      2. Agar copy ishlamasa → ultrafast encode (slow o'rniga 50x tez)
-      3. Har jarayonga timeout — bot qotib qolmaydi
-      4. Xatolar logga tushadi
+    1-usul: -c copy (eng tez, sifat o'zgarmaydi)
+    2-usul: Agar copy ishlamasa → har qismni -c copy bilan remux qilib, keyin birlashtiradi
+    Hech qanday encode, siqish yo'q. Sifat va hajm o'zgarmaydi.
+    """
+    total          = len(video_paths)
+    tmp_dir        = os.path.dirname(out_path)
+    t              = [time.time()]
+    total_duration = sum(get_duration(vp) for vp in video_paths)
+    mins = int(total_duration // 60)
+    secs = int(total_duration % 60)
+
+    os.makedirs(tmp_dir, exist_ok=True)
+
+    await safe_edit(
+        status_msg,
+        f"⚡ *Birlashtirish boshlandi!*\n\n"
+        f"🎞 Qismlar: *{total} ta*\n"
+        f"⏱ Jami: *{mins}:{secs:02d}*\n\n"
+        f"{make_bar(5)} **5%**",
+        last_t=t, min_gap=0
+    )
+
+    def write_list(paths, list_file):
+        with open(list_file, "w", encoding="utf-8") as f:
+            for p in paths:
+                f.write(f"file '{os.path.abspath(p)}'\n")
+
+    async def run_concat(src_paths, dest, pct_start=5, pct_end=98):
+        """src_paths ro'yxatidan dest ga -c copy concat qiladi, progress ko'rsatadi."""
+        list_file = os.path.join(tmp_dir, "_list.txt")
+        write_list(src_paths, list_file)
+        cmd = [
+            "ffmpeg", "-y",
+            "-f", "concat", "-safe", "0", "-i", list_file,
+            "-c", "copy", "-movflags", "+faststart",
+            "-progress", "pipe:1", "-nostats",
+            dest
+        ]
+        proc = await asyncio.create_subprocess_exec(
+            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        )
+        async def _read():
+            while True:
+                line = await proc.stdout.readline()
+                if not line: break
+                line = line.decode("utf-8", errors="ignore").strip()
+                if line.startswith("out_time_ms=") and total_duration > 0:
+                    try:
+                        done_s = int(line.split("=")[1]) / 1_000_000
+                        pct    = pct_start + min(int(done_s / total_duration * (pct_end - pct_start)), pct_end - pct_start)
+                        await safe_edit(
+                            status_msg,
+                            f"⚡ *Birlashtirilmoqda...*\n\n"
+                            f"📊 {make_bar(pct)} **{pct}%**",
+                            last_t=t
+                        )
+                    except: pass
+        try:
+            await asyncio.wait_for(_read(), timeout=3600)
+        except asyncio.TimeoutError:
+            proc.kill()
+        _, stderr_data = await proc.communicate()
+        try: os.remove(list_file)
+        except: pass
+        ok = os.path.exists(dest) and os.path.getsize(dest) > 1024
+        return ok, stderr_data
+
+    # ── USUL 1: to'g'ridan-to'g'ri concat ──
+    ok, stderr_data = await run_concat(video_paths, out_path, 5, 98)
+
+    if ok:
+        print("[MERGE] ✅ Usul-1 (direct copy) muvaffaqiyatli!")
+        return True
+
+    # ── USUL 2: har qismni alohida remux qilib, keyin concat ──
+    print("[MERGE] ⚠️ Usul-1 bajarilmadi → remux urinilmoqda...")
+    await safe_edit(
+        status_msg,
+        f"🔄 *Qismlar moslashtirilmoqda...*\n\n"
+        f"{make_bar(10)} **10%**\n\n_Bir oz kutish..._",
+        last_t=t, min_gap=0
+    )
+
+    remuxed = []
+    for i, vpath in enumerate(video_paths):
+        tmp_out = os.path.join(tmp_dir, f"_remux_{i}.mp4")
+        cmd_remux = [
+            "ffmpeg", "-y", "-i", vpath,
+            "-c", "copy",
+            "-movflags", "+faststart",
+            tmp_out
+        ]
+        proc_r = await asyncio.create_subprocess_exec(
+            *cmd_remux,
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL
+        )
+        await proc_r.wait()
+
+        pct = 10 + int((i + 1) / total * 50)
+        await safe_edit(
+            status_msg,
+            f"🔄 *Moslashtirilmoqda...*\n\n"
+            f"🎞 *{i+1}/{total}* qism\n"
+            f"{make_bar(pct)} **{pct}%**",
+            last_t=t
+        )
+
+        if os.path.exists(tmp_out) and os.path.getsize(tmp_out) > 1024:
+            remuxed.append(tmp_out)
+        else:
+            remuxed.append(vpath)  # remux ishlamasa aslini ishlat
+
+    ok2, _ = await run_concat(remuxed, out_path, 60, 98)
+
+    for fp in remuxed:
+        if "_remux_" in fp:
+            try: os.remove(fp)
+            except: pass
+
+    if ok2:
+        print("[MERGE] ✅ Usul-2 (remux+copy) muvaffaqiyatli!")
+        return True
+
+    print("[MERGE] ❌ Ikki usul ham bajarilmadi.")
+    return False
+
+import subprocess
+import time
+import requests
+from pyrogram import Client, filters
+from pyrogram.types import (
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+    ReplyKeyboardMarkup,
+    KeyboardButton
+)
+from pyrogram.enums import ParseMode
+from static_ffmpeg import add_paths
+
+add_paths()
+
+# --- SOZLAMALAR ---
+API_ID    = 37366974
+API_HASH  = "08d09c7ed8b7cb414ed6a99c104f1bd6"
+BOT_TOKEN = "8713773581:AAEu0fZmpEMyg0aNqrbVOtnbNaXhXbqONGM"
+
+RAPIDAPI_KEY = "30f65179admsh07b2707861cb0f6p104a91jsn2bb1ee84511f"
+SEGMENT_SEC  = 15
+
+app = Client("video_processor", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+
+user_data = {}
+MAX_MERGE_VIDEOS = 150
+
+# ──────────────────────────────────────────────
+#  YORDAMCHI
+# ──────────────────────────────────────────────
+
+def make_bar(pct, n=15):
+    f      = int(n * pct / 100)
+    filled = "🟩" * f
+    empty  = "⬜" * (n - f)
+    return filled + empty
+
+def get_duration(path):
+    try:
+        r = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "default=noprint_wrappers=1:nokey=1", path],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=30
+        )
+        return float(r.stdout.strip())
+    except:
+        return 0
+
+def get_video_info(path):
+    try:
+        r = subprocess.run(
+            ["ffprobe", "-v", "error",
+             "-select_streams", "v:0",
+             "-show_entries", "stream=width,height",
+             "-of", "default=noprint_wrappers=1:nokey=1", path],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=30
+        )
+        lines  = r.stdout.strip().split("\n")
+        width  = int(lines[0]) if len(lines) > 0 and lines[0].isdigit() else 1920
+        height = int(lines[1]) if len(lines) > 1 and lines[1].isdigit() else 1080
+        return width, height
+    except:
+        return 1920, 1080
+
+def parts_list_text(videos):
+    lines = [f"  ✅ {i+1}-qism" for i in range(len(videos))]
+    return "\n".join(lines) if lines else "  (hali yo'q)"
+
+def merge_keyboard(count):
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton(f"🎬 Birlashtir  ({count} ta qism)", callback_data="do_merge")],
+        [InlineKeyboardButton("❌ Bekor qilish", callback_data="cancel_merge")]
+    ])
+
+async def safe_edit(msg, text, kb=None, last_t=None, min_gap=0.5):
+    now = time.time()
+    if last_t is not None and now - last_t[0] < min_gap:
+        return
+    try:
+        await msg.edit_text(text, parse_mode=ParseMode.MARKDOWN,
+                            reply_markup=kb, disable_web_page_preview=True)
+        if last_t is not None:
+            last_t[0] = now
+    except:
+        pass
+
+# ──────────────────────────────────────────────
+#  DOWNLOAD PROGRESS
+# ──────────────────────────────────────────────
+
+_dl_last: dict      = {}
+_dl_anim_task: dict = {}
+ANIM_FRAMES         = ["⏳", "⌛"]
+
+async def _dl_animate(msg, label):
+    frame = 0
+    while True:
+        try:
+            await asyncio.sleep(1.2)
+            icon = ANIM_FRAMES[frame % len(ANIM_FRAMES)]
+            await msg.edit_text(
+                f"{icon} *{label}*\n{make_bar(0)}\n_Yuklanmoqda..._",
+                parse_mode=ParseMode.MARKDOWN
+            )
+            frame += 1
+        except asyncio.CancelledError:
+            break
+        except:
+            break
+
+async def dl_progress(current, total, msg, label):
+    uid  = id(msg)
+    task = _dl_anim_task.pop(uid, None)
+    if task and not task.done():
+        task.cancel()
+
+    now = time.time()
+    if now - _dl_last.get(uid, 0) < 0.5:
+        return
+    _dl_last[uid] = now
+
+    if not total or total == 0:
+        return
+
+    pct    = int(current * 100 / total)
+    cur_mb = round(current / (1024 * 1024), 1)
+    tot_mb = round(total   / (1024 * 1024), 1)
+
+    try:
+        await msg.edit_text(
+            f"📥 *{label}*\n"
+            f"{make_bar(pct)} *{pct}%*\n"
+            f"`{cur_mb} MB / {tot_mb} MB`",
+            parse_mode=ParseMode.MARKDOWN
+        )
+    except:
+        pass
+
+async def start_dl(msg, label, coro_fn, *args, **kwargs):
+    uid  = id(msg)
+    anim = asyncio.ensure_future(_dl_animate(msg, label))
+    _dl_anim_task[uid] = anim
+    try:
+        result = await coro_fn(*args, **kwargs)
+    finally:
+        anim.cancel()
+        _dl_anim_task.pop(uid, None)
+    return result
+
+# ──────────────────────────────────────────────
+#  UPLOAD PROGRESS (send_video uchun)
+# ──────────────────────────────────────────────
+
+_up_last: dict = {}
+
+async def up_progress(current, total, msg, label):
+    """send_video() uchun upload progress"""
+    uid = id(msg)
+    now = time.time()
+    if now - _up_last.get(uid, 0) < 1.0:   # 1 soniyada bir marta yangilanadi
+        return
+    _up_last[uid] = now
+
+    if not total or total == 0:
+        return
+
+    pct    = int(current * 100 / total)
+    cur_mb = round(current / (1024 * 1024), 1)
+    tot_mb = round(total   / (1024 * 1024), 1)
+
+    bar = make_bar(pct)
+    try:
+        await msg.edit_text(
+            f"📤 *{label}*\n"
+            f"{bar} *{pct}%*\n"
+            f"`{cur_mb} MB / {tot_mb} MB`",
+            parse_mode=ParseMode.MARKDOWN
+        )
+    except:
+        pass
+
+# ──────────────────────────────────────────────
+#  BIRLASHTIRISH — TUZATILGAN
+# ──────────────────────────────────────────────
+
+def calc_crf_for_size(total_duration_sec: float, max_size_mb: float = 1900.0) -> int:
+    """Jami vaqtdan kelib chiqib optimal CRF hisoblash. max_size_mb=1900 (Telegram 2GB limit)"""
+    if total_duration_sec <= 0:
+        return 18
+    audio_kbps  = 192
+    total_kbits = max_size_mb * 1024 * 8
+    audio_kbits = audio_kbps * total_duration_sec
+    video_kbits = total_kbits - audio_kbits
+    needed_vbr  = int(video_kbits / total_duration_sec)
+
+    # Sifatli CRF jadvali (past = yaxshi sifat)
+    if needed_vbr >= 4000:   return 14
+    elif needed_vbr >= 3000: return 15
+    elif needed_vbr >= 2500: return 16
+    elif needed_vbr >= 2000: return 17
+    elif needed_vbr >= 1500: return 18
+    elif needed_vbr >= 1000: return 19
+    elif needed_vbr >= 700:  return 20
+    elif needed_vbr >= 500:  return 21
+    else:                    return 22
+
+
+async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> bool:
+    """
+    SODDALASHTIRILGAN merge: faqat -c copy, hech qanday encode yo'q.
+    Sifat o'zgarmaydi, hajm o'zgarmaydi — shunchaki birlashtiradi.
     """
     total   = len(video_paths)
     tmp_dir = os.path.dirname(out_path)
@@ -223,18 +557,17 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
 
     os.makedirs(tmp_dir, exist_ok=True)
 
-    # 1-QADAM: Jami davomiylik va CRF
-    await safe_edit(status_msg, f"📐 *Hajm hisoblanmoqda...*\n\n{make_bar(0)} **0%**",
-                    last_t=t, min_gap=0)
-
+    # Jami davomiylikni hisoblab xabar berish
     total_duration = sum(get_duration(vp) for vp in video_paths)
-    target_crf     = calc_crf_for_size(total_duration, max_size_mb=1900)
+    mins = int(total_duration // 60)
+    secs = int(total_duration % 60)
 
     await safe_edit(
         status_msg,
-        f"📐 *Maqsad sifat:* CRF `{target_crf}` (2GB chegarasi)\n"
-        f"⏱ Jami: `{int(total_duration//60)}:{int(total_duration%60):02d}`\n\n"
-        f"{make_bar(3)} **3%**",
+        f"⚡ *Birlashtirish boshlandi!*\n\n"
+        f"🎞 Qismlar: *{total} ta*\n"
+        f"⏱ Jami: *{mins}:{secs:02d}*\n\n"
+        f"{make_bar(5)} **5%**",
         last_t=t, min_gap=0
     )
 
@@ -243,32 +576,23 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
         for vp in video_paths:
             f.write(f"file '{os.path.abspath(vp)}'\n")
 
-    # ══════════════════════════════════════════
-    # USUL 1: -c copy (encode yo'q — eng tez)
-    # ══════════════════════════════════════════
-    await safe_edit(status_msg,
-                    f"⚡ *Tezkor birlashtirish (copy)...*\n\n{make_bar(10)} **10%**",
-                    last_t=t, min_gap=0)
-
-    copy_out = out_path.replace(".mp4", "_copy.mp4")
-    copy_cmd = [
+    cmd = [
         "ffmpeg", "-y",
         "-f", "concat", "-safe", "0", "-i", list_file,
         "-c", "copy",
         "-movflags", "+faststart",
         "-progress", "pipe:1", "-nostats",
-        copy_out
+        out_path
     ]
 
-    copy_ok = False
     try:
         proc = await asyncio.create_subprocess_exec(
-            *copy_cmd,
+            *cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
 
-        async def _read_copy():
+        async def _read_progress():
             while True:
                 line = await proc.stdout.readline()
                 if not line:
@@ -277,230 +601,47 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
                 if line.startswith("out_time_ms=") and total_duration > 0:
                     try:
                         done_s = int(line.split("=")[1]) / 1_000_000
-                        pct    = 10 + min(int(done_s / total_duration * 85), 85)
+                        pct    = 5 + min(int(done_s / total_duration * 93), 93)
                         await safe_edit(
                             status_msg,
-                            f"⚡ *Birlashtirilmoqda (copy)...*\n\n📊 {make_bar(pct)} **{pct}%**",
+                            f"⚡ *Birlashtirilmoqda...*\n\n"
+                            f"📊 {make_bar(pct)} **{pct}%**\n\n"
+                            f"_Sifat o\'zgarmaydi..._",
                             last_t=t
                         )
                     except:
                         pass
 
         try:
-            await asyncio.wait_for(_read_copy(), timeout=1800)  # 30 daqiqa
+            await asyncio.wait_for(_read_progress(), timeout=3600)  # 1 soat
         except asyncio.TimeoutError:
             proc.kill()
+            print("[MERGE] Timeout!")
 
-        await proc.wait()
+        _, stderr_data = await proc.communicate()
 
-        if os.path.exists(copy_out) and os.path.getsize(copy_out) > 1024:
-            os.rename(copy_out, out_path)
-            copy_ok = True
-            print("[MERGE] ✅ copy mode muvaffaqiyatli!")
-        else:
-            print("[MERGE] ⚠️ copy mode bajarilmadi → encode rejimiga o'tilmoqda")
-
-    except Exception as e:
-        print(f"[MERGE copy ERROR] {e}")
-
-    # ══════════════════════════════════════════
-    # USUL 2: ultrafast encode (copy ishlamasa)
-    # ══════════════════════════════════════════
-    if not copy_ok:
-        reenc = []
-
-        await safe_edit(status_msg,
-                        f"⚙️ *Encode rejimi (ultrafast)...*\n\n{make_bar(5)} **5%**",
-                        last_t=t, min_gap=0)
-
-        for i, vpath in enumerate(video_paths):
-            part_n  = i + 1
-            tmp_out = os.path.join(tmp_dir, f"_p{i}.mp4")
-            dur     = get_duration(vpath)
-            _, h    = get_video_info(vpath)
-
-            scale = "scale=-2:min(ih\\,1080)" if h > 1080 else "scale=-2:trunc(ih/2)*2"
-
-            cmd = [
-                "ffmpeg", "-y", "-i", vpath,
-                "-vf", scale,
-                "-c:v", "libx264",
-                "-preset", "fast",        # ← yaxshi sifat/tezlik balansi
-                "-crf", str(target_crf),
-                "-pix_fmt", "yuv420p",
-                "-c:a", "aac", "-b:a", "192k",
-                "-movflags", "+faststart",
-                "-progress", "pipe:1", "-nostats",
-                tmp_out
-            ]
-
-            proc = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
-            )
-
-            async def _read_encode(proc=proc, dur=dur, i=i, part_n=part_n):
-                while True:
-                    line = await proc.stdout.readline()
-                    if not line:
-                        break
-                    line = line.decode("utf-8", errors="ignore").strip()
-                    if line.startswith("out_time_ms=") and dur > 0:
-                        try:
-                            done_s   = int(line.split("=")[1]) / 1_000_000
-                            part_pct = min(int(done_s / dur * 100), 100)
-                            overall  = int(((i * 100 + part_pct) / (total * 100)) * 85)
-                            await safe_edit(
-                                status_msg,
-                                f"⚙️ *Tayyorlanmoqda...*\n\n"
-                                f"🎞 Qism: *{part_n}/{total}*  —  {part_pct}%\n"
-                                f"{make_bar(part_pct)}\n\n"
-                                f"📊 Umumiy: {make_bar(overall)} **{overall}%**\n"
-                                f"🎯 CRF: `{target_crf}`",
-                                last_t=t
-                            )
-                        except:
-                            pass
-
-            try:
-                await asyncio.wait_for(_read_encode(), timeout=1200)  # 20 daqiqa/qism
-            except asyncio.TimeoutError:
-                proc.kill()
-                print(f"[MERGE] {part_n}-qism timeout!")
-
-            _, stderr_data = await proc.communicate()
-
-            if not os.path.exists(tmp_out) or os.path.getsize(tmp_out) == 0:
-                err = stderr_data.decode("utf-8", errors="ignore")[-300:]
-                print(f"[MERGE encode ERROR qism {part_n}]: {err}")
-            else:
-                reenc.append(tmp_out)
-
-            done_overall = int(((i + 1) / total) * 85)
-            await safe_edit(
-                status_msg,
-                f"⚙️ *Tayyorlanmoqda...*\n\n"
-                f"✅ Tayyor: *{i+1}/{total}* qism\n\n"
-                f"📊 Umumiy: {make_bar(done_overall)} **{done_overall}%**",
-                last_t=t
-            )
-
-        if not reenc:
+        if not os.path.exists(out_path) or os.path.getsize(out_path) < 1024:
+            # copy ishlamadi (format farq qilsa) — xato logga
+            err = stderr_data.decode("utf-8", errors="ignore")[-500:]
+            print(f"[MERGE copy FAILED]:\n{err}")
             try:
                 os.remove(list_file)
             except:
                 pass
             return False
 
-        # Concat (encode qilingan qismlarni birlashtirish)
-        with open(list_file, "w", encoding="utf-8") as f:
-            for fp in reenc:
-                f.write(f"file '{os.path.abspath(fp)}'\n")
+    except Exception as e:
+        print(f"[MERGE ERROR] {e}")
+        try:
+            os.remove(list_file)
+        except:
+            pass
+        return False
 
-        await safe_edit(
-            status_msg,
-            f"🔗 *Qismlar birlashtirilmoqda...*\n\n📊 {make_bar(90)} **90%**\n\n_Deyarli tayyor..._",
-            last_t=t, min_gap=0
-        )
-
-        total_enc_dur = sum(get_duration(fp) for fp in reenc)
-        concat_cmd = [
-            "ffmpeg", "-y",
-            "-f", "concat", "-safe", "0", "-i", list_file,
-            "-c", "copy",
-            "-movflags", "+faststart",
-            "-progress", "pipe:1", "-nostats",
-            out_path
-        ]
-        proc2 = await asyncio.create_subprocess_exec(
-            *concat_cmd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.DEVNULL
-        )
-        while True:
-            line = await proc2.stdout.readline()
-            if not line:
-                break
-            line = line.decode("utf-8", errors="ignore").strip()
-            if line.startswith("out_time_ms=") and total_enc_dur > 0:
-                try:
-                    done_s = int(line.split("=")[1]) / 1_000_000
-                    pct    = 90 + min(int(done_s / total_enc_dur * 10), 10)
-                    await safe_edit(
-                        status_msg,
-                        f"🔗 *Birlashtirilmoqda...*\n\n📊 {make_bar(pct)} **{pct}%**",
-                        last_t=t
-                    )
-                except:
-                    pass
-        await proc2.wait()
-
-        for fp in reenc:
-            try:
-                os.remove(fp)
-            except:
-                pass
-
-    # Cleanup list file
     try:
         os.remove(list_file)
     except:
         pass
-
-    # ── Hajm tekshirish (>1900MB bo'lsa qayta siqish) ──
-    if os.path.exists(out_path):
-        final_mb = os.path.getsize(out_path) / (1024 * 1024)
-        if final_mb > 1900:
-            await safe_edit(
-                status_msg,
-                f"⚠️ *Hajm {final_mb:.0f} MB — 2GB dan oshdi!*\n\n"
-                f"🗜 Qayta siqilmoqda...\n{make_bar(0)} **0%**",
-                last_t=t, min_gap=0
-            )
-            compressed = out_path.replace(".mp4", "_c.mp4")
-            new_crf    = min(target_crf + 2, 24)
-            re_dur     = get_duration(out_path)
-
-            compress_cmd = [
-                "ffmpeg", "-y", "-i", out_path,
-                "-c:v", "libx264",
-                "-preset", "ultrafast",
-                "-crf", str(new_crf),
-                "-pix_fmt", "yuv420p",
-                "-c:a", "aac", "-b:a", "128k",
-                "-movflags", "+faststart",
-                "-progress", "pipe:1", "-nostats",
-                compressed
-            ]
-            proc3 = await asyncio.create_subprocess_exec(
-                *compress_cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.DEVNULL
-            )
-            while True:
-                line = await proc3.stdout.readline()
-                if not line:
-                    break
-                line = line.decode("utf-8", errors="ignore").strip()
-                if line.startswith("out_time_ms=") and re_dur > 0:
-                    try:
-                        done_s = int(line.split("=")[1]) / 1_000_000
-                        pct    = min(int(done_s / re_dur * 100), 100)
-                        await safe_edit(
-                            status_msg,
-                            f"🗜 *Qayta siqilmoqda...*\n\n{make_bar(pct)} **{pct}%**",
-                            last_t=t
-                        )
-                    except:
-                        pass
-            await proc3.wait()
-            try:
-                os.remove(out_path)
-            except:
-                pass
-            if os.path.exists(compressed):
-                os.rename(compressed, out_path)
 
     return os.path.exists(out_path)
 
