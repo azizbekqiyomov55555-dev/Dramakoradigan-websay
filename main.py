@@ -257,7 +257,8 @@ async def bypass_contentid(video_path: str, level: str, status_msg) -> str | Non
     cmd = [
         "ffmpeg", "-y", "-i", video_path,
         "-af", af,
-        "-c:v", "copy",
+        "-c:v", "libx264", "-preset", "fast", "-crf", "18",
+        "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "128k",
         "-movflags", "+faststart",
         "-progress", "pipe:1", "-nostats",
@@ -265,7 +266,7 @@ async def bypass_contentid(video_path: str, level: str, status_msg) -> str | Non
     ]
 
     proc = await asyncio.create_subprocess_exec(
-        *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL
+        *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
     )
 
     while True:
