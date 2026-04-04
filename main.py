@@ -59,7 +59,7 @@ def merge_keyboard(count):
         [InlineKeyboardButton("❌ Bekor qilish", callback_data="cancel_merge")]
     ])
 
-async def safe_edit(msg, text, kb=None, last_t=None, min_gap=2.5):
+async def safe_edit(msg, text, kb=None, last_t=None, min_gap=0.5):
     now = time.time()
     if last_t is not None and now - last_t[0] < min_gap:
         return
@@ -82,7 +82,7 @@ async def dl_progress(current, total, msg, label):
         return
     uid = id(msg)
     now = time.time()
-    if now - _dl_last.get(uid, 0) < 2.0:
+    if now - _dl_last.get(uid, 0) < 0.5:
         return
     _dl_last[uid] = now
     pct = int(current * 100 / total)
@@ -111,10 +111,11 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
 
         cmd = [
             "ffmpeg", "-y", "-i", vpath,
-            "-vf", "scale=-2:720",
-            "-c:v", "libx264", "-preset", "fast",
+            "-vf", "scale=-2:1080",
+            "-c:v", "libx264", "-preset", "slow",
+            "-crf", "16",
             "-pix_fmt", "yuv420p",
-            "-c:a", "aac", "-b:a", "128k",
+            "-c:a", "aac", "-b:a", "192k",
             "-movflags", "+faststart",
             "-progress", "pipe:1", "-nostats",
             tmp_out
@@ -242,9 +243,9 @@ async def bypass_contentid(video_path: str, level: str, status_msg) -> str | Non
         "ffmpeg", "-y", "-i", video_path,
         "-vf", vf,
         "-af", af,
-        "-c:v", "libx264", "-preset", "fast", "-crf", "18",
+        "-c:v", "libx264", "-preset", "slow", "-crf", "16",
         "-pix_fmt", "yuv420p",
-        "-c:a", "aac", "-b:a", "128k",
+        "-c:a", "aac", "-b:a", "192k",
         "-movflags", "+faststart",
         "-progress", "pipe:1", "-nostats",
         out
@@ -364,9 +365,9 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
         cmd   = [
             "ffmpeg", "-y", "-i", video_path,
             "-af", af,
-            "-c:v", "libx264", "-preset", "fast", "-crf", "18",
+            "-c:v", "libx264", "-preset", "slow", "-crf", "16",
             "-pix_fmt", "yuv420p",
-            "-c:a", "aac", "-b:a", "128k",
+            "-c:a", "aac", "-b:a", "192k",
             "-movflags", "+faststart",
             "-progress", "pipe:1", "-nostats", out_path
         ]
@@ -423,9 +424,9 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
                     "-i", video_path,
                     "-ss", f"{s:.3f}",
                     "-t",  f"{dur_seg:.3f}",
-                    "-c:v", "libx264", "-preset", "fast", "-crf", "18",
+                    "-c:v", "libx264", "-preset", "slow", "-crf", "16",
                     "-pix_fmt", "yuv420p",
-                    "-c:a", "aac", "-b:a", "128k",
+                    "-c:a", "aac", "-b:a", "192k",
                     "-avoid_negative_ts", "make_zero",
                     "-movflags", "+faststart",
                     pf
@@ -452,9 +453,9 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
                 [
                     "ffmpeg", "-y", "-f", "concat", "-safe", "0",
                     "-i", list_file,
-                    "-c:v", "libx264", "-preset", "fast", "-crf", "18",
+                    "-c:v", "libx264", "-preset", "slow", "-crf", "16",
                     "-pix_fmt", "yuv420p",
-                    "-c:a", "aac", "-b:a", "128k",
+                    "-c:a", "aac", "-b:a", "192k",
                     "-movflags", "+faststart",
                     out_path
                 ],
@@ -479,7 +480,6 @@ def main_kb():
     return ReplyKeyboardMarkup([
         [KeyboardButton("🎬 Kino qismlarini birlashtirish")],
         [KeyboardButton("🎞 Video ishlash"), KeyboardButton("🖼 Rasm ishlash")],
-        [KeyboardButton("🚫 YT taqiqini olib tashlash")],
         [KeyboardButton("📊 Statistika"), KeyboardButton("❓ Yordam")]
     ], resize_keyboard=True)
 
@@ -487,8 +487,7 @@ def main_kb():
 async def cmd_start(client, message):
     await message.reply_text(
         "👋 *Assalomu alaykum!*\n\n"
-        "YouTube taqiqini olib tashlash uchun:\n"
-        "👉 *«🚫 YT taqiqini olib tashlash»* tugmasini bosing.",
+        "🎬 Kino birlashtirish, video siqish yoki bo'lish uchun tugmalardan foydalaning.",
         reply_markup=main_kb(),
         parse_mode=ParseMode.MARKDOWN
     )
@@ -903,9 +902,9 @@ async def text_input(client, message):
                 vb  = max(int((target * 8000) / dur - 128), 200)
                 cmd = [
                     "ffmpeg", "-y", "-i", path,
-                    "-vf", "scale=-2:720", "-c:v", "libx264", "-b:v", f"{vb}k",
-                    "-preset", "fast", "-pix_fmt", "yuv420p",
-                    "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", out
+                    "-vf", "scale=-2:1080", "-c:v", "libx264", "-b:v", f"{vb}k",
+                    "-preset", "slow", "-pix_fmt", "yuv420p",
+                    "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", out
                 ]
                 proc = await asyncio.create_subprocess_exec(*cmd)
                 await proc.wait()
@@ -966,14 +965,10 @@ async def stats(client, message):
 async def help_msg(client, message):
     await message.reply_text(
         "❓ *Yordam:*\n\n"
-        "🚫 *YT taqiqini olib tashlash:*\n"
-        "1. «🚫 YT taqiqini olib tashlash» tugmasini bosing\n"
-        "2. Video yuboring\n"
-        "3. *«🔧 Bypass»* tanlang _(eng samarali)_\n"
-        "4. Daraja tanlang: Yengil / O'rta / Kuchli\n"
-        "5. Bot videoni qayta ishlab beradi ✅\n\n"
         "🎬 *Kino birlashtirish:*\n"
         "Videolarni tartib bilan yuboring → Birlashtir\n\n"
+        "🎞 *Video ishlash:*\n"
+        "Video yuboring → Siqish yoki bo'lish tanlang\n\n"
         f"📦 Maksimal: *{MAX_MERGE_VIDEOS}* ta qism",
         parse_mode=ParseMode.MARKDOWN
     )
