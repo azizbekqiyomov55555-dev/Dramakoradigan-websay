@@ -221,13 +221,26 @@ async def bypass_contentid(video_path: str, level: str, status_msg) -> str | Non
         last_t=t, min_gap=0
     )
 
-    # Pitch +3% — ContentID topolmaydi, quloqqa deyarli sezilmaydi
-    af = "asetrate=44100*1.03,aresample=44100"
+    # Vizual + audio fingerprint o'zgartirish:
+    # 1. Mirror (hflip) — chapga-o'ngga teskari
+    # 2. Crop+zoom — 3% kesib kattalashtirish
+    # 3. Color — brightness/saturation biroz o'zgartirish
+    # 4. Speed — 1.01x tezlashtirish
+    # 5. Audio pitch +3%
+    vf = (
+        "hflip,"
+        "crop=iw*0.97:ih*0.97:(iw-iw*0.97)/2:(ih-ih*0.97)/2,"
+        "scale=iw/0.97:ih/0.97,"
+        "eq=brightness=0.03:saturation=1.08:contrast=1.02,"
+        "setpts=PTS/1.01"
+    )
+    af = "asetrate=44100*1.03,aresample=44100,atempo=1.01"
 
     total_dur = get_duration(video_path)
 
     cmd = [
         "ffmpeg", "-y", "-i", video_path,
+        "-vf", vf,
         "-af", af,
         "-c:v", "libx264", "-preset", "fast", "-crf", "18",
         "-pix_fmt", "yuv420p",
@@ -572,11 +585,14 @@ async def handle_video(client, message):
         # Avtomatik bypass boshlash
         await status.edit_text(
             "✅ *Video yuklandi!*\n\n"
-            "🔧 *Bypass* — YouTube taqiqini chetlab o'tish\n"
-            "_(audio ohang biroz o'zgartiriladi, ContentID topolmaydi)_",
+            "🔧 YouTube taqiqini chetlab o'tish:\n"
+            "• Vizual o'zgartiriladi (mirror + crop + color)\n"
+            "• Tezlik biroz oshiriladi (+1%)\n"
+            "• Audio pitch o'zgartiriladi (+3%)\n\n"
+            "_ContentID vizual va audio fingerprint tanimaydi_",
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🔧 Taqiqni olib tashlash", callback_data="bp_medium")],
+                [InlineKeyboardButton("🚀 Taqiqni olib tashlash", callback_data="bp_medium")],
                 [InlineKeyboardButton("❌ Bekor qilish", callback_data="cr_cancel")]
             ])
         )
