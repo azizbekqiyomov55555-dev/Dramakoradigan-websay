@@ -3270,6 +3270,10 @@
 
             hideVideoError();
 
+            // vkViewer ni yashirish (YouTube va boshqalar uchun)
+            const _vkV = document.getElementById('vkViewer');
+            if(_vkV) _vkV.style.display = 'none';
+
             // Iframe ni tozalash
             iframe.style.width = '100%';
             iframe.style.height = '100%';
