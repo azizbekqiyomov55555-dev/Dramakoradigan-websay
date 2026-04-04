@@ -3303,8 +3303,11 @@
                 iframe.src = vkSrc;
 
             } else if(info.type === 'vk') {
+                // Eski error handlerlarni tozalash (muhim!)
+                v.onerror = null; v.oncanplay = null; v.onstalled = null; v.onwaiting = null;
                 v.style.display = 'none'; v.src = '';
                 iframe.style.display = 'none'; iframe.src = '';
+                hideVideoError();
                 // VK iframe o'rniga - tashqi ochish tugmasi
                 let vkViewer = document.getElementById('vkViewer');
                 if(!vkViewer) {
