@@ -187,22 +187,26 @@ async def up_progress(current, total, msg, label):
 #  BIRLASHTIRISH — TUZATILGAN
 # ──────────────────────────────────────────────
 
-def calc_crf_for_size(total_duration_sec: float, max_size_mb: float = 950.0) -> int:
-    """Jami vaqtdan kelib chiqib optimal CRF hisoblash. max_size_mb=950 (1GB xavfsiz chegara)"""
+def calc_crf_for_size(total_duration_sec: float, max_size_mb: float = 1900.0) -> int:
+    """Jami vaqtdan kelib chiqib optimal CRF hisoblash. max_size_mb=1900 (Telegram 2GB limit)"""
     if total_duration_sec <= 0:
-        return 23
-    audio_kbps  = 128
+        return 18
+    audio_kbps  = 192
     total_kbits = max_size_mb * 1024 * 8
     audio_kbits = audio_kbps * total_duration_sec
     video_kbits = total_kbits - audio_kbits
     needed_vbr  = int(video_kbits / total_duration_sec)
 
-    if needed_vbr >= 2500:   return 18
-    elif needed_vbr >= 1800: return 20
-    elif needed_vbr >= 1200: return 22
-    elif needed_vbr >= 800:  return 24
-    elif needed_vbr >= 500:  return 26
-    else:                    return 28
+    # Sifatli CRF jadvali (past = yaxshi sifat)
+    if needed_vbr >= 4000:   return 14
+    elif needed_vbr >= 3000: return 15
+    elif needed_vbr >= 2500: return 16
+    elif needed_vbr >= 2000: return 17
+    elif needed_vbr >= 1500: return 18
+    elif needed_vbr >= 1000: return 19
+    elif needed_vbr >= 700:  return 20
+    elif needed_vbr >= 500:  return 21
+    else:                    return 22
 
 
 async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> bool:
@@ -224,11 +228,11 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
                     last_t=t, min_gap=0)
 
     total_duration = sum(get_duration(vp) for vp in video_paths)
-    target_crf     = calc_crf_for_size(total_duration, max_size_mb=950)
+    target_crf     = calc_crf_for_size(total_duration, max_size_mb=1900)
 
     await safe_edit(
         status_msg,
-        f"📐 *Maqsad sifat:* CRF `{target_crf}` (1GB chegarasi)\n"
+        f"📐 *Maqsad sifat:* CRF `{target_crf}` (2GB chegarasi)\n"
         f"⏱ Jami: `{int(total_duration//60)}:{int(total_duration%60):02d}`\n\n"
         f"{make_bar(3)} **3%**",
         last_t=t, min_gap=0
@@ -321,10 +325,10 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
                 "ffmpeg", "-y", "-i", vpath,
                 "-vf", scale,
                 "-c:v", "libx264",
-                "-preset", "ultrafast",   # ← slow o'rniga ultrafast (50x tez!)
+                "-preset", "fast",        # ← yaxshi sifat/tezlik balansi
                 "-crf", str(target_crf),
                 "-pix_fmt", "yuv420p",
-                "-c:a", "aac", "-b:a", "128k",
+                "-c:a", "aac", "-b:a", "192k",
                 "-movflags", "+faststart",
                 "-progress", "pipe:1", "-nostats",
                 tmp_out
@@ -444,18 +448,18 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
     except:
         pass
 
-    # ── Hajm tekshirish (>950MB bo'lsa qayta siqish) ──
+    # ── Hajm tekshirish (>1900MB bo'lsa qayta siqish) ──
     if os.path.exists(out_path):
         final_mb = os.path.getsize(out_path) / (1024 * 1024)
-        if final_mb > 950:
+        if final_mb > 1900:
             await safe_edit(
                 status_msg,
-                f"⚠️ *Hajm {final_mb:.0f} MB — 1GB dan oshdi!*\n\n"
+                f"⚠️ *Hajm {final_mb:.0f} MB — 2GB dan oshdi!*\n\n"
                 f"🗜 Qayta siqilmoqda...\n{make_bar(0)} **0%**",
                 last_t=t, min_gap=0
             )
             compressed = out_path.replace(".mp4", "_c.mp4")
-            new_crf    = min(target_crf + 4, 32)
+            new_crf    = min(target_crf + 2, 24)
             re_dur     = get_duration(out_path)
 
             compress_cmd = [
@@ -958,7 +962,7 @@ async def on_callback(client, q):
 
         if ok:
             size_mb = round(os.path.getsize(out_path) / (1024*1024), 2)
-            size_ok = "✅" if size_mb < 950 else "⚠️"
+            size_ok = "✅" if size_mb < 1900 else "⚠️"
             await status.edit_text(
                 f"✅ *Birlashtirish tugadi!*\n\n"
                 f"📹 {total} ta qism\n"
