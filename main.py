@@ -126,14 +126,15 @@ async def dl_progress(current, total, msg, label):
     except:
         pass
 
-async def start_dl(msg, label, download_coro):
+async def start_dl(msg, label, coro_fn, *args, **kwargs):
+    """Animatsiya bilan download - coro_fn chaqiriladi, progress callback bor"""
     uid  = id(msg)
-    task = asyncio.ensure_future(_dl_animate(msg, label))
-    _dl_anim_task[uid] = task
+    anim = asyncio.ensure_future(_dl_animate(msg, label))
+    _dl_anim_task[uid] = anim
     try:
-        result = await download_coro
+        result = await coro_fn(*args, **kwargs)
     finally:
-        task.cancel()
+        anim.cancel()
         _dl_anim_task.pop(uid, None)
     return result
 
@@ -706,11 +707,10 @@ async def handle_video(client, message):
         file_path = await start_dl(
             status,
             f"{part_n}-qism yuklanmoqda",
-            message.download(
-                file_name=f"downloads/merge_{uid}_{count}.mp4",
-                progress=dl_progress,
-                progress_args=(status, f"{part_n}-qism yuklanmoqda")
-            )
+            message.download,
+            file_name=f"downloads/merge_{uid}_{count}.mp4",
+            progress=dl_progress,
+            progress_args=(status, f"{part_n}-qism yuklanmoqda")
         )
         videos.append(file_path)
         new_count = len(videos)
@@ -735,11 +735,10 @@ async def handle_video(client, message):
         file_path = await start_dl(
             status,
             "Video yuklanmoqda",
-            message.download(
-                file_name=f"downloads/cr_{uid}.mp4",
-                progress=dl_progress,
-                progress_args=(status, "Video yuklanmoqda")
-            )
+            message.download,
+            file_name=f"downloads/cr_{uid}.mp4",
+            progress=dl_progress,
+            progress_args=(status, "Video yuklanmoqda")
         )
         user_data[uid]["path"] = file_path
 
@@ -767,11 +766,10 @@ async def handle_video(client, message):
     file_path = await start_dl(
         msg,
         "Video yuklanmoqda",
-        message.download(
-            file_name=f"downloads/vid_{uid}.mp4",
-            progress=dl_progress,
-            progress_args=(msg, "Video yuklanmoqda")
-        )
+        message.download,
+        file_name=f"downloads/vid_{uid}.mp4",
+        progress=dl_progress,
+        progress_args=(msg, "Video yuklanmoqda")
     )
     user_data[uid] = {
         "path": file_path,
