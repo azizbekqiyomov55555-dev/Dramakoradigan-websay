@@ -371,15 +371,20 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
     out_path = os.path.join(tmp_dir, f"_cr_out_{os.path.basename(video_path)}")
 
     if mode == "mute":
+        # -c:v copy bilan -af ishlamaydi, libx264 ishlatamiz
         parts = [f"volume=enable='between(t,{s},{e})':volume=0" for s, e in found_ranges]
         af    = ",".join(parts)
         cmd   = [
             "ffmpeg", "-y", "-i", video_path,
-            "-af", af, "-c:v", "copy", "-c:a", "aac", "-b:a", "128k",
+            "-af", af,
+            "-c:v", "libx264", "-preset", "fast", "-crf", "18",
+            "-pix_fmt", "yuv420p",
+            "-c:a", "aac", "-b:a", "128k",
+            "-movflags", "+faststart",
             "-progress", "pipe:1", "-nostats", out_path
         ]
         proc = await asyncio.create_subprocess_exec(
-            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL
+            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
         )
         while True:
             line = await proc.stdout.readline()
@@ -391,51 +396,89 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
                     pct    = 70 + min(int(done_s / total_dur * 30), 30)
                     await safe_edit(
                         status_msg,
-                        f"⚙️ *Ovoz oʻchirilmoqda...*\n\n`{make_bar(pct)}` {pct}%",
+                        f"⚙️ *Ovoz o'chirilmoqda...*\n\n`{make_bar(pct)}` {pct}%",
                         last_t=t
                     )
                 except: pass
         await proc.wait()
 
     else:
+        # Taqiqlangan qismlarni birlashtir (overlap bo'lsa)
+        merged_ranges = []
+        for s, e in sorted(found_ranges):
+            s2 = max(0.0, s - 0.5)
+            e2 = min(total_dur, e + 0.5)
+            if merged_ranges and s2 <= merged_ranges[-1][1]:
+                merged_ranges[-1] = (merged_ranges[-1][0], max(merged_ranges[-1][1], e2))
+            else:
+                merged_ranges.append((s2, e2))
+
+        # Saqlanadigan qismlar (taqiqlangan joylar orasidagi)
         keep = []
         prev = 0.0
-        for s, e in sorted(found_ranges):
-            s2 = max(0.0, s - 1)
-            e2 = min(total_dur, e + 1)
-            if prev < s2:
-                keep.append((prev, s2))
-            prev = e2
-        if prev < total_dur:
+        for s, e in merged_ranges:
+            if prev < s - 0.01:
+                keep.append((prev, s))
+            prev = e
+        if prev < total_dur - 0.01:
             keep.append((prev, total_dur))
+
         if not keep:
             return None, found_list
 
         part_files = []
         for j, (s, e) in enumerate(keep):
             pf = os.path.join(tmp_dir, f"_keep_{j}.mp4")
+            dur_seg = e - s
             subprocess.run(
-                ["ffmpeg", "-y", "-ss", str(s), "-i", video_path,
-                 "-t", str(e - s), "-c:v", "libx264", "-c:a", "aac",
-                 "-avoid_negative_ts", "make_zero", pf],
+                [
+                    "ffmpeg", "-y",
+                    "-i", video_path,
+                    "-ss", f"{s:.3f}",
+                    "-t",  f"{dur_seg:.3f}",
+                    "-c:v", "libx264", "-preset", "fast", "-crf", "18",
+                    "-pix_fmt", "yuv420p",
+                    "-c:a", "aac", "-b:a", "128k",
+                    "-avoid_negative_ts", "make_zero",
+                    "-movflags", "+faststart",
+                    pf
+                ],
                 capture_output=True
             )
-            part_files.append(pf)
+            if os.path.exists(pf) and os.path.getsize(pf) > 0:
+                part_files.append(pf)
 
-        list_file = os.path.join(tmp_dir, "_keep_list.txt")
-        with open(list_file, "w") as f:
-            for pf in part_files:
-                f.write(f"file '{os.path.abspath(pf)}'\n")
-        subprocess.run(
-            ["ffmpeg", "-y", "-f", "concat", "-safe", "0",
-             "-i", list_file, "-c", "copy", out_path],
-            capture_output=True
-        )
-        for pf in part_files:
-            try: os.remove(pf)
+        if not part_files:
+            return None, found_list
+
+        if len(part_files) == 1:
+            import shutil
+            shutil.copy2(part_files[0], out_path)
+            try: os.remove(part_files[0])
             except: pass
-        try: os.remove(list_file)
-        except: pass
+        else:
+            list_file = os.path.join(tmp_dir, "_keep_list.txt")
+            with open(list_file, "w", encoding="utf-8") as f:
+                for pf in part_files:
+                    f.write(f"file '{os.path.abspath(pf)}'\n")
+            subprocess.run(
+                [
+                    "ffmpeg", "-y", "-f", "concat", "-safe", "0",
+                    "-i", list_file,
+                    "-c:v", "libx264", "-preset", "fast", "-crf", "18",
+                    "-pix_fmt", "yuv420p",
+                    "-c:a", "aac", "-b:a", "128k",
+                    "-movflags", "+faststart",
+                    out_path
+                ],
+                capture_output=True
+            )
+            for pf in part_files:
+                try: os.remove(pf)
+                except: pass
+            try: os.remove(list_file)
+            except: pass
+
 
     if os.path.exists(out_path):
         return out_path, found_list
