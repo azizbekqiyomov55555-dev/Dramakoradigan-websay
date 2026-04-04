@@ -127,7 +127,6 @@ async def dl_progress(current, total, msg, label):
         pass
 
 async def start_dl(msg, label, coro_fn, *args, **kwargs):
-    """Animatsiya bilan download - coro_fn chaqiriladi, progress callback bor"""
     uid  = id(msg)
     anim = asyncio.ensure_future(_dl_animate(msg, label))
     _dl_anim_task[uid] = anim
@@ -143,12 +142,12 @@ async def start_dl(msg, label, coro_fn, *args, **kwargs):
 # ──────────────────────────────────────────────
 
 def get_video_info(path):
-    """Video resolution va bitrate ni olish"""
+    """Video resolution olish"""
     try:
         r = subprocess.run(
             ["ffprobe", "-v", "error",
              "-select_streams", "v:0",
-             "-show_entries", "stream=width,height,bit_rate",
+             "-show_entries", "stream=width,height",
              "-of", "default=noprint_wrappers=1:nokey=1", path],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
         )
@@ -159,21 +158,33 @@ def get_video_info(path):
     except:
         return 1920, 1080
 
-def calc_target_bitrate(total_duration_sec: float, max_size_mb: float = 1900.0) -> int:
+def calc_crf_for_size(total_duration_sec: float, max_size_mb: float = 950.0) -> int:
     """
-    Jami vaqtdan kelib chiqib maqsad video bitrate hisoblash.
-    max_size_mb = 1900 (2GB dan xavfsiz chegarada qolish uchun)
-    audio 128k ajratib qoldiriladi.
+    Jami vaqtdan kelib chiqib optimal CRF hisoblash.
+    max_size_mb = 950 (1GB dan xavfsiz chegarada qolish uchun)
+    CRF: 18 = yuqori sifat, 28 = o'rtacha sifat
     """
     if total_duration_sec <= 0:
-        return 2000
-    audio_kbps  = 128
-    total_kbits = max_size_mb * 1024 * 8          # MB → kbit
-    audio_kbits = audio_kbps * total_duration_sec
-    video_kbits = total_kbits - audio_kbits
-    vbr = int(video_kbits / total_duration_sec)
-    # Minimal 400k, maksimal 8000k
-    return max(400, min(vbr, 8000))
+        return 23
+    audio_kbps   = 128
+    total_kbits  = max_size_mb * 1024 * 8        # MB → kbit
+    audio_kbits  = audio_kbps * total_duration_sec
+    video_kbits  = total_kbits - audio_kbits
+    needed_vbr   = int(video_kbits / total_duration_sec)
+
+    # Kerakli bitratega mos CRF tanlash (1080p asosida)
+    if needed_vbr >= 2500:
+        return 18   # Eng yuqori sifat
+    elif needed_vbr >= 1800:
+        return 20
+    elif needed_vbr >= 1200:
+        return 22
+    elif needed_vbr >= 800:
+        return 24
+    elif needed_vbr >= 500:
+        return 26
+    else:
+        return 28   # Minimal — lekin ko'zga yaxshi ko'rinadi
 
 async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> bool:
     total   = len(video_paths)
@@ -188,11 +199,11 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
         last_t=t, min_gap=0
     )
     total_duration = sum(get_duration(vp) for vp in video_paths)
-    target_vbr     = calc_target_bitrate(total_duration, max_size_mb=1900)
+    target_crf     = calc_crf_for_size(total_duration, max_size_mb=950)
 
     await safe_edit(
         status_msg,
-        f"📐 *Maqsad sifat:* `{target_vbr}k` video bitrate\n"
+        f"📐 *Maqsad sifat:* CRF `{target_crf}` (1GB chegarasi)\n"
         f"⏱ Jami davomiylik: `{int(total_duration//60)}:{int(total_duration%60):02d}`\n\n"
         f"{make_bar(2)} **2%**",
         last_t=t, min_gap=0
@@ -212,10 +223,8 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
             "ffmpeg", "-y", "-i", vpath,
             "-vf", scale,
             "-c:v", "libx264",
-            "-preset", "medium",
-            "-b:v", f"{target_vbr}k",
-            "-maxrate", f"{int(target_vbr * 1.5)}k",
-            "-bufsize", f"{target_vbr * 2}k",
+            "-preset", "slow",        # slow = yaxshiroq siqish, sifat yuqori
+            "-crf", str(target_crf),  # CRF — aqlli sifat/hajm balansi
             "-pix_fmt", "yuv420p",
             "-c:a", "aac", "-b:a", "128k",
             "-movflags", "+faststart",
@@ -233,14 +242,15 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
                 try:
                     done_s   = int(line.split("=")[1]) / 1_000_000
                     part_pct = min(int(done_s / dur * 100), 100)
-                    overall  = int((i / total) * 90 + (part_pct / total) * 0.9)
+                    # TO'G'RI overall hisob:
+                    overall  = int(((i * 100 + part_pct) / (total * 100)) * 90)
                     await safe_edit(
                         status_msg,
                         f"⚙️ *Tayyorlanmoqda...*\n\n"
                         f"🎞 Qism: *{part_n}/{total}*  —  {part_pct}%\n"
                         f"{make_bar(part_pct)}\n\n"
                         f"📊 Umumiy: {make_bar(overall)} **{overall}%**\n"
-                        f"🎯 Bitrate: `{target_vbr}k`",
+                        f"🎯 CRF: `{target_crf}`",
                         last_t=t
                     )
                 except: pass
@@ -304,26 +314,23 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
     try: os.remove(list_file)
     except: pass
 
-    # ── 4-QADAM: Hajmni tekshirish ──
+    # ── 4-QADAM: Hajmni tekshirish (1GB = 950MB chegarasi) ──
     if os.path.exists(out_path):
         final_mb = os.path.getsize(out_path) / (1024 * 1024)
-        if final_mb > 2000:
-            # Hajm oshib ketdi — qayta siqish
+        if final_mb > 950:
             await safe_edit(
                 status_msg,
-                f"⚠️ *Hajm {final_mb:.0f} MB — 2GB dan oshdi!*\n\n"
+                f"⚠️ *Hajm {final_mb:.0f} MB — 1GB dan oshdi!*\n\n"
                 f"🗜 Qayta siqilmoqda...\n{make_bar(0)} **0%**",
                 last_t=t, min_gap=0
             )
             compressed = out_path.replace(".mp4", "_c.mp4")
-            new_vbr    = int(target_vbr * 1900 / final_mb * 0.95)
-            new_vbr    = max(300, new_vbr)
+            # CRF ni oshirish = hajm kamaytirish, sifat biroz pasayadi
+            new_crf = min(target_crf + 4, 32)
             compress_cmd = [
                 "ffmpeg", "-y", "-i", out_path,
-                "-c:v", "libx264", "-preset", "medium",
-                "-b:v", f"{new_vbr}k",
-                "-maxrate", f"{int(new_vbr * 1.5)}k",
-                "-bufsize", f"{new_vbr * 2}k",
+                "-c:v", "libx264", "-preset", "slow",
+                "-crf", str(new_crf),
                 "-pix_fmt", "yuv420p",
                 "-c:a", "aac", "-b:a", "128k",
                 "-movflags", "+faststart",
@@ -359,12 +366,9 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
 
 # ──────────────────────────────────────────────
 #  CONTENTID BYPASS — AUDIO O'ZGARTIRISH
-#  YouTube ContentID audio fingerprint aniqlay
-#  olmaydi: pitch shift + EQ + minimal shovqin
 # ──────────────────────────────────────────────
 
 async def bypass_contentid(video_path: str, level: str, status_msg) -> str | None:
-    """audd.io APIsiz, ffmpeg audio fingerprint o'zgartirish"""
     t       = [time.time()]
     os.makedirs("downloads", exist_ok=True)
     out     = f"downloads/_bypass_{os.path.basename(video_path)}"
@@ -377,12 +381,6 @@ async def bypass_contentid(video_path: str, level: str, status_msg) -> str | Non
         last_t=t, min_gap=0
     )
 
-    # Vizual + audio fingerprint o'zgartirish:
-    # 1. Mirror (hflip) — chapga-o'ngga teskari
-    # 2. Crop+zoom — 3% kesib kattalashtirish
-    # 3. Color — brightness/saturation biroz o'zgartirish
-    # 4. Speed — 1.01x tezlashtirish
-    # 5. Audio pitch +3%
     vf = (
         "hflip,"
         "crop=iw*0.97:ih*0.97:(iw-iw*0.97)/2:(ih-ih*0.97)/2,"
@@ -398,7 +396,7 @@ async def bypass_contentid(video_path: str, level: str, status_msg) -> str | Non
         "ffmpeg", "-y", "-i", video_path,
         "-vf", vf,
         "-af", af,
-        "-c:v", "libx264", "-preset", "slow", "-crf", "16",
+        "-c:v", "libx264", "-preset", "slow", "-crf", "18",
         "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "192k",
         "-movflags", "+faststart",
@@ -427,22 +425,20 @@ async def bypass_contentid(video_path: str, level: str, status_msg) -> str | Non
             except: pass
 
     _, stderr_data = await proc.communicate()
-    
+
     if os.path.exists(out) and os.path.getsize(out) > 0:
         return out
-    
-    # Xatoni logga chiqar
+
     err_text = stderr_data.decode("utf-8", errors="ignore")[-500:]
     print(f"[BYPASS ERROR] {err_text}")
     return None
 
 
 # ──────────────────────────────────────────────
-#  SHAZAM ORQALI TEKSHIRISH + O'CHIRISH (eski usul)
+#  SHAZAM ORQALI TEKSHIRISH + O'CHIRISH
 # ──────────────────────────────────────────────
 
 def acr_check(audio_bytes: bytes) -> dict:
-    """audd.io orqali musiqa aniqlash — API key shart emas"""
     try:
         resp = requests.post(
             "https://api.audd.io/",
@@ -514,13 +510,12 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
     out_path = os.path.join(tmp_dir, f"_cr_out_{os.path.basename(video_path)}")
 
     if mode == "mute":
-        # -c:v copy bilan -af ishlamaydi, libx264 ishlatamiz
         parts = [f"volume=enable='between(t,{s},{e})':volume=0" for s, e in found_ranges]
         af    = ",".join(parts)
         cmd   = [
             "ffmpeg", "-y", "-i", video_path,
             "-af", af,
-            "-c:v", "libx264", "-preset", "slow", "-crf", "16",
+            "-c:v", "libx264", "-preset", "slow", "-crf", "18",
             "-pix_fmt", "yuv420p",
             "-c:a", "aac", "-b:a", "192k",
             "-movflags", "+faststart",
@@ -546,7 +541,6 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
         await proc.wait()
 
     else:
-        # Taqiqlangan qismlarni birlashtir (overlap bo'lsa)
         merged_ranges = []
         for s, e in sorted(found_ranges):
             s2 = max(0.0, s - 0.5)
@@ -556,7 +550,6 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
             else:
                 merged_ranges.append((s2, e2))
 
-        # Saqlanadigan qismlar (taqiqlangan joylar orasidagi)
         keep = []
         prev = 0.0
         for s, e in merged_ranges:
@@ -579,7 +572,7 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
                     "-i", video_path,
                     "-ss", f"{s:.3f}",
                     "-t",  f"{dur_seg:.3f}",
-                    "-c:v", "libx264", "-preset", "slow", "-crf", "16",
+                    "-c:v", "libx264", "-preset", "slow", "-crf", "18",
                     "-pix_fmt", "yuv420p",
                     "-c:a", "aac", "-b:a", "192k",
                     "-avoid_negative_ts", "make_zero",
@@ -608,7 +601,7 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
                 [
                     "ffmpeg", "-y", "-f", "concat", "-safe", "0",
                     "-i", list_file,
-                    "-c:v", "libx264", "-preset", "slow", "-crf", "16",
+                    "-c:v", "libx264", "-preset", "slow", "-crf", "18",
                     "-pix_fmt", "yuv420p",
                     "-c:a", "aac", "-b:a", "192k",
                     "-movflags", "+faststart",
@@ -621,7 +614,6 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
                 except: pass
             try: os.remove(list_file)
             except: pass
-
 
     if os.path.exists(out_path):
         return out_path, found_list
@@ -742,7 +734,6 @@ async def handle_video(client, message):
         )
         user_data[uid]["path"] = file_path
 
-        # Avtomatik bypass boshlash
         await status.edit_text(
             "✅ *Video yuklandi!*\n\n"
             "🔧 YouTube taqiqini chetlab o'tish:\n"
@@ -820,7 +811,7 @@ async def on_callback(client, q):
 
         if ok:
             size_mb = round(os.path.getsize(out_path) / (1024*1024), 2)
-            size_ok = "✅" if size_mb < 2000 else "⚠️"
+            size_ok = "✅" if size_mb < 950 else "⚠️"
             await status.edit_text(
                 f"✅ *Birlashtirish tugadi!*\n\n"
                 f"📹 {total} ta qism\n"
@@ -828,6 +819,7 @@ async def on_callback(client, q):
                 f"📤 Yuborilmoqda...",
                 parse_mode=ParseMode.MARKDOWN
             )
+            # TO'G'RI: progress_args bilan, lambda emas
             await client.send_video(
                 uid, out_path,
                 caption=(
@@ -835,10 +827,10 @@ async def on_callback(client, q):
                     f"📹 {total} ta qism\n"
                     f"📦 {size_mb} MB"
                 ),
-                supports_streaming=True, parse_mode=ParseMode.MARKDOWN,
-                progress=lambda c, tot: asyncio.ensure_future(
-                    dl_progress(c, tot, status, "Yuborilmoqda")
-                )
+                supports_streaming=True,
+                parse_mode=ParseMode.MARKDOWN,
+                progress=dl_progress,
+                progress_args=(status, "Yuborilmoqda")
             )
             await status.delete()
             try: os.remove(out_path)
@@ -864,9 +856,9 @@ async def on_callback(client, q):
             parse_mode=ParseMode.MARKDOWN
         )
 
-        out_path = f"downloads/_muted_{uid}.mp4"
+        out_path  = f"downloads/_muted_{uid}.mp4"
         total_dur = get_duration(video_path)
-        t = [time.time()]
+        t         = [time.time()]
 
         cmd = [
             "ffmpeg", "-y", "-i", video_path,
@@ -1074,12 +1066,23 @@ async def text_input(client, message):
             out    = f"downloads/res_{uid}.mp4"
             dur    = get_duration(path)
             if dur > 0:
+                # CRF orqali hisoblash
                 vb  = max(int((target * 8000) / dur - 128), 200)
+                # vbr dan CRF taxmini
+                if vb >= 2500: crf = 18
+                elif vb >= 1500: crf = 21
+                elif vb >= 900: crf = 23
+                elif vb >= 500: crf = 26
+                else: crf = 28
                 cmd = [
                     "ffmpeg", "-y", "-i", path,
-                    "-vf", "scale=-2:1080", "-c:v", "libx264", "-b:v", f"{vb}k",
-                    "-preset", "slow", "-pix_fmt", "yuv420p",
-                    "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", out
+                    "-vf", "scale=-2:1080",
+                    "-c:v", "libx264",
+                    "-preset", "slow",
+                    "-crf", str(crf),
+                    "-pix_fmt", "yuv420p",
+                    "-c:a", "aac", "-b:a", "128k",
+                    "-movflags", "+faststart", out
                 ]
                 proc = await asyncio.create_subprocess_exec(*cmd)
                 await proc.wait()
