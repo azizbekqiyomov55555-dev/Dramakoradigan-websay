@@ -3217,6 +3217,9 @@
             if(gdMatch) return { type: 'gdrive', id: gdMatch[1] };
             const tgMatch = src.match(/(?:https?:\/\/)?t\.me\/([^\/]+)\/(\d+)/);
             if(tgMatch) return { type: 'telegram', channel: tgMatch[1], postId: tgMatch[2] };
+            // VK embed URL (video_ext.php?...&hash=...) — to'g'ridan iframe
+            if(src.includes('vk.com/video_ext.php')) return { type: 'vk_embed', src };
+            // VK oddiy video URL
             const vkMatch = src.match(/vk\.com\/(?:video|clip)([-\d]+)_(\d+)/);
             if(vkMatch) return { type: 'vk', oid: vkMatch[1], id: vkMatch[2] };
             const igMatch = src.match(/instagram\.com\/(?:reel|p|tv)\/([^\/\?]+)/);
@@ -3286,13 +3289,23 @@
                 iframe.onload = () => { setTimeout(hideVideoLoading, 1500); };
                 iframe.src = `https://www.youtube.com/embed/${info.id}?autoplay=1&rel=0&modestbranding=1&playsinline=1&fs=1&iv_load_policy=3&enablejsapi=0`;
 
+            } else if(info.type === 'vk_embed') {
+                v.style.display = 'none'; v.src = '';
+                iframe.style.display = 'block';
+                iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox');
+                showVideoLoading('VK video yuklanmoqda...');
+                iframe.onload = () => { setTimeout(hideVideoLoading, 1500); };
+                let vkSrc = info.src;
+                if(!vkSrc.includes('autoplay')) vkSrc += '&autoplay=1';
+                iframe.src = vkSrc;
+
             } else if(info.type === 'vk') {
                 v.style.display = 'none'; v.src = '';
                 iframe.style.display = 'block';
                 iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox');
                 showVideoLoading('VK video yuklanmoqda...');
                 iframe.onload = () => { setTimeout(hideVideoLoading, 1500); };
-                iframe.src = `https://vk.com/video_ext.php?oid=${info.oid}&id=${info.id}&hd=2&js_api=1&autoplay=1`;
+                iframe.src = `https://vk.com/video_ext.php?oid=${info.oid}&id=${info.id}&hd=2&autoplay=1`;
 
             } else if(info.type === 'gdrive') {
                 v.style.display = 'none'; v.src = '';
