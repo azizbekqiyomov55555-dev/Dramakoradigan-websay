@@ -22,11 +22,8 @@ API_ID    = 37366974
 API_HASH  = "08d09c7ed8b7cb414ed6a99c104f1bd6"
 BOT_TOKEN = "8630024708:AAGRE2oY2c74wR4mP3U5C298d3k3a7SUEVU"
 
-# Shazam RapidAPI kaliti (rapidapi.com dan olingan)
 RAPIDAPI_KEY = "30f65179admsh07b2707861cb0f6p104a91jsn2bb1ee84511f"
-
-# Har bir audio segment uzunligi (soniya)
-SEGMENT_SEC = 15
+SEGMENT_SEC  = 15
 
 app = Client("video_processor", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
@@ -98,19 +95,19 @@ async def dl_progress(current, total, msg, label):
         pass
 
 # ──────────────────────────────────────────────
-#  BIRLASHTIRISH (PROGRESS BILAN)
+#  BIRLASHTIRISH
 # ──────────────────────────────────────────────
 
 async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> bool:
-    total = len(video_paths)
+    total   = len(video_paths)
     tmp_dir = os.path.dirname(out_path)
-    reenc = []
-    t = [time.time()]
+    reenc   = []
+    t       = [time.time()]
 
     for i, vpath in enumerate(video_paths):
-        part_n = i + 1
+        part_n  = i + 1
         tmp_out = os.path.join(tmp_dir, f"_p{i}.mp4")
-        dur = get_duration(vpath)
+        dur     = get_duration(vpath)
 
         cmd = [
             "ffmpeg", "-y", "-i", vpath,
@@ -123,21 +120,17 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
             tmp_out
         ]
         proc = await asyncio.create_subprocess_exec(
-            *cmd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.DEVNULL
+            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL
         )
-
         while True:
             line = await proc.stdout.readline()
-            if not line:
-                break
+            if not line: break
             line = line.decode("utf-8", errors="ignore").strip()
             if line.startswith("out_time_ms=") and dur > 0:
                 try:
-                    done_s = int(line.split("=")[1]) / 1_000_000
+                    done_s   = int(line.split("=")[1]) / 1_000_000
                     part_pct = min(int(done_s / dur * 100), 100)
-                    overall = int((i / total) * 90 + (part_pct / total) * 0.9)
+                    overall  = int((i / total) * 90 + (part_pct / total) * 0.9)
                     await safe_edit(
                         status_msg,
                         f"⚙️ *Tayyorlanmoqda...*\n\n"
@@ -146,9 +139,7 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
                         f"📊 Umumiy: `{make_bar(overall)}` {overall}%",
                         last_t=t
                     )
-                except:
-                    pass
-
+                except: pass
         await proc.wait()
         if os.path.exists(tmp_out):
             reenc.append(tmp_out)
@@ -178,39 +169,28 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
     )
 
     total_dur = sum(get_duration(fp) for fp in reenc)
-
     cmd = [
-        "ffmpeg", "-y",
-        "-f", "concat", "-safe", "0", "-i", list_file,
+        "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", list_file,
         "-c", "copy", "-movflags", "+faststart",
-        "-progress", "pipe:1", "-nostats",
-        out_path
+        "-progress", "pipe:1", "-nostats", out_path
     ]
     proc = await asyncio.create_subprocess_exec(
-        *cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.DEVNULL
+        *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL
     )
-
     while True:
         line = await proc.stdout.readline()
-        if not line:
-            break
+        if not line: break
         line = line.decode("utf-8", errors="ignore").strip()
         if line.startswith("out_time_ms=") and total_dur > 0:
             try:
                 done_s = int(line.split("=")[1]) / 1_000_000
-                extra = min(int(done_s / total_dur * 10), 10)
-                pct = 90 + extra
+                pct    = 90 + min(int(done_s / total_dur * 10), 10)
                 await safe_edit(
                     status_msg,
-                    f"🔗 *Birlashtirilmoqda...*\n\n"
-                    f"📊 `{make_bar(pct)}` {pct}%",
+                    f"🔗 *Birlashtirilmoqda...*\n\n📊 `{make_bar(pct)}` {pct}%",
                     last_t=t
                 )
-            except:
-                pass
-
+            except: pass
     await proc.wait()
 
     for fp in reenc:
@@ -222,14 +202,99 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
     return os.path.exists(out_path)
 
 # ──────────────────────────────────────────────
-#  SHAZAM — AUDIO TEKSHIRISH
+#  CONTENTID BYPASS — AUDIO O'ZGARTIRISH
+#  YouTube ContentID audio fingerprint aniqlay
+#  olmaydi: pitch shift + EQ + minimal shovqin
+# ──────────────────────────────────────────────
+
+async def bypass_contentid(video_path: str, level: str, status_msg) -> str | None:
+    """
+    level = 'soft' | 'medium' | 'hard'
+    soft:   faqat pitch +2% (quloqqa sezilib qolmaydi)
+    medium: pitch +3% + hafif EQ + minimal shovqin
+    hard:   pitch +4% + EQ + shovqin + tempo biroz o'zgarish
+    Qaytaradi: output fayl yoli yoki None
+    """
+    t       = [time.time()]
+    tmp_dir = os.path.dirname(video_path)
+    out     = os.path.join(tmp_dir, f"_bypass_{os.path.basename(video_path)}")
+
+    await safe_edit(
+        status_msg,
+        f"🔧 *ContentID chetlab o'tilmoqda...*\n\n"
+        f"Daraja: *{'Yengil' if level=='soft' else 'O\\'rta' if level=='medium' else 'Kuchli'}*\n\n"
+        f"`{make_bar(10)}` 10%\n\n"
+        f"_Audio qayta ishlanmoqda..._",
+        last_t=t, min_gap=0
+    )
+
+    # Audio filter tuzish
+    if level == "soft":
+        # Pitch +2% (quloqqa sezilmaydi, ContentID topolmaydi)
+        af = "asetrate=44100*1.02,aresample=44100"
+
+    elif level == "medium":
+        # Pitch +3% + EQ (bass biroz kamaytirish) + juda kichik shovqin
+        af = (
+            "asetrate=44100*1.03,aresample=44100,"
+            "equalizer=f=60:width_type=o:width=2:g=-2,"
+            "aeval=val(0)+0.0003*random(0)|val(1)+0.0003*random(1):c=stereo"
+        )
+
+    else:  # hard
+        # Pitch +4% + EQ + shovqin + atempo 0.99 (tempo biroz kamaytirish)
+        af = (
+            "asetrate=44100*1.04,aresample=44100,"
+            "atempo=0.99,"
+            "equalizer=f=60:width_type=o:width=2:g=-3,"
+            "equalizer=f=8000:width_type=o:width=2:g=-2,"
+            "aeval=val(0)+0.0005*random(0)|val(1)+0.0005*random(1):c=stereo"
+        )
+
+    total_dur = get_duration(video_path)
+
+    cmd = [
+        "ffmpeg", "-y", "-i", video_path,
+        "-af", af,
+        "-c:v", "copy",
+        "-c:a", "aac", "-b:a", "128k",
+        "-movflags", "+faststart",
+        "-progress", "pipe:1", "-nostats",
+        out
+    ]
+
+    proc = await asyncio.create_subprocess_exec(
+        *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL
+    )
+
+    while True:
+        line = await proc.stdout.readline()
+        if not line: break
+        line = line.decode("utf-8", errors="ignore").strip()
+        if line.startswith("out_time_ms=") and total_dur > 0:
+            try:
+                done_s = int(line.split("=")[1]) / 1_000_000
+                pct    = min(int(done_s / total_dur * 100), 100)
+                await safe_edit(
+                    status_msg,
+                    f"🔧 *Audio o'zgartirilmoqda...*\n\n"
+                    f"`{make_bar(pct)}` {pct}%",
+                    last_t=t
+                )
+            except: pass
+
+    await proc.wait()
+
+    if os.path.exists(out):
+        return out
+    return None
+
+
+# ──────────────────────────────────────────────
+#  SHAZAM ORQALI TEKSHIRISH + O'CHIRISH (eski usul)
 # ──────────────────────────────────────────────
 
 def acr_check(audio_bytes: bytes) -> dict:
-    """
-    Shazam (RapidAPI) orqali audio segmentni tekshiradi.
-    Qaytaradi: {'found': True/False, 'title': ..., 'artist': ...}
-    """
     try:
         resp = requests.post(
             "https://shazam.p.rapidapi.com/songs/v2/detect",
@@ -241,37 +306,31 @@ def acr_check(audio_bytes: bytes) -> dict:
             data=base64.b64encode(audio_bytes).decode(),
             timeout=20
         )
-        res = resp.json()
+        res   = resp.json()
         track = res.get("track")
         if track:
             return {
-                "found": True,
+                "found":  True,
                 "title":  track.get("title", "Noma'lum"),
                 "artist": track.get("subtitle", "?"),
             }
-    except:
-        pass
+    except: pass
     return {"found": False}
 
 
-# ──────────────────────────────────────────────
-#  COPYRIGHT OLIB TASHLASH
-# ──────────────────────────────────────────────
-
 async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
-    total_dur = get_duration(video_path)
-    num_seg   = math.ceil(total_dur / SEGMENT_SEC)
+    total_dur    = get_duration(video_path)
+    num_seg      = math.ceil(total_dur / SEGMENT_SEC)
     found_ranges = []
     found_list   = []
-    t = [time.time()]
-    tmp_dir = os.path.dirname(video_path)
+    t            = [time.time()]
+    tmp_dir      = os.path.dirname(video_path)
 
-    # 1. Har segmentni tekshir
     for i in range(num_seg):
-        start = i * SEGMENT_SEC
-        dur   = min(SEGMENT_SEC, total_dur - start)
-
+        start    = i * SEGMENT_SEC
+        dur      = min(SEGMENT_SEC, total_dur - start)
         seg_path = os.path.join(tmp_dir, f"_acr_{i}.mp3")
+
         subprocess.run(
             ["ffmpeg", "-y", "-ss", str(start), "-i", video_path,
              "-t", str(dur), "-vn", "-acodec", "libmp3lame", "-q:a", "6", seg_path],
@@ -281,9 +340,7 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
         pct = int((i + 1) / num_seg * 60)
         await safe_edit(
             status_msg,
-            f"🔍 *Tekshirilmoqda...*\n\n"
-            f"Segment: *{i+1}/{num_seg}*\n"
-            f"`{make_bar(pct)}` {pct}%",
+            f"🔍 *Tekshirilmoqda...*\n\nSegment: *{i+1}/{num_seg}*\n`{make_bar(pct)}` {pct}%",
             last_t=t
         )
 
@@ -296,41 +353,31 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
         if res["found"]:
             found_ranges.append((start, start + dur))
             found_list.append(
-                f"  🎵 `{int(start)}s–{int(start+dur)}s` — "
-                f"{res['title']} / {res['artist']}"
+                f"  🎵 `{int(start)}s–{int(start+dur)}s` — {res['title']} / {res['artist']}"
             )
 
     if not found_ranges:
         return None, []
 
-    # 2. Qayta ishlash
     await safe_edit(
         status_msg,
-        f"⚙️ *Qayta ishlanmoqda...*\n\n"
-        f"`{make_bar(70)}` 70%\n\n"
-        f"_{len(found_ranges)} ta segment {'oʻchirilmoqda' if mode=='mute' else 'kesib tashlanmoqda'}..._",
+        f"⚙️ *Qayta ishlanmoqda...*\n\n`{make_bar(70)}` 70%\n\n"
+        f"_{len(found_ranges)} ta segment qayta ishlanmoqda..._",
         last_t=t, min_gap=0
     )
 
     out_path = os.path.join(tmp_dir, f"_cr_out_{os.path.basename(video_path)}")
 
     if mode == "mute":
-        parts = []
-        for s, e in found_ranges:
-            parts.append(f"volume=enable='between(t,{s},{e})':volume=0")
-        af = ",".join(parts) if parts else "anull"
-
-        cmd = [
+        parts = [f"volume=enable='between(t,{s},{e})':volume=0" for s, e in found_ranges]
+        af    = ",".join(parts)
+        cmd   = [
             "ffmpeg", "-y", "-i", video_path,
-            "-af", af,
-            "-c:v", "copy", "-c:a", "aac", "-b:a", "128k",
-            "-progress", "pipe:1", "-nostats",
-            out_path
+            "-af", af, "-c:v", "copy", "-c:a", "aac", "-b:a", "128k",
+            "-progress", "pipe:1", "-nostats", out_path
         ]
         proc = await asyncio.create_subprocess_exec(
-            *cmd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.DEVNULL
+            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL
         )
         while True:
             line = await proc.stdout.readline()
@@ -339,7 +386,7 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
             if line.startswith("out_time_ms=") and total_dur > 0:
                 try:
                     done_s = int(line.split("=")[1]) / 1_000_000
-                    pct = 70 + min(int(done_s / total_dur * 30), 30)
+                    pct    = 70 + min(int(done_s / total_dur * 30), 30)
                     await safe_edit(
                         status_msg,
                         f"⚙️ *Ovoz oʻchirilmoqda...*\n\n`{make_bar(pct)}` {pct}%",
@@ -359,7 +406,6 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
             prev = e2
         if prev < total_dur:
             keep.append((prev, total_dur))
-
         if not keep:
             return None, found_list
 
@@ -368,24 +414,16 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
             pf = os.path.join(tmp_dir, f"_keep_{j}.mp4")
             subprocess.run(
                 ["ffmpeg", "-y", "-ss", str(s), "-i", video_path,
-                 "-t", str(e - s),
-                 "-c:v", "libx264", "-c:a", "aac",
+                 "-t", str(e - s), "-c:v", "libx264", "-c:a", "aac",
                  "-avoid_negative_ts", "make_zero", pf],
                 capture_output=True
             )
             part_files.append(pf)
-            pct = 70 + int((j + 1) / len(keep) * 25)
-            await safe_edit(
-                status_msg,
-                f"✂️ *Kesib birlashtirilmoqda...*\n\n`{make_bar(pct)}` {pct}%",
-                last_t=t, min_gap=0
-            )
 
         list_file = os.path.join(tmp_dir, "_keep_list.txt")
         with open(list_file, "w") as f:
             for pf in part_files:
                 f.write(f"file '{os.path.abspath(pf)}'\n")
-
         subprocess.run(
             ["ffmpeg", "-y", "-f", "concat", "-safe", "0",
              "-i", list_file, "-c", "copy", out_path],
@@ -417,18 +455,14 @@ def main_kb():
 async def cmd_start(client, message):
     await message.reply_text(
         "👋 *Assalomu alaykum!*\n\n"
-        "Kino qismlarini birlashtirish uchun:\n"
-        "👉 *«🎬 Kino qismlarini birlashtirish»* tugmasini bosing,\n"
-        "keyin kanaldan videolarni tartib bilan yuboring.\n\n"
         "YouTube taqiqini olib tashlash uchun:\n"
-        "👉 *«🚫 YT taqiqini olib tashlash»* tugmasini bosing,\n"
-        "keyin video yuboring.",
+        "👉 *«🚫 YT taqiqini olib tashlash»* tugmasini bosing.",
         reply_markup=main_kb(),
         parse_mode=ParseMode.MARKDOWN
     )
 
 # ──────────────────────────────────────────────
-#  KINO BIRLASHTIRISH REJIMI
+#  KINO BIRLASHTIRISH
 # ──────────────────────────────────────────────
 
 @app.on_message(filters.regex("🎬 Kino qismlarini birlashtirish"))
@@ -438,16 +472,14 @@ async def start_merge(client, message):
     user_data[uid] = {"mode": "merge", "videos": []}
     await message.reply_text(
         "🎬 *Kino birlashtirish rejimi yoqildi!*\n\n"
-        "📌 Kanaldan videolarni *tartib bilan* yuboring:\n"
-        "1-qism → 2-qism → 3-qism → ...\n\n"
-        f"📦 Maksimal *{MAX_MERGE_VIDEOS}* ta qism qabul qilinadi.\n\n"
-        "Hammasi yuborilgach *«🎬 Birlashtir»* tugmasini bosing.",
+        "📌 Kanaldan videolarni *tartib bilan* yuboring.\n\n"
+        f"📦 Maksimal *{MAX_MERGE_VIDEOS}* ta qism.",
         parse_mode=ParseMode.MARKDOWN,
         reply_markup=merge_keyboard(0)
     )
 
 # ──────────────────────────────────────────────
-#  YT TAQIQINI OLIB TASHLASH REJIMI
+#  YT TAQIQINI OLIB TASHLASH
 # ──────────────────────────────────────────────
 
 @app.on_message(filters.regex("🚫 YT taqiqini olib tashlash"))
@@ -456,10 +488,8 @@ async def start_copyright(client, message):
     clean_user(uid)
     user_data[uid] = {"mode": "copyright"}
     await message.reply_text(
-        "🚫 *YT taqiqini olib tashlash rejimi yoqildi!*\n\n"
-        "📌 Video yuboring — bot taqiqlangan musiqalarni aniqlab,\n"
-        "tanlagan usulingiz bilan olib tashlaydi.\n\n"
-        "_(Katta videolarda biroz vaqt ketadi)_",
+        "🚫 *YT taqiqini olib tashlash*\n\n"
+        "📌 Video yuboring.",
         parse_mode=ParseMode.MARKDOWN,
         reply_markup=main_kb()
     )
@@ -475,17 +505,12 @@ async def handle_video(client, message):
 
     uid = message.from_user.id
 
-    # ── BIRLASHTIRISH REJIMI ──
+    # ── BIRLASHTIRISH ──
     if uid in user_data and user_data[uid].get("mode") == "merge":
-        videos = user_data[uid]["videos"]
-        count = len(videos)
-
+        videos  = user_data[uid]["videos"]
+        count   = len(videos)
         if count >= MAX_MERGE_VIDEOS:
-            await message.reply_text(
-                f"⚠️ Maksimal *{MAX_MERGE_VIDEOS}* ta qism!\n"
-                "«🎬 Birlashtir» tugmasini bosing.",
-                parse_mode=ParseMode.MARKDOWN
-            )
+            await message.reply_text(f"⚠️ Maksimal *{MAX_MERGE_VIDEOS}* ta!", parse_mode=ParseMode.MARKDOWN)
             return
 
         part_n = count + 1
@@ -500,17 +525,13 @@ async def handle_video(client, message):
         )
         videos.append(file_path)
         new_count = len(videos)
+        hint      = (f"📤 Keyingi: *{new_count+1}-qism*ni yuboring yoki birlashtiring."
+                     if new_count < MAX_MERGE_VIDEOS
+                     else f"⚠️ Maksimal {MAX_MERGE_VIDEOS} ta. Endi birlashtiring.")
 
-        if new_count < MAX_MERGE_VIDEOS:
-            hint = f"📤 Keyingi: *{new_count+1}-qism*ni yuboring yoki birlashtiring."
-        else:
-            hint = f"⚠️ Maksimal {MAX_MERGE_VIDEOS} ta. Endi birlashtiring."
-
-        parts_txt = parts_list_text(videos)
         await status.edit_text(
             f"✅ *{part_n}-qism qabul qilindi!*\n\n"
-            f"📋 *Qabul qilingan qismlar:*\n{parts_txt}\n\n"
-            f"{hint}",
+            f"📋 *Qabul qilingan qismlar:*\n{parts_list_text(videos)}\n\n{hint}",
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=merge_keyboard(new_count)
         )
@@ -528,11 +549,18 @@ async def handle_video(client, message):
             progress_args=(status, "Video yuklanmoqda")
         )
         user_data[uid]["path"] = file_path
+
+        # Usul tanlash — BYPASS birinchi tavsiya
         await status.edit_text(
             "✅ *Video yuklandi!*\n\n"
-            "Qanday usulda taqiqlangan joyni olib tashlasin?",
+            "Qaysi usulni tanlaysiz?\n\n"
+            "🔧 *Bypass* — audio ohangni biroz o'zgartiradi,\n"
+            "YouTube ContentID topolmaydi _(tavsiya etiladi)_\n\n"
+            "🔇 *Aniqlash* — Shazam orqali topib o'chiradi\n"
+            "_(faqat Shazam biladigan musiqalar)_",
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔧 Bypass (tavsiya)", callback_data="cr_bypass")],
                 [
                     InlineKeyboardButton("🔇 Ovozini o'chirish", callback_data="cr_mute"),
                     InlineKeyboardButton("✂️ Kesib tashlash",    callback_data="cr_cut"),
@@ -557,11 +585,13 @@ async def handle_video(client, message):
         "type": "video",
         "orig_size": round(os.path.getsize(file_path) / (1024*1024), 2)
     }
-    kb = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🗜 Siqish", callback_data="v_comp"),
-         InlineKeyboardButton("✂️ Bo'lish", callback_data="v_split")]
-    ])
-    await msg.edit_text("✅ Video yuklandi. Tanlang:", reply_markup=kb)
+    await msg.edit_text(
+        "✅ Video yuklandi. Tanlang:",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("🗜 Siqish", callback_data="v_comp"),
+             InlineKeyboardButton("✂️ Bo'lish", callback_data="v_split")]
+        ])
+    )
 
 # ──────────────────────────────────────────────
 #  CALLBACK HANDLER
@@ -580,54 +610,39 @@ async def on_callback(client, q):
 
     if data == "do_merge":
         if uid not in user_data or user_data[uid].get("mode") != "merge":
-            await q.answer("Ma'lumot topilmadi, qaytadan boshlang.", show_alert=True)
+            await q.answer("Ma'lumot topilmadi.", show_alert=True)
             return
-
         videos = user_data[uid].get("videos", [])
         if len(videos) < 2:
-            await q.answer("⚠️ Kamida 2 ta qism yuboring!", show_alert=True)
+            await q.answer("⚠️ Kamida 2 ta qism!", show_alert=True)
             return
 
         total     = len(videos)
         parts_txt = parts_list_text(videos)
-
-        status = await q.message.edit_text(
+        status    = await q.message.edit_text(
             f"🎬 *{total} ta qism birlashtirish boshlandi!*\n\n"
-            f"📋 *Tartib:*\n{parts_txt}\n\n"
-            f"📊 `{make_bar(0)}` 0%\n\n_Iltimos, kuting..._",
+            f"📋 *Tartib:*\n{parts_txt}\n\n`{make_bar(0)}` 0%",
             parse_mode=ParseMode.MARKDOWN
         )
-
         out_path = f"downloads/merged_{uid}.mp4"
-        ok = await merge_with_progress(videos, out_path, status)
+        ok       = await merge_with_progress(videos, out_path, status)
 
         if ok:
             size_mb = round(os.path.getsize(out_path) / (1024*1024), 2)
             await status.edit_text(
-                f"✅ *Birlashtirish tugadi!*\n\n"
-                f"📹 Qismlar: *{total}* ta\n"
-                f"📦 Hajmi: *{size_mb} MB*\n\n"
-                f"📤 Yuborilmoqda...",
+                f"✅ *Birlashtirish tugadi!*\n\n📹 {total} ta qism\n📦 {size_mb} MB\n\n📤 Yuborilmoqda...",
                 parse_mode=ParseMode.MARKDOWN
             )
             await client.send_video(
                 uid, out_path,
-                caption=(
-                    f"🎬 *Kino tayyor!*\n"
-                    f"📹 {total} ta qism birlashtirildi\n"
-                    f"📦 Hajmi: {size_mb} MB"
-                ),
-                supports_streaming=True,
-                parse_mode=ParseMode.MARKDOWN
+                caption=f"🎬 *Kino tayyor!*\n📹 {total} ta qism\n📦 {size_mb} MB",
+                supports_streaming=True, parse_mode=ParseMode.MARKDOWN
             )
             await status.delete()
             try: os.remove(out_path)
             except: pass
         else:
-            await status.edit_text(
-                "❌ Birlashtirish muvaffaqiyatsiz bo'ldi.\n"
-                "Qaytadan urinib ko'ring."
-            )
+            await status.edit_text("❌ Birlashtirish muvaffaqiyatsiz.")
 
         for vp in videos:
             try: os.remove(vp)
@@ -635,7 +650,71 @@ async def on_callback(client, q):
         user_data.pop(uid, None)
         return
 
-    # ── COPYRIGHT CALLBACK ──
+    # ── BYPASS CALLBACK ──
+    if data == "cr_bypass":
+        if uid not in user_data or "path" not in user_data.get(uid, {}):
+            await q.answer("Fayl topilmadi.", show_alert=True)
+            return
+        await q.message.edit_text(
+            "🔧 *Bypass darajasini tanlang:*\n\n"
+            "🟢 *Yengil* — +2% pitch, quloqqa sezilib qolmaydi\n"
+            "🟡 *O'rta* — +3% pitch + EQ _(ko'p hollarda yetarli)_\n"
+            "🔴 *Kuchli* — +4% pitch + EQ + shovqin\n"
+            "_(ovoz biroz o'zgaradi lekin taqiq bo'lmaydi)_",
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🟢 Yengil",  callback_data="bp_soft")],
+                [InlineKeyboardButton("🟡 O'rta",   callback_data="bp_medium")],
+                [InlineKeyboardButton("🔴 Kuchli",  callback_data="bp_hard")],
+                [InlineKeyboardButton("❌ Bekor",   callback_data="cr_cancel")],
+            ])
+        )
+        return
+
+    if data in ("bp_soft", "bp_medium", "bp_hard"):
+        if uid not in user_data or "path" not in user_data.get(uid, {}):
+            await q.answer("Fayl topilmadi.", show_alert=True)
+            return
+
+        level      = data.split("_")[1]
+        level_text = {"soft": "🟢 Yengil", "medium": "🟡 O'rta", "hard": "🔴 Kuchli"}[level]
+        video_path = user_data[uid]["path"]
+
+        status = await q.message.edit_text(
+            f"🔧 *ContentID chetlab o'tilmoqda...*\n\nDaraja: {level_text}\n\n`{make_bar(0)}` 0%",
+            parse_mode=ParseMode.MARKDOWN
+        )
+
+        out_path = await bypass_contentid(video_path, level, status)
+
+        if not out_path:
+            await status.edit_text("❌ Xato yuz berdi. Qaytadan urinib ko'ring.")
+            clean_user(uid)
+            return
+
+        size_mb = round(os.path.getsize(out_path) / (1024*1024), 2)
+        await status.edit_text(
+            f"✅ *Tayyor!*\n\n📦 Hajmi: *{size_mb} MB*\n📤 *Yuborilmoqda...*",
+            parse_mode=ParseMode.MARKDOWN
+        )
+        await client.send_video(
+            uid, out_path,
+            caption=(
+                f"🚫 *ContentID bypass qilindi!*\n"
+                f"🔧 Daraja: {level_text}\n"
+                f"📦 Hajmi: {size_mb} MB\n\n"
+                f"✅ Endi YouTube'ga yuklay olasiz!"
+            ),
+            supports_streaming=True,
+            parse_mode=ParseMode.MARKDOWN
+        )
+        try: os.remove(out_path)
+        except: pass
+        await status.delete()
+        clean_user(uid)
+        return
+
+    # ── ANIQLASH + O'CHIRISH ──
     if data == "cr_cancel":
         clean_user(uid)
         await q.message.edit_text("❌ Bekor qilindi.")
@@ -643,7 +722,7 @@ async def on_callback(client, q):
 
     if data in ("cr_mute", "cr_cut"):
         if uid not in user_data or "path" not in user_data.get(uid, {}):
-            await q.answer("Fayl topilmadi, qaytadan yuboring.", show_alert=True)
+            await q.answer("Fayl topilmadi.", show_alert=True)
             return
 
         mode       = "mute" if data == "cr_mute" else "cut"
@@ -651,10 +730,7 @@ async def on_callback(client, q):
         video_path = user_data[uid]["path"]
 
         status = await q.message.edit_text(
-            f"🔍 *Tekshirilmoqda...*\n\n"
-            f"Rejim: *{mode_text}*\n"
-            f"`{make_bar(0)}` 0%\n\n"
-            f"_Audio segmentlar skanlanmoqda..._",
+            f"🔍 *Tekshirilmoqda...*\n\nRejim: *{mode_text}*\n`{make_bar(0)}` 0%",
             parse_mode=ParseMode.MARKDOWN
         )
 
@@ -662,19 +738,18 @@ async def on_callback(client, q):
 
         if not found_list:
             await status.edit_text(
-                "✅ *Taqiqlangan musiqa topilmadi!*\n\n"
-                "Video YouTube'ga yuklash uchun xavfsiz.",
-                parse_mode=ParseMode.MARKDOWN
+                "⚠️ *Shazam topolmadi.*\n\n"
+                "YouTube ContentID boshqacha ishlaydi.\n"
+                "«🔧 Bypass» usulini ishlatib ko'ring!",
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🔧 Bypass usulini ishlatish", callback_data="cr_bypass")]
+                ])
             )
-            clean_user(uid)
             return
 
         if out_path is None:
-            await status.edit_text(
-                "❌ *Videoning barcha qismlari taqiqlangan.*\n"
-                "Yuborish imkoni yo'q.",
-                parse_mode=ParseMode.MARKDOWN
-            )
+            await status.edit_text("❌ Videoning barcha qismlari taqiqlangan.")
             clean_user(uid)
             return
 
@@ -682,25 +757,16 @@ async def on_callback(client, q):
         found_text = "\n".join(found_list)
 
         await status.edit_text(
-            f"✅ *{len(found_list)} ta segment {'oʻchirildi' if mode=='mute' else 'kesib tashlandi'}!*\n\n"
+            f"✅ *{len(found_list)} ta segment qayta ishlandi!*\n\n"
             f"🎵 *Topilgan joylar:*\n{found_text}\n\n"
-            f"📦 Hajmi: *{size_mb} MB*\n"
-            f"📤 *Yuborilmoqda...*",
+            f"📦 {size_mb} MB\n📤 *Yuborilmoqda...*",
             parse_mode=ParseMode.MARKDOWN
         )
-
         await client.send_video(
             uid, out_path,
-            caption=(
-                f"🚫 *Taqiq olib tashlandi!*\n"
-                f"📌 Rejim: {mode_text}\n"
-                f"🎵 {len(found_list)} ta segment qayta ishlandi\n"
-                f"📦 Hajmi: {size_mb} MB"
-            ),
-            supports_streaming=True,
-            parse_mode=ParseMode.MARKDOWN
+            caption=f"🚫 *Taqiq olib tashlandi!*\n📌 {mode_text}\n🎵 {len(found_list)} segment\n📦 {size_mb} MB",
+            supports_streaming=True, parse_mode=ParseMode.MARKDOWN
         )
-
         try: os.remove(out_path)
         except: pass
         await status.delete()
@@ -712,25 +778,21 @@ async def on_callback(client, q):
         if uid not in user_data:
             await q.answer("Ma'lumot topilmadi.", show_alert=True)
             return
-        await q.message.edit_text("🗜 *Necha MB bo'lsin?* (Faqat raqam yozing):",
-                                   parse_mode=ParseMode.MARKDOWN)
+        await q.message.edit_text("🗜 *Necha MB bo'lsin?* (Faqat raqam):", parse_mode=ParseMode.MARKDOWN)
         user_data[uid]["action"] = "wait_v_size"
 
     elif data == "v_split":
         if uid not in user_data:
             await q.answer("Ma'lumot topilmadi.", show_alert=True)
             return
-        await q.message.edit_text("✂️ *Nechta qismga bo'linsin?* (Faqat raqam):",
-                                   parse_mode=ParseMode.MARKDOWN)
+        await q.message.edit_text("✂️ *Nechta qismga bo'linsin?* (Faqat raqam):", parse_mode=ParseMode.MARKDOWN)
         user_data[uid]["action"] = "wait_v_split"
 
 # ──────────────────────────────────────────────
 #  MATN INPUT
 # ──────────────────────────────────────────────
 
-@app.on_message(filters.text & filters.private & ~filters.regex(
-    "^(🎬|🎞|🖼|📊|❓|🚫)"
-))
+@app.on_message(filters.text & filters.private & ~filters.regex("^(🎬|🎞|🖼|📊|❓|🚫)"))
 async def text_input(client, message):
     uid = message.from_user.id
     if uid not in user_data or "action" not in user_data[uid]:
@@ -741,18 +803,16 @@ async def text_input(client, message):
     if action == "wait_v_size":
         try:
             target = int(message.text.strip())
-            st  = await message.reply_text(f"⏳ {target} MB ga siqilmoqda...")
-            out = f"downloads/res_{uid}.mp4"
-            dur = get_duration(path)
+            st     = await message.reply_text(f"⏳ {target} MB ga siqilmoqda...")
+            out    = f"downloads/res_{uid}.mp4"
+            dur    = get_duration(path)
             if dur > 0:
-                vb = max(int((target * 8000) / dur - 128), 200)
+                vb  = max(int((target * 8000) / dur - 128), 200)
                 cmd = [
                     "ffmpeg", "-y", "-i", path,
-                    "-vf", "scale=-2:720",
-                    "-c:v", "libx264", "-b:v", f"{vb}k",
+                    "-vf", "scale=-2:720", "-c:v", "libx264", "-b:v", f"{vb}k",
                     "-preset", "fast", "-pix_fmt", "yuv420p",
-                    "-c:a", "aac", "-b:a", "128k",
-                    "-movflags", "+faststart", out
+                    "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", out
                 ]
                 proc = await asyncio.create_subprocess_exec(*cmd)
                 await proc.wait()
@@ -769,7 +829,7 @@ async def text_input(client, message):
 
     elif action == "wait_v_split":
         try:
-            parts = int(message.text.strip())
+            parts    = int(message.text.strip())
             if parts < 2 or parts > 20:
                 await message.reply_text("❌ 2 dan 20 gacha son kiriting.")
                 return
@@ -781,15 +841,11 @@ async def text_input(client, message):
                 start = p * part_dur
                 out   = f"downloads/split_{uid}_{p+1}.mp4"
                 cmd   = [
-                    "ffmpeg", "-y",
-                    "-ss", str(start), "-t", str(part_dur),
-                    "-i", path, "-c", "copy", "-map", "0",
-                    "-movflags", "+faststart", out
+                    "ffmpeg", "-y", "-ss", str(start), "-t", str(part_dur),
+                    "-i", path, "-c", "copy", "-map", "0", "-movflags", "+faststart", out
                 ]
                 proc = await asyncio.create_subprocess_exec(
-                    *cmd,
-                    stdout=asyncio.subprocess.DEVNULL,
-                    stderr=asyncio.subprocess.DEVNULL
+                    *cmd, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL
                 )
                 await proc.wait()
                 if os.path.exists(out):
@@ -809,9 +865,7 @@ async def text_input(client, message):
 @app.on_message(filters.regex("📊 Statistika"))
 async def stats(client, message):
     await message.reply_text(
-        f"📊 *Statistika:*\n\n"
-        f"👥 Faol seans: {len(user_data)} ta\n"
-        f"🤖 Bot holati: Ishlamoqda ✅",
+        f"📊 *Statistika:*\n\n👥 Faol seans: {len(user_data)} ta\n🤖 Bot holati: Ishlamoqda ✅",
         parse_mode=ParseMode.MARKDOWN
     )
 
@@ -819,31 +873,25 @@ async def stats(client, message):
 async def help_msg(client, message):
     await message.reply_text(
         "❓ *Yordam:*\n\n"
-        "🎬 *Kino qismlarini birlashtirish:*\n"
-        "1. «🎬 Kino qismlarini birlashtirish» tugmasini bosing\n"
-        "2. Kanaldan videolarni *tartib bilan* yuboring (1→2→3...)\n"
-        "3. «🎬 Birlashtir» tugmasini bosing\n"
-        "4. Bot ularni tartib bo'yicha birlashtiradi ✅\n\n"
         "🚫 *YT taqiqini olib tashlash:*\n"
         "1. «🚫 YT taqiqini olib tashlash» tugmasini bosing\n"
         "2. Video yuboring\n"
-        "3. Usul tanlang: ovozini o'chirish yoki kesib tashlash\n"
-        "4. Bot taqiqlangan segmentlarni aniqlab, qayta ishlangan videoni beradi ✅\n\n"
-        "🎞 *Video siqish/bo'lish:*\n"
-        "Video yuboring → amallardan birini tanlang\n\n"
+        "3. *«🔧 Bypass»* tanlang _(eng samarali)_\n"
+        "4. Daraja tanlang: Yengil / O'rta / Kuchli\n"
+        "5. Bot videoni qayta ishlab beradi ✅\n\n"
+        "🎬 *Kino birlashtirish:*\n"
+        "Videolarni tartib bilan yuboring → Birlashtir\n\n"
         f"📦 Maksimal: *{MAX_MERGE_VIDEOS}* ta qism",
         parse_mode=ParseMode.MARKDOWN
     )
 
 @app.on_message(filters.regex("🎞 Video ishlash"))
 async def video_mode_msg(client, message):
-    await message.reply_text("🎞 *Video ishlash:*\n\nVideo yuboring.",
-                              parse_mode=ParseMode.MARKDOWN)
+    await message.reply_text("🎞 *Video ishlash:*\n\nVideo yuboring.", parse_mode=ParseMode.MARKDOWN)
 
 @app.on_message(filters.regex("🖼 Rasm ishlash"))
 async def image_mode_msg(client, message):
-    await message.reply_text("🖼 *Rasm ishlash:*\n\nRasm yuboring.",
-                              parse_mode=ParseMode.MARKDOWN)
+    await message.reply_text("🖼 *Rasm ishlash:*\n\nRasm yuboring.", parse_mode=ParseMode.MARKDOWN)
 
 # ──────────────────────────────────────────────
 #  CLEAN
