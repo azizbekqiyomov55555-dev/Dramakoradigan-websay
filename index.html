@@ -3219,7 +3219,10 @@
             if(tgMatch) return { type: 'telegram', channel: tgMatch[1], postId: tgMatch[2] };
             // VK embed URL (video_ext.php?...&hash=...) — to'g'ridan iframe
             if(src.includes('vk.com/video_ext.php')) return { type: 'vk_embed', src };
-            // VK oddiy video URL
+            // vkvideo.ru — yangi VK video domeni: vkvideo.ru/videoOWNER_ID
+            const vkvideoMatch = src.match(/vkvideo\.ru\/video([-\d]+)_(\d+)/);
+            if(vkvideoMatch) return { type: 'vk', oid: vkvideoMatch[1], id: vkvideoMatch[2] };
+            // VK oddiy video URL: vk.com/videoOWNER_ID
             const vkMatch = src.match(/vk\.com\/(?:video|clip)([-\d]+)_(\d+)/);
             if(vkMatch) return { type: 'vk', oid: vkMatch[1], id: vkMatch[2] };
             const igMatch = src.match(/instagram\.com\/(?:reel|p|tv)\/([^\/\?]+)/);
@@ -3294,18 +3297,42 @@
                 iframe.style.display = 'block';
                 iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox');
                 showVideoLoading('VK video yuklanmoqda...');
-                iframe.onload = () => { setTimeout(hideVideoLoading, 1500); };
                 let vkSrc = info.src;
                 if(!vkSrc.includes('autoplay')) vkSrc += '&autoplay=1';
+                iframe.onload = () => { setTimeout(hideVideoLoading, 1500); };
                 iframe.src = vkSrc;
 
             } else if(info.type === 'vk') {
                 v.style.display = 'none'; v.src = '';
-                iframe.style.display = 'block';
-                iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox');
-                showVideoLoading('VK video yuklanmoqda...');
-                iframe.onload = () => { setTimeout(hideVideoLoading, 1500); };
-                iframe.src = `https://vk.com/video_ext.php?oid=${info.oid}&id=${info.id}&hd=2&autoplay=1`;
+                iframe.style.display = 'none'; iframe.src = '';
+                // VK iframe o'rniga - tashqi ochish tugmasi
+                let vkViewer = document.getElementById('vkViewer');
+                if(!vkViewer) {
+                    vkViewer = document.createElement('div');
+                    vkViewer.id = 'vkViewer';
+                    vkViewer.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000;z-index:10;';
+                    document.getElementById('player').appendChild(vkViewer);
+                }
+                const vkOrigUrl = `https://vkvideo.ru/video${info.oid}_${info.id}`;
+                const vkEmbedUrl = `https://vk.com/video_ext.php?oid=${info.oid}&id=${info.id}&hd=2`;
+                vkViewer.style.display = 'flex';
+                vkViewer.innerHTML = `
+                    <div style="text-align:center;padding:30px 24px;">
+                        <div style="font-size:52px;margin-bottom:16px;">🎬</div>
+                        <div style="font-size:20px;font-weight:900;color:#fff;margin-bottom:8px;">VK Video</div>
+                        <div style="font-size:13px;color:#888;margin-bottom:28px;line-height:1.6;">
+                            VK videolarni to'g'ridan ijro qilish uchun<br>quyidagi tugmani bosing.
+                        </div>
+                        <button onclick="if(window.Telegram?.WebApp?.openLink){Telegram.WebApp.openLink('${vkOrigUrl}')}else{window.open('${vkOrigUrl}','_blank')}"
+                            style="background:linear-gradient(135deg,#0077ff,#005bcc);
+                                   color:#fff;border:none;padding:16px 32px;border-radius:16px;
+                                   font-size:16px;font-weight:900;width:100%;max-width:280px;
+                                   display:flex;align-items:center;justify-content:center;gap:10px;margin:0 auto 12px;">
+                            ▶ VK da Tomosha Et
+                        </button>
+                        <div style="margin-top:8px;font-size:11px;color:#444;">Telegram ichki brauzeri orqali ochiladi</div>
+                    </div>`;
+                hideVideoLoading();
 
             } else if(info.type === 'gdrive') {
                 v.style.display = 'none'; v.src = '';
