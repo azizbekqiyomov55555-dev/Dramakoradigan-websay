@@ -221,12 +221,8 @@ async def bypass_contentid(video_path: str, level: str, status_msg) -> str | Non
         last_t=t, min_gap=0
     )
 
-    # Pitch +3% + EQ — ContentID topolmaydi, quloqqa deyarli sezilmaydi
-    af = (
-        "asetrate=44100*1.03,aresample=44100,"
-        "equalizer=f=60:width_type=o:width=2:g=-2,"
-        "aeval=val(0)+0.0003*random(0)|val(1)+0.0003*random(1):c=stereo"
-    )
+    # Pitch +3% — ContentID topolmaydi, quloqqa deyarli sezilmaydi
+    af = "asetrate=44100*1.03,aresample=44100"
 
     total_dur = get_duration(video_path)
 
@@ -261,10 +257,14 @@ async def bypass_contentid(video_path: str, level: str, status_msg) -> str | Non
                 )
             except: pass
 
-    await proc.wait()
-
+    _, stderr_data = await proc.communicate()
+    
     if os.path.exists(out) and os.path.getsize(out) > 0:
         return out
+    
+    # Xatoni logga chiqar
+    err_text = stderr_data.decode("utf-8", errors="ignore")[-500:]
+    print(f"[BYPASS ERROR] {err_text}")
     return None
 
 
