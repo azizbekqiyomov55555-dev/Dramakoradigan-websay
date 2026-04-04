@@ -595,20 +595,22 @@ async def handle_video(client, message):
         )
         user_data[uid]["path"] = file_path
 
-        # Usul tanlash — BYPASS birinchi tavsiya
+        # To'g'ridan-to'g'ri usul tanlash
         await status.edit_text(
             "✅ *Video yuklandi!*\n\n"
             "Qaysi usulni tanlaysiz?\n\n"
-            "🔧 *Bypass* — audio ohangni biroz o'zgartiradi,\n"
-            "YouTube ContentID topolmaydi _(tavsiya etiladi)_\n\n"
-            "🔇 *Aniqlash* — Shazam orqali topib o'chiradi\n"
-            "_(faqat Shazam biladigan musiqalar)_",
+            "🔇 *Ovozni o'chirish* — butun audio o'chiriladi\n"
+            "_(100% ishonchli, taqiq bo'lmaydi)_\n\n"
+            "🔧 *Bypass* — audio ohangni biroz o'zgartiradi\n"
+            "_(ovoz saqlanadi, ContentID topolmaydi)_\n\n"
+            "✂️ *Kesib tashlash* — taqiqlangan qismni kesadi\n"
+            "_(Shazam orqali aniqlaydi)_",
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🔧 Bypass (tavsiya)", callback_data="cr_bypass")],
+                [InlineKeyboardButton("🔇 Ovozni o'chirish (tavsiya)", callback_data="cr_mute_full")],
+                [InlineKeyboardButton("🔧 Bypass", callback_data="cr_bypass")],
                 [
-                    InlineKeyboardButton("🔇 Ovozini o'chirish", callback_data="cr_mute"),
-                    InlineKeyboardButton("✂️ Kesib tashlash",    callback_data="cr_cut"),
+                    InlineKeyboardButton("✂️ Kesib tashlash", callback_data="cr_cut"),
                 ],
                 [InlineKeyboardButton("❌ Bekor qilish", callback_data="cr_cancel")]
             ])
@@ -693,6 +695,71 @@ async def on_callback(client, q):
             try: os.remove(vp)
             except: pass
         user_data.pop(uid, None)
+        return
+
+    # ── TO'LIQ OVOZ O'CHIRISH ──
+    if data == "cr_mute_full":
+        if uid not in user_data or "path" not in user_data.get(uid, {}):
+            await q.answer("Fayl topilmadi.", show_alert=True)
+            return
+
+        video_path = user_data[uid]["path"]
+        status = await q.message.edit_text(
+            "🔇 *Ovoz o'chirilmoqda...*\n\n`░░░░░░░░░░░░` 0%",
+            parse_mode=ParseMode.MARKDOWN
+        )
+
+        out_path = f"downloads/_muted_{uid}.mp4"
+        total_dur = get_duration(video_path)
+        t = [time.time()]
+
+        cmd = [
+            "ffmpeg", "-y", "-i", video_path,
+            "-an",
+            "-c:v", "copy",
+            "-movflags", "+faststart",
+            "-progress", "pipe:1", "-nostats",
+            out_path
+        ]
+        proc = await asyncio.create_subprocess_exec(
+            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        )
+        while True:
+            line = await proc.stdout.readline()
+            if not line: break
+            line = line.decode("utf-8", errors="ignore").strip()
+            if line.startswith("out_time_ms=") and total_dur > 0:
+                try:
+                    done_s = int(line.split("=")[1]) / 1_000_000
+                    pct    = min(int(done_s / total_dur * 100), 100)
+                    await safe_edit(
+                        status,
+                        f"🔇 *Ovoz o'chirilmoqda...*\n\n`{make_bar(pct)}` {pct}%",
+                        last_t=t
+                    )
+                except: pass
+        await proc.wait()
+
+        if not os.path.exists(out_path) or os.path.getsize(out_path) == 0:
+            await status.edit_text("❌ Xato yuz berdi. Qaytadan urinib ko'ring.")
+            clean_user(uid)
+            return
+
+        size_mb = round(os.path.getsize(out_path) / (1024*1024), 2)
+        await status.edit_text(
+            f"✅ *Tayyor!*\n\n🔇 Ovoz to'liq o'chirildi\n📦 Hajmi: *{size_mb} MB*\n📤 *Yuborilmoqda...*",
+            parse_mode=ParseMode.MARKDOWN
+        )
+        await client.send_video(
+            uid, out_path,
+            caption=f"🔇 *Ovoz o'chirilgan video*\n📦 {size_mb} MB\n\n✅ Endi YouTube'ga yuklay olasiz!",
+            supports_streaming=True,
+            parse_mode=ParseMode.MARKDOWN
+        )
+        try: os.remove(out_path)
+        except: pass
+        await status.delete()
+        clean_user(uid)
         return
 
     # ── BYPASS CALLBACK ──
