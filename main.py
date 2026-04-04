@@ -208,49 +208,25 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
 # ──────────────────────────────────────────────
 
 async def bypass_contentid(video_path: str, level: str, status_msg) -> str | None:
-    """
-    level = 'soft' | 'medium' | 'hard'
-    soft:   faqat pitch +2% (quloqqa sezilib qolmaydi)
-    medium: pitch +3% + hafif EQ + minimal shovqin
-    hard:   pitch +4% + EQ + shovqin + tempo biroz o'zgarish
-    Qaytaradi: output fayl yoli yoki None
-    """
+    """audd.io APIsiz, ffmpeg audio fingerprint o'zgartirish"""
     t       = [time.time()]
-    tmp_dir = os.path.dirname(video_path)
-    out     = os.path.join(tmp_dir, f"_bypass_{os.path.basename(video_path)}")
+    os.makedirs("downloads", exist_ok=True)
+    out     = f"downloads/_bypass_{os.path.basename(video_path)}"
 
-    level_label = "Yengil" if level == "soft" else "O'rta" if level == "medium" else "Kuchli"
     await safe_edit(
         status_msg,
-        f"🔧 *ContentID chetlab o'tilmoqda...*\n\n"
-        f"Daraja: *{level_label}*\n\n"
+        f"🔧 *Taqiq olib tashlanmoqda...*\n\n"
         f"`{make_bar(10)}` 10%\n\n"
         f"_Audio qayta ishlanmoqda..._",
         last_t=t, min_gap=0
     )
 
-    # Audio filter tuzish
-    if level == "soft":
-        # Pitch +2% (quloqqa sezilmaydi, ContentID topolmaydi)
-        af = "asetrate=44100*1.02,aresample=44100"
-
-    elif level == "medium":
-        # Pitch +3% + EQ (bass biroz kamaytirish) + juda kichik shovqin
-        af = (
-            "asetrate=44100*1.03,aresample=44100,"
-            "equalizer=f=60:width_type=o:width=2:g=-2,"
-            "aeval=val(0)+0.0003*random(0)|val(1)+0.0003*random(1):c=stereo"
-        )
-
-    else:  # hard
-        # Pitch +4% + EQ + shovqin + atempo 0.99 (tempo biroz kamaytirish)
-        af = (
-            "asetrate=44100*1.04,aresample=44100,"
-            "atempo=0.99,"
-            "equalizer=f=60:width_type=o:width=2:g=-3,"
-            "equalizer=f=8000:width_type=o:width=2:g=-2,"
-            "aeval=val(0)+0.0005*random(0)|val(1)+0.0005*random(1):c=stereo"
-        )
+    # Pitch +3% + EQ — ContentID topolmaydi, quloqqa deyarli sezilmaydi
+    af = (
+        "asetrate=44100*1.03,aresample=44100,"
+        "equalizer=f=60:width_type=o:width=2:g=-2,"
+        "aeval=val(0)+0.0003*random(0)|val(1)+0.0003*random(1):c=stereo"
+    )
 
     total_dur = get_duration(video_path)
 
@@ -276,10 +252,10 @@ async def bypass_contentid(video_path: str, level: str, status_msg) -> str | Non
         if line.startswith("out_time_ms=") and total_dur > 0:
             try:
                 done_s = int(line.split("=")[1]) / 1_000_000
-                pct    = min(int(done_s / total_dur * 100), 100)
+                pct    = min(10 + int(done_s / total_dur * 88), 98)
                 await safe_edit(
                     status_msg,
-                    f"🔧 *Audio o'zgartirilmoqda...*\n\n"
+                    f"🔧 *Taqiq olib tashlanmoqda...*\n\n"
                     f"`{make_bar(pct)}` {pct}%",
                     last_t=t
                 )
@@ -287,7 +263,7 @@ async def bypass_contentid(video_path: str, level: str, status_msg) -> str | Non
 
     await proc.wait()
 
-    if os.path.exists(out):
+    if os.path.exists(out) and os.path.getsize(out) > 0:
         return out
     return None
 
@@ -323,7 +299,8 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
     found_ranges = []
     found_list   = []
     t            = [time.time()]
-    tmp_dir      = os.path.dirname(video_path)
+    os.makedirs("downloads", exist_ok=True)
+    tmp_dir      = "downloads"
 
     for i in range(num_seg):
         start    = i * SEGMENT_SEC
