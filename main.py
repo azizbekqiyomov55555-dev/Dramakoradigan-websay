@@ -152,6 +152,38 @@ async def start_dl(msg, label, coro_fn, *args, **kwargs):
     return result
 
 # ──────────────────────────────────────────────
+#  UPLOAD PROGRESS (send_video uchun)
+# ──────────────────────────────────────────────
+
+_up_last: dict = {}
+
+async def up_progress(current, total, msg, label):
+    """send_video() uchun upload progress"""
+    uid = id(msg)
+    now = time.time()
+    if now - _up_last.get(uid, 0) < 1.0:   # 1 soniyada bir marta yangilanadi
+        return
+    _up_last[uid] = now
+
+    if not total or total == 0:
+        return
+
+    pct    = int(current * 100 / total)
+    cur_mb = round(current / (1024 * 1024), 1)
+    tot_mb = round(total   / (1024 * 1024), 1)
+
+    bar = make_bar(pct)
+    try:
+        await msg.edit_text(
+            f"📤 *{label}*\n"
+            f"{bar} *{pct}%*\n"
+            f"`{cur_mb} MB / {tot_mb} MB`",
+            parse_mode=ParseMode.MARKDOWN
+        )
+    except:
+        pass
+
+# ──────────────────────────────────────────────
 #  BIRLASHTIRISH — TUZATILGAN
 # ──────────────────────────────────────────────
 
@@ -931,7 +963,7 @@ async def on_callback(client, q):
                 f"✅ *Birlashtirish tugadi!*\n\n"
                 f"📹 {total} ta qism\n"
                 f"📦 Hajmi: {size_ok} *{size_mb} MB*\n\n"
-                f"📤 Yuborilmoqda...",
+                f"📤 *Yuborilmoqda...*",
                 parse_mode=ParseMode.MARKDOWN
             )
             await client.send_video(
@@ -943,10 +975,13 @@ async def on_callback(client, q):
                 ),
                 supports_streaming=True,
                 parse_mode=ParseMode.MARKDOWN,
-                progress=dl_progress,
+                progress=up_progress,
                 progress_args=(status, "Yuborilmoqda")
             )
-            await status.delete()
+            try:
+                await status.delete()
+            except:
+                pass
             try:
                 os.remove(out_path)
             except:
@@ -1020,13 +1055,18 @@ async def on_callback(client, q):
             uid, out_path,
             caption=f"🔇 *Ovoz o'chirilgan video*\n📦 {size_mb} MB\n\n✅ Endi YouTube'ga yuklay olasiz!",
             supports_streaming=True,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.MARKDOWN,
+            progress=up_progress,
+            progress_args=(status, "Yuborilmoqda")
         )
         try:
             os.remove(out_path)
         except:
             pass
-        await status.delete()
+        try:
+            await status.delete()
+        except:
+            pass
         clean_user(uid)
         return
 
@@ -1086,13 +1126,18 @@ async def on_callback(client, q):
                 f"✅ Endi YouTube'ga yuklay olasiz!"
             ),
             supports_streaming=True,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.MARKDOWN,
+            progress=up_progress,
+            progress_args=(status, "Yuborilmoqda")
         )
         try:
             os.remove(out_path)
         except:
             pass
-        await status.delete()
+        try:
+            await status.delete()
+        except:
+            pass
         clean_user(uid)
         return
 
@@ -1148,13 +1193,18 @@ async def on_callback(client, q):
             uid, out_path,
             caption=f"🚫 *Taqiq olib tashlandi!*\n📌 {mode_text}\n🎵 {len(found_list)} segment\n📦 {size_mb} MB",
             supports_streaming=True,
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.MARKDOWN,
+            progress=up_progress,
+            progress_args=(status, "Yuborilmoqda")
         )
         try:
             os.remove(out_path)
         except:
             pass
-        await status.delete()
+        try:
+            await status.delete()
+        except:
+            pass
         clean_user(uid)
         return
 
