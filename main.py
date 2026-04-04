@@ -219,10 +219,11 @@ async def bypass_contentid(video_path: str, level: str, status_msg) -> str | Non
     tmp_dir = os.path.dirname(video_path)
     out     = os.path.join(tmp_dir, f"_bypass_{os.path.basename(video_path)}")
 
+    level_label = "Yengil" if level == "soft" else "O'rta" if level == "medium" else "Kuchli"
     await safe_edit(
         status_msg,
         f"🔧 *ContentID chetlab o'tilmoqda...*\n\n"
-        f"Daraja: *{'Yengil' if level=='soft' else 'O\\'rta' if level=='medium' else 'Kuchli'}*\n\n"
+        f"Daraja: *{level_label}*\n\n"
         f"`{make_bar(10)}` 10%\n\n"
         f"_Audio qayta ishlanmoqda..._",
         last_t=t, min_gap=0
