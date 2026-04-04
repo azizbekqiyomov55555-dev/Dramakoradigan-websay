@@ -34,9 +34,11 @@ MAX_MERGE_VIDEOS = 150
 #  YORDAMCHI
 # ──────────────────────────────────────────────
 
-def make_bar(pct, n=12):
+def make_bar(pct, n=15):
     f = int(n * pct / 100)
-    return "█" * f + "░" * (n - f)
+    filled = "🟩" * f
+    empty  = "⬜" * (n - f)
+    return filled + empty
 
 def get_duration(path):
     try:
@@ -76,23 +78,64 @@ async def safe_edit(msg, text, kb=None, last_t=None, min_gap=0.5):
 # ──────────────────────────────────────────────
 
 _dl_last: dict = {}
+_dl_anim_task: dict = {}
+
+ANIM_FRAMES = ["⏳", "⌛"]
+
+async def _dl_animate(msg, label):
+    frame = 0
+    while True:
+        try:
+            await asyncio.sleep(1.2)
+            icon = ANIM_FRAMES[frame % len(ANIM_FRAMES)]
+            await msg.edit_text(
+                f"{icon} *{label}*\n{make_bar(0)}\n_Yuklanmoqda..._",
+                parse_mode=ParseMode.MARKDOWN
+            )
+            frame += 1
+        except asyncio.CancelledError:
+            break
+        except:
+            break
 
 async def dl_progress(current, total, msg, label):
-    if not total:
-        return
     uid = id(msg)
+    task = _dl_anim_task.pop(uid, None)
+    if task and not task.done():
+        task.cancel()
+
     now = time.time()
     if now - _dl_last.get(uid, 0) < 0.5:
         return
     _dl_last[uid] = now
-    pct = int(current * 100 / total)
+
+    if not total or total == 0:
+        return
+
+    pct    = int(current * 100 / total)
+    cur_mb = round(current / (1024 * 1024), 1)
+    tot_mb = round(total   / (1024 * 1024), 1)
+
     try:
         await msg.edit_text(
-            f"📥 *{label}*\n`{make_bar(pct)}` {pct}%",
+            f"📥 *{label}*\n"
+            f"{make_bar(pct)} *{pct}%*\n"
+            f"`{cur_mb} MB / {tot_mb} MB`",
             parse_mode=ParseMode.MARKDOWN
         )
     except:
         pass
+
+async def start_dl(msg, label, download_coro):
+    uid  = id(msg)
+    task = asyncio.ensure_future(_dl_animate(msg, label))
+    _dl_anim_task[uid] = task
+    try:
+        result = await download_coro
+    finally:
+        task.cancel()
+        _dl_anim_task.pop(uid, None)
+    return result
 
 # ──────────────────────────────────────────────
 #  BIRLASHTIRISH
@@ -140,7 +183,7 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
     # ── 1-QADAM: Jami davomiylikni oldindan hisoblash ──
     await safe_edit(
         status_msg,
-        f"📐 *Hajm hisoblanmoqda...*\n\n`{make_bar(0)}` 0%",
+        f"📐 *Hajm hisoblanmoqda...*\n\n{make_bar(0)} **0%**",
         last_t=t, min_gap=0
     )
     total_duration = sum(get_duration(vp) for vp in video_paths)
@@ -150,7 +193,7 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
         status_msg,
         f"📐 *Maqsad sifat:* `{target_vbr}k` video bitrate\n"
         f"⏱ Jami davomiylik: `{int(total_duration//60)}:{int(total_duration%60):02d}`\n\n"
-        f"`{make_bar(2)}` 2%",
+        f"{make_bar(2)} **2%**",
         last_t=t, min_gap=0
     )
 
@@ -194,8 +237,8 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
                         status_msg,
                         f"⚙️ *Tayyorlanmoqda...*\n\n"
                         f"🎞 Qism: *{part_n}/{total}*  —  {part_pct}%\n"
-                        f"`{make_bar(part_pct)}`\n\n"
-                        f"📊 Umumiy: `{make_bar(overall)}` {overall}%\n"
+                        f"{make_bar(part_pct)}\n\n"
+                        f"📊 Umumiy: {make_bar(overall)} **{overall}%**\n"
                         f"🎯 Bitrate: `{target_vbr}k`",
                         last_t=t
                     )
@@ -209,7 +252,7 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
             status_msg,
             f"⚙️ *Tayyorlanmoqda...*\n\n"
             f"✅ Tayyor: *{i+1}/{total}* qism\n\n"
-            f"📊 Umumiy: `{make_bar(done_overall)}` {done_overall}%",
+            f"📊 Umumiy: {make_bar(done_overall)} **{done_overall}%**",
             last_t=t
         )
 
@@ -225,7 +268,7 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
     await safe_edit(
         status_msg,
         f"🔗 *Qismlar birlashtirilmoqda...*\n\n"
-        f"📊 `{make_bar(90)}` 90%\n\n_Deyarli tayyor..._",
+        f"📊 {make_bar(90)} **90%**\n\n_Deyarli tayyor..._",
         last_t=t, min_gap=0
     )
 
@@ -248,7 +291,7 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
                 pct    = 90 + min(int(done_s / total_dur * 10), 10)
                 await safe_edit(
                     status_msg,
-                    f"🔗 *Birlashtirilmoqda...*\n\n📊 `{make_bar(pct)}` {pct}%",
+                    f"🔗 *Birlashtirilmoqda...*\n\n📊 {make_bar(pct)} **{pct}%**",
                     last_t=t
                 )
             except: pass
@@ -268,7 +311,7 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
             await safe_edit(
                 status_msg,
                 f"⚠️ *Hajm {final_mb:.0f} MB — 2GB dan oshdi!*\n\n"
-                f"🗜 Qayta siqilmoqda...\n`{make_bar(0)}` 0%",
+                f"🗜 Qayta siqilmoqda...\n{make_bar(0)} **0%**",
                 last_t=t, min_gap=0
             )
             compressed = out_path.replace(".mp4", "_c.mp4")
@@ -301,7 +344,7 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
                         pct    = min(int(done_s / total_dur * 100), 100)
                         await safe_edit(
                             status_msg,
-                            f"🗜 *Qayta siqilmoqda...*\n\n`{make_bar(pct)}` {pct}%",
+                            f"🗜 *Qayta siqilmoqda...*\n\n{make_bar(pct)} **{pct}%**",
                             last_t=t
                         )
                     except: pass
@@ -328,7 +371,7 @@ async def bypass_contentid(video_path: str, level: str, status_msg) -> str | Non
     await safe_edit(
         status_msg,
         f"🔧 *Taqiq olib tashlanmoqda...*\n\n"
-        f"`{make_bar(10)}` 10%\n\n"
+        f"{make_bar(10)} **10%**\n\n"
         f"_Audio qayta ishlanmoqda..._",
         last_t=t, min_gap=0
     )
@@ -377,7 +420,7 @@ async def bypass_contentid(video_path: str, level: str, status_msg) -> str | Non
                 await safe_edit(
                     status_msg,
                     f"🔧 *Taqiq olib tashlanmoqda...*\n\n"
-                    f"`{make_bar(pct)}` {pct}%",
+                    f"{make_bar(pct)} **{pct}%**",
                     last_t=t
                 )
             except: pass
@@ -441,7 +484,7 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
         pct = int((i + 1) / num_seg * 60)
         await safe_edit(
             status_msg,
-            f"🔍 *Tekshirilmoqda...*\n\nSegment: *{i+1}/{num_seg}*\n`{make_bar(pct)}` {pct}%",
+            f"🔍 *Tekshirilmoqda...*\n\nSegment: *{i+1}/{num_seg}*\n{make_bar(pct)} **{pct}%**",
             last_t=t
         )
 
@@ -462,7 +505,7 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
 
     await safe_edit(
         status_msg,
-        f"⚙️ *Qayta ishlanmoqda...*\n\n`{make_bar(70)}` 70%\n\n"
+        f"⚙️ *Qayta ishlanmoqda...*\n\n{make_bar(70)} **70%**\n\n"
         f"_{len(found_ranges)} ta segment qayta ishlanmoqda..._",
         last_t=t, min_gap=0
     )
@@ -495,7 +538,7 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
                     pct    = 70 + min(int(done_s / total_dur * 30), 30)
                     await safe_edit(
                         status_msg,
-                        f"⚙️ *Ovoz o'chirilmoqda...*\n\n`{make_bar(pct)}` {pct}%",
+                        f"⚙️ *Ovoz o'chirilmoqda...*\n\n{make_bar(pct)} **{pct}%**",
                         last_t=t
                     )
                 except: pass
@@ -657,13 +700,17 @@ async def handle_video(client, message):
 
         part_n = count + 1
         status = await message.reply_text(
-            f"📥 *{part_n}-qism yuklanmoqda...*\n`{make_bar(0)}` 0%",
+            f"⏳ *{part_n}-qism yuklanmoqda...*\n{make_bar(0)}\n_Yuklanmoqda..._",
             parse_mode=ParseMode.MARKDOWN
         )
-        file_path = await message.download(
-            file_name=f"downloads/merge_{uid}_{count}.mp4",
-            progress=dl_progress,
-            progress_args=(status, f"{part_n}-qism yuklanmoqda")
+        file_path = await start_dl(
+            status,
+            f"{part_n}-qism yuklanmoqda",
+            message.download(
+                file_name=f"downloads/merge_{uid}_{count}.mp4",
+                progress=dl_progress,
+                progress_args=(status, f"{part_n}-qism yuklanmoqda")
+            )
         )
         videos.append(file_path)
         new_count = len(videos)
@@ -685,10 +732,14 @@ async def handle_video(client, message):
             "📥 *Video yuklanmoqda...*\n`░░░░░░░░░░░░` 0%",
             parse_mode=ParseMode.MARKDOWN
         )
-        file_path = await message.download(
-            file_name=f"downloads/cr_{uid}.mp4",
-            progress=dl_progress,
-            progress_args=(status, "Video yuklanmoqda")
+        file_path = await start_dl(
+            status,
+            "Video yuklanmoqda",
+            message.download(
+                file_name=f"downloads/cr_{uid}.mp4",
+                progress=dl_progress,
+                progress_args=(status, "Video yuklanmoqda")
+            )
         )
         user_data[uid]["path"] = file_path
 
@@ -710,13 +761,17 @@ async def handle_video(client, message):
 
     # ── ODDIY VIDEO REJIMI ──
     msg = await message.reply_text(
-        "📥 *Video yuklanmoqda...*\n`░░░░░░░░░░░░` 0%",
+        f"⏳ *Video yuklanmoqda...*\n{make_bar(0)}\n_Yuklanmoqda..._",
         parse_mode=ParseMode.MARKDOWN
     )
-    file_path = await message.download(
-        file_name=f"downloads/vid_{uid}.mp4",
-        progress=dl_progress,
-        progress_args=(msg, "Video yuklanmoqda")
+    file_path = await start_dl(
+        msg,
+        "Video yuklanmoqda",
+        message.download(
+            file_name=f"downloads/vid_{uid}.mp4",
+            progress=dl_progress,
+            progress_args=(msg, "Video yuklanmoqda")
+        )
     )
     user_data[uid] = {
         "path": file_path,
@@ -759,7 +814,7 @@ async def on_callback(client, q):
         parts_txt = parts_list_text(videos)
         status    = await q.message.edit_text(
             f"🎬 *{total} ta qism birlashtirish boshlandi!*\n\n"
-            f"📋 *Tartib:*\n{parts_txt}\n\n`{make_bar(0)}` 0%",
+            f"📋 *Tartib:*\n{parts_txt}\n\n{make_bar(0)} **0%**",
             parse_mode=ParseMode.MARKDOWN
         )
         out_path = f"downloads/merged_{uid}.mp4"
@@ -836,7 +891,7 @@ async def on_callback(client, q):
                     pct    = min(int(done_s / total_dur * 100), 100)
                     await safe_edit(
                         status,
-                        f"🔇 *Ovoz o'chirilmoqda...*\n\n`{make_bar(pct)}` {pct}%",
+                        f"🔇 *Ovoz o'chirilmoqda...*\n\n{make_bar(pct)} **{pct}%**",
                         last_t=t
                     )
                 except: pass
@@ -895,7 +950,7 @@ async def on_callback(client, q):
         video_path = user_data[uid]["path"]
 
         status = await q.message.edit_text(
-            f"🔧 *ContentID chetlab o'tilmoqda...*\n\nDaraja: {level_text}\n\n`{make_bar(0)}` 0%",
+            f"🔧 *ContentID chetlab o'tilmoqda...*\n\nDaraja: {level_text}\n\n{make_bar(0)} **0%**",
             parse_mode=ParseMode.MARKDOWN
         )
 
@@ -944,7 +999,7 @@ async def on_callback(client, q):
         video_path = user_data[uid]["path"]
 
         status = await q.message.edit_text(
-            f"🔍 *Tekshirilmoqda...*\n\nRejim: *{mode_text}*\n`{make_bar(0)}` 0%",
+            f"🔍 *Tekshirilmoqda...*\n\nRejim: *{mode_text}*\n{make_bar(0)} **0%**",
             parse_mode=ParseMode.MARKDOWN
         )
 
