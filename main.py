@@ -32,6 +32,16 @@ def btn(text, callback_data, style=None, emoji_id=None):
         b.icon_custom_emoji_id = emoji_id
     return b
 
+def kbtn(text, style=None):
+    """
+    ReplyKeyboard uchun rangli KeyboardButton yasaydi.
+    style: None (ko'k/default) | "destructive" (qizil) | "secondary" (kulrang)
+    """
+    b = KeyboardButton(text)
+    if style:
+        b.style = style
+    return b
+
 # ──────────────────────────────────────────────
 #  SOZLAMALAR
 # ──────────────────────────────────────────────
@@ -623,9 +633,10 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
 
 def main_kb():
     return ReplyKeyboardMarkup([
-        [KeyboardButton("🎬 Kino qismlarini birlashtirish")],
-        [KeyboardButton("🎞 Video ishlash"), KeyboardButton("🖼 Rasm ishlash")],
-        [KeyboardButton("📊 Statistika"),    KeyboardButton("❓ Yordam")]
+        [kbtn("🎬 Kino qismlarini birlashtirish", style="success")],
+        [kbtn("🎞 Video ishlash"), kbtn("🖼 Rasm ishlash")],
+        [kbtn("📊 Statistika", style="secondary"),
+         kbtn("❓ Yordam",     style="destructive")]
     ], resize_keyboard=True)
 
 @app.on_message(filters.command("start"))
