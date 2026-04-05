@@ -1,4 +1,4 @@
-pyrogram
-tgcrypto
-Pillow
+aiogram==3.7.0
 static-ffmpeg
+requests
+aiohttp
