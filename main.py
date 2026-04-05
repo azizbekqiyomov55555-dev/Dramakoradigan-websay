@@ -16,61 +16,6 @@ from static_ffmpeg import add_paths
 
 add_paths()
 
-import json as _json
-
-# ──────────────────────────────────────────────
-#  RANGLI TUGMALAR — Bot API 9.4
-#  Pyrogram style= ni qo'llamaydi, shuning uchun
-#  Telegram HTTP API ga to'g'ridan-to'g'ri yuboramiz.
-# ──────────────────────────────────────────────
-
-def btn(text, callback_data, style=None):
-    d = {"text": text, "callback_data": callback_data}
-    if style:
-        d["style"] = style
-    return d
-
-def kbtn(text, style=None):
-    d = {"text": text}
-    if style:
-        d["style"] = style
-    return d
-
-def _tg_sync(method, **kw):
-    """Sinxron HTTP so'rov (thread ichida ishlatiladi)."""
-    try:
-        r = requests.post(
-            f"https://api.telegram.org/bot{BOT_TOKEN}/{method}",
-            json=kw, timeout=10
-        )
-        return r.json()
-    except Exception as e:
-        print(f"[TG:{method}] {e}")
-        return {}
-
-async def _tg(method, **kw):
-    """Asinxron HTTP so'rov — event loop ni bloklamaydi."""
-    return await asyncio.to_thread(_tg_sync, method, **kw)
-
-async def send_kb(chat_id, text, rows, kb_type="inline", parse_mode="Markdown"):
-    """Rangli tugmalar bilan yangi xabar yuboradi, message_id qaytaradi."""
-    rm = {"inline_keyboard": rows} if kb_type == "inline" else {"keyboard": rows, "resize_keyboard": True}
-    r = await _tg("sendMessage", chat_id=chat_id, text=text,
-                  parse_mode=parse_mode, reply_markup=rm)
-    return r.get("result", {}).get("message_id")
-
-async def edit_kb(chat_id, message_id, text, rows, kb_type="inline", parse_mode="Markdown"):
-    """Rangli tugmalar bilan xabarni tahrirlaydi."""
-    rm = {"inline_keyboard": rows} if kb_type == "inline" else {"keyboard": rows, "resize_keyboard": True}
-    await _tg("editMessageText", chat_id=chat_id, message_id=message_id,
-              text=text, parse_mode=parse_mode, reply_markup=rm)
-
-async def edit_rows(chat_id, message_id, rows):
-    """Faqat tugmalarni yangilaydi."""
-    await _tg("editMessageReplyMarkup", chat_id=chat_id, message_id=message_id,
-              reply_markup={"inline_keyboard": rows})
-
-
 # ──────────────────────────────────────────────
 #  SOZLAMALAR
 # ──────────────────────────────────────────────
@@ -127,24 +72,19 @@ def get_video_info(path):
 def merge_keyboard(count):
     rows = []
     if count >= 1:
-        rows.append([btn(f"🎬 Birlashtir  ({count} ta qism)", "do_merge")])
-    rows.append([btn("❌ Bekor qilish", "cancel_merge", style="destructive")])
-    return rows
+        rows.append([InlineKeyboardButton(
+            f"🎬 Birlashtir  ({count} ta qism)", callback_data="do_merge"
+        )])
+    rows.append([InlineKeyboardButton("❌ Bekor qilish", callback_data="cancel_merge")])
+    return InlineKeyboardMarkup(rows)
 
 async def safe_edit(msg, text, kb=None, last_t=None, min_gap=0.8):
     now = time.time()
     if last_t is not None and now - last_t[0] < min_gap:
         return
     try:
-        # kb — rangli tugmalar dict, Pyrogram ga berib bo'lmaydi
-        # Shuning uchun avval matnni yangilaymiz, keyin tugmalarni HTTP API bilan
         await msg.edit_text(text, parse_mode=ParseMode.MARKDOWN,
-                            disable_web_page_preview=True)
-        if kb is not None:
-            _tg("editMessageReplyMarkup",
-                chat_id=msg.chat.id,
-                message_id=msg.id,
-                reply_markup={"inline_keyboard": kb})
+                            reply_markup=kb, disable_web_page_preview=True)
         if last_t is not None:
             last_t[0] = now
     except:
@@ -668,20 +608,19 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
 # ──────────────────────────────────────────────
 
 def main_kb():
-    return [
-        [kbtn("🎬 Kino qismlarini birlashtirish", style="success")],
-        [kbtn("🎞 Video ishlash"), kbtn("🖼 Rasm ishlash")],
-        [kbtn("📊 Statistika", style="secondary"),
-         kbtn("❓ Yordam",     style="destructive")]
-    ]
+    return ReplyKeyboardMarkup([
+        [KeyboardButton("🎬 Kino qismlarini birlashtirish")],
+        [KeyboardButton("🎞 Video ishlash"), KeyboardButton("🖼 Rasm ishlash")],
+        [KeyboardButton("📊 Statistika"),    KeyboardButton("❓ Yordam")]
+    ], resize_keyboard=True)
 
 @app.on_message(filters.command("start"))
 async def cmd_start(client, message):
-    await send_kb(
-        message.from_user.id,
+    await message.reply_text(
         "👋 *Assalomu alaykum!*\n\n"
         "🎬 Kino birlashtirish, video siqish yoki bo'lish uchun tugmalardan foydalaning.",
-        main_kb(), kb_type="reply"
+        reply_markup=main_kb(),
+        parse_mode=ParseMode.MARKDOWN
     )
 
 # ──────────────────────────────────────────────
@@ -693,12 +632,12 @@ async def start_merge(client, message):
     uid = message.from_user.id
     clean_user(uid)
     user_data[uid] = {"mode": "merge", "videos": []}
-    await send_kb(
-        message.from_user.id,
-        f"🎬 *Kino birlashtirish rejimi yoqildi!*\n\n"
-        f"📌 Videolarni *tartib bilan* yuboring.\n"
-        f"📦 Maksimal *{'{MAX_MERGE_VIDEOS}'}* ta qism qo'llab-quvvatlanadi.",
-        merge_keyboard(0)
+    await message.reply_text(
+        "🎬 *Kino birlashtirish rejimi yoqildi!*\n\n"
+        "📌 Videolarni *tartib bilan* yuboring.\n"
+        f"📦 Maksimal *{MAX_MERGE_VIDEOS}* ta qism qo'llab-quvvatlanadi.",
+        parse_mode=ParseMode.MARKDOWN,
+        reply_markup=merge_keyboard(0)
     )
 
 # ──────────────────────────────────────────────
@@ -710,10 +649,10 @@ async def start_copyright(client, message):
     uid = message.from_user.id
     clean_user(uid)
     user_data[uid] = {"mode": "copyright"}
-    await send_kb(
-        message.from_user.id,
+    await message.reply_text(
         "🚫 *YT taqiqini olib tashlash*\n\n📌 Video yuboring.",
-        main_kb(), kb_type="reply"
+        parse_mode=ParseMode.MARKDOWN,
+        reply_markup=main_kb()
     )
 
 # ──────────────────────────────────────────────
@@ -763,12 +702,12 @@ async def handle_video(client, message):
             else f"⚠️ Maksimal {MAX_MERGE_VIDEOS} ta. Endi birlashtiring."
         )
 
-        await edit_kb(
-            uid, status.id,
+        await status.edit_text(
             f"✅ *{part_n}-qism qabul qilindi!*\n\n"
             f"📋 Jami qabul qilingan: *{new_count} ta qism*\n\n"
             f"{hint}",
-            merge_keyboard(new_count)
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=merge_keyboard(new_count)
         )
         return
 
@@ -788,18 +727,18 @@ async def handle_video(client, message):
         )
         user_data[uid]["path"] = file_path
 
-        await edit_kb(
-            uid, status.id,
+        await status.edit_text(
             "✅ *Video yuklandi!*\n\n"
             "🔧 YouTube taqiqini chetlab o'tish:\n"
             "• Vizual o'zgartiriladi (mirror + crop + color)\n"
             "• Tezlik biroz oshiriladi (+1%)\n"
             "• Audio pitch o'zgartiriladi (+3%)\n\n"
             "_ContentID vizual va audio fingerprint tanimaydi_",
-            [
-                [btn("🚀 Taqiqni olib tashlash", "bp_medium")],
-                [btn("❌ Bekor qilish", "cr_cancel", style="destructive")]
-            ]
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🚀 Taqiqni olib tashlash", callback_data="bp_medium")],
+                [InlineKeyboardButton("❌ Bekor qilish",          callback_data="cr_cancel")]
+            ])
         )
         return
 
@@ -821,13 +760,12 @@ async def handle_video(client, message):
         "type":      "video",
         "orig_size": round(os.path.getsize(file_path) / (1024 * 1024), 2)
     }
-    await edit_kb(
-        uid, msg.id,
+    await msg.edit_text(
         "✅ Video yuklandi. Tanlang:",
-        [
-            [btn("🗜 Siqish",  "v_comp"),
-             btn("✂️ Bo'lish", "v_split")]
-        ]
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("🗜 Siqish",  callback_data="v_comp"),
+             InlineKeyboardButton("✂️ Bo'lish", callback_data="v_split")]
+        ])
     )
 
 # ──────────────────────────────────────────────
@@ -986,18 +924,18 @@ async def on_callback(client, q):
         if uid not in user_data or "path" not in user_data.get(uid, {}):
             await q.answer("Fayl topilmadi.", show_alert=True)
             return
-        await edit_kb(
-            uid, q.message.id,
+        await q.message.edit_text(
             "🔧 *Bypass darajasini tanlang:*\n\n"
             "🟢 *Yengil* — +2% pitch, quloqqa sezilib qolmaydi\n"
             "🟡 *O'rta* — +3% pitch + EQ _(ko'p hollarda yetarli)_\n"
             "🔴 *Kuchli* — +4% pitch + EQ + shovqin\n",
-            [
-                [btn("🟢 Yengil", "bp_soft",  style="secondary")],
-                [btn("🟡 O'rta",  "bp_medium")],
-                [btn("🔴 Kuchli", "bp_hard",  style="destructive")],
-                [btn("❌ Bekor",  "cr_cancel", style="destructive")],
-            ]
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🟢 Yengil", callback_data="bp_soft")],
+                [InlineKeyboardButton("🟡 O'rta",  callback_data="bp_medium")],
+                [InlineKeyboardButton("🔴 Kuchli", callback_data="bp_hard")],
+                [InlineKeyboardButton("❌ Bekor",  callback_data="cr_cancel")],
+            ])
         )
         return
 
@@ -1074,11 +1012,13 @@ async def on_callback(client, q):
         out_path, found_list = await remove_copyright(video_path, mode, status)
 
         if not found_list:
-            await edit_kb(
-                uid, status.id,
+            await status.edit_text(
                 "⚠️ *Shazam topolmadi.*\n\n"
                 "«🔧 Bypass» usulini ishlatib ko'ring!",
-                [[btn("🔧 Bypass usulini ishlatish", "cr_bypass")]]
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🔧 Bypass usulini ishlatish", callback_data="cr_bypass")]
+                ])
             )
             return
 
