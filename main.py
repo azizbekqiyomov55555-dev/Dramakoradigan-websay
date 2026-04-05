@@ -608,10 +608,11 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
 # ──────────────────────────────────────────────
 
 def main_kb():
+    # KeyboardButton style qo'llab-quvvatlamaydi (Pyrogram hali yangilanmagan)
     return ReplyKeyboardMarkup([
-        [KeyboardButton("🎬 Kino qismlarini birlashtirish", style="primary")],
-        [KeyboardButton("🎞 Video ishlash", style="success"), KeyboardButton("🖼 Rasm ishlash", style="success")],
-        [KeyboardButton("📊 Statistika", style="primary"),    KeyboardButton("❓ Yordam", style="primary")]
+        [KeyboardButton("🎬 Kino qismlarini birlashtirish")],
+        [KeyboardButton("🎞 Video ishlash"), KeyboardButton("🖼 Rasm ishlash")],
+        [KeyboardButton("📊 Statistika"),    KeyboardButton("❓ Yordam")]
     ], resize_keyboard=True)
 
 @app.on_message(filters.command("start"))
@@ -736,7 +737,7 @@ async def handle_video(client, message):
             "_ContentID vizual va audio fingerprint tanimaydi_",
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🚀 Taqiqni olib tashlash", callback_data="bp_medium", style="primary")],
+                [InlineKeyboardButton("🚀 Taqiqni olib tashlash", callback_data="bp_medium", style="success")],
                 [InlineKeyboardButton("❌ Bekor qilish",          callback_data="cr_cancel", style="danger")]
             ])
         )
