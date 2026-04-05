@@ -624,11 +624,11 @@ def send_colored_kb(chat_id: int, text: str):
     """
     keyboard = {
         "keyboard": [
-            [{"text": "🎬 Kino qismlarini birlashtirish", "style": "primary"}],
-            [{"text": "🎞 Video ishlash", "style": "success"},
-             {"text": "🖼 Rasm ishlash", "style": "success"}],
+            [{"text": "🎬 Kino qismlarini birlashtirish", "style": "success"}],
+            [{"text": "🎞 Video ishlash", "style": "primary"},
+             {"text": "🖼 Rasm ishlash", "style": "primary"}],
             [{"text": "📊 Statistika", "style": "primary"},
-             {"text": "❓ Yordam",     "style": "primary"}]
+             {"text": "❓ Yordam",     "style": "danger"}]
         ],
         "resize_keyboard": True
     }
