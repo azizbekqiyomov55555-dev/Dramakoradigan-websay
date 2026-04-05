@@ -73,9 +73,9 @@ def merge_keyboard(count):
     rows = []
     if count >= 1:
         rows.append([InlineKeyboardButton(
-            f"🎬 Birlashtir  ({count} ta qism)", callback_data="do_merge"
+            f"🎬 Birlashtir  ({count} ta qism)", callback_data="do_merge", style="success"
         )])
-    rows.append([InlineKeyboardButton("❌ Bekor qilish", callback_data="cancel_merge")])
+    rows.append([InlineKeyboardButton("❌ Bekor qilish", callback_data="cancel_merge", style="danger")])
     return InlineKeyboardMarkup(rows)
 
 async def safe_edit(msg, text, kb=None, last_t=None, min_gap=0.8):
@@ -609,9 +609,9 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
 
 def main_kb():
     return ReplyKeyboardMarkup([
-        [KeyboardButton("🎬 Kino qismlarini birlashtirish")],
-        [KeyboardButton("🎞 Video ishlash"), KeyboardButton("🖼 Rasm ishlash")],
-        [KeyboardButton("📊 Statistika"),    KeyboardButton("❓ Yordam")]
+        [KeyboardButton("🎬 Kino qismlarini birlashtirish", style="primary")],
+        [KeyboardButton("🎞 Video ishlash", style="success"), KeyboardButton("🖼 Rasm ishlash", style="success")],
+        [KeyboardButton("📊 Statistika", style="primary"),    KeyboardButton("❓ Yordam", style="primary")]
     ], resize_keyboard=True)
 
 @app.on_message(filters.command("start"))
@@ -736,8 +736,8 @@ async def handle_video(client, message):
             "_ContentID vizual va audio fingerprint tanimaydi_",
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🚀 Taqiqni olib tashlash", callback_data="bp_medium")],
-                [InlineKeyboardButton("❌ Bekor qilish",          callback_data="cr_cancel")]
+                [InlineKeyboardButton("🚀 Taqiqni olib tashlash", callback_data="bp_medium", style="primary")],
+                [InlineKeyboardButton("❌ Bekor qilish",          callback_data="cr_cancel", style="danger")]
             ])
         )
         return
@@ -763,8 +763,8 @@ async def handle_video(client, message):
     await msg.edit_text(
         "✅ Video yuklandi. Tanlang:",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("🗜 Siqish",  callback_data="v_comp"),
-             InlineKeyboardButton("✂️ Bo'lish", callback_data="v_split")]
+            [InlineKeyboardButton("🗜 Siqish",  callback_data="v_comp",  style="primary"),
+             InlineKeyboardButton("✂️ Bo'lish", callback_data="v_split", style="primary")]
         ])
     )
 
@@ -931,10 +931,10 @@ async def on_callback(client, q):
             "🔴 *Kuchli* — +4% pitch + EQ + shovqin\n",
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🟢 Yengil", callback_data="bp_soft")],
-                [InlineKeyboardButton("🟡 O'rta",  callback_data="bp_medium")],
-                [InlineKeyboardButton("🔴 Kuchli", callback_data="bp_hard")],
-                [InlineKeyboardButton("❌ Bekor",  callback_data="cr_cancel")],
+                [InlineKeyboardButton("🟢 Yengil", callback_data="bp_soft",   style="success")],
+                [InlineKeyboardButton("🟡 O'rta",  callback_data="bp_medium", style="primary")],
+                [InlineKeyboardButton("🔴 Kuchli", callback_data="bp_hard",   style="danger")],
+                [InlineKeyboardButton("❌ Bekor",  callback_data="cr_cancel", style="danger")],
             ])
         )
         return
@@ -1017,7 +1017,7 @@ async def on_callback(client, q):
                 "«🔧 Bypass» usulini ishlatib ko'ring!",
                 parse_mode=ParseMode.MARKDOWN,
                 reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("🔧 Bypass usulini ishlatish", callback_data="cr_bypass")]
+                    [InlineKeyboardButton("🔧 Bypass usulini ishlatish", callback_data="cr_bypass", style="primary")]
                 ])
             )
             return
