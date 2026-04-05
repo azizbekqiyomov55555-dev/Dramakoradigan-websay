@@ -137,8 +137,15 @@ async def safe_edit(msg, text, kb=None, last_t=None, min_gap=0.8):
     if last_t is not None and now - last_t[0] < min_gap:
         return
     try:
+        # kb — rangli tugmalar dict, Pyrogram ga berib bo'lmaydi
+        # Shuning uchun avval matnni yangilaymiz, keyin tugmalarni HTTP API bilan
         await msg.edit_text(text, parse_mode=ParseMode.MARKDOWN,
-                            reply_markup=kb, disable_web_page_preview=True)
+                            disable_web_page_preview=True)
+        if kb is not None:
+            _tg("editMessageReplyMarkup",
+                chat_id=msg.chat.id,
+                message_id=msg.id,
+                reply_markup={"inline_keyboard": kb})
         if last_t is not None:
             last_t[0] = now
     except:
