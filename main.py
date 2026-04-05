@@ -27,7 +27,7 @@ BOT_TOKEN = "8713773581:AAEu0fZmpEMyg0aNqrbVOtnbNaXhXbqONGM"
 
 RAPIDAPI_KEY     = "30f65179admsh07b2707861cb0f6p104a91jsn2bb1ee84511f"
 SEGMENT_SEC      = 15
-MAX_MERGE_VIDEOS = 500   # 500 tagacha qism birlashtirish
+MAX_MERGE_VIDEOS = 500
 
 app = Client("video_processor", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
@@ -108,6 +108,35 @@ def clean_user(uid):
         except:
             pass
     del user_data[uid]
+
+# ──────────────────────────────────────────────
+#  RANGLI REPLY KEYBOARD (HTTP Bot API orqali)
+# ──────────────────────────────────────────────
+
+def send_colored_kb(chat_id: int, text: str):
+    keyboard = {
+        "keyboard": [
+            [{"text": "🎬 Kino qismlarini birlashtirish", "style": "success"}],
+            [{"text": "🎞 Video ishlash", "style": "primary"},
+             {"text": "🖼 Rasm ishlash", "style": "primary"}],
+            [{"text": "📊 Statistika",   "style": "primary"},
+             {"text": "❓ Yordam",        "style": "danger"}]
+        ],
+        "resize_keyboard": True
+    }
+    try:
+        requests.post(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+            json={
+                "chat_id":      chat_id,
+                "text":         text,
+                "parse_mode":   "Markdown",
+                "reply_markup": keyboard
+            },
+            timeout=10
+        )
+    except Exception as e:
+        print(f"[HTTP KB ERROR] {e}")
 
 # ──────────────────────────────────────────────
 #  DOWNLOAD PROGRESS
@@ -197,17 +226,10 @@ async def up_progress(current, total, msg, label):
         pass
 
 # ──────────────────────────────────────────────
-#  BIRLASHTIRISH — FAQAT COPY, HECH QANDAY ENCODE YO'Q
+#  BIRLASHTIRISH
 # ──────────────────────────────────────────────
 
 async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> bool:
-    """
-    Barcha qismlarni -c copy bilan birlashtiradi.
-    Sifat o'zgarmaydi, hajm o'zgarmaydi, encode yo'q.
-
-    1-urinish: to'g'ridan-to'g'ri concat
-    2-urinish: har qismni remux qilib, keyin concat (format noto'g'ri bo'lsa)
-    """
     total   = len(video_paths)
     tmp_dir = os.path.dirname(out_path)
     t       = [time.time()]
@@ -272,7 +294,7 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
                         pass
 
         try:
-            await asyncio.wait_for(_read(), timeout=7200)  # 2 soat
+            await asyncio.wait_for(_read(), timeout=7200)
         except asyncio.TimeoutError:
             proc.kill()
             print("[MERGE] Timeout!")
@@ -281,20 +303,18 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
         ok = os.path.exists(dest) and os.path.getsize(dest) > 1024
         return ok, stderr_data
 
-    # ── 1-URINISH: to'g'ridan-to'g'ri concat ──
     ok, stderr_data = await run_copy_concat(video_paths, out_path, 5, 97)
 
     if ok:
-        print("[MERGE] ✅ 1-urinish (direct copy) muvaffaqiyatli!")
+        print("[MERGE] ✅ 1-urinish muvaffaqiyatli!")
         try:
             os.remove(list_file)
         except:
             pass
         return True
 
-    # ── 2-URINISH: remux + concat ──
     err_log = stderr_data.decode("utf-8", errors="ignore")[-300:]
-    print(f"[MERGE] ⚠️ 1-urinish bajarilmadi:\n{err_log}\n→ Remux urinilmoqda...")
+    print(f"[MERGE] ⚠️ 1-urinish bajarilmadi → Remux...")
 
     await safe_edit(
         status_msg,
@@ -308,8 +328,7 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
         tmp_out = os.path.join(tmp_dir, f"_remux_{i}.mp4")
         cmd_remux = [
             "ffmpeg", "-y", "-i", vpath,
-            "-c", "copy", "-movflags", "+faststart",
-            tmp_out
+            "-c", "copy", "-movflags", "+faststart", tmp_out
         ]
         proc_r = await asyncio.create_subprocess_exec(
             *cmd_remux,
@@ -340,14 +359,13 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
                 os.remove(fp)
             except:
                 pass
-
     try:
         os.remove(list_file)
     except:
         pass
 
     if ok2:
-        print("[MERGE] ✅ 2-urinish (remux+copy) muvaffaqiyatli!")
+        print("[MERGE] ✅ 2-urinish muvaffaqiyatli!")
         return True
 
     print("[MERGE] ❌ Ikki urinish ham bajarilmadi.")
@@ -605,46 +623,8 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
     return None, found_list
 
 # ──────────────────────────────────────────────
-#  MENYU
+#  START
 # ──────────────────────────────────────────────
-
-def main_kb():
-    # KeyboardButton style qo'llab-quvvatlamaydi (Pyrogram hali yangilanmagan)
-    return ReplyKeyboardMarkup([
-        [KeyboardButton("🎬 Kino qismlarini birlashtirish")],
-        [KeyboardButton("🎞 Video ishlash"), KeyboardButton("🖼 Rasm ishlash")],
-        [KeyboardButton("📊 Statistika"),    KeyboardButton("❓ Yordam")]
-    ], resize_keyboard=True)
-
-# ── HTTP Bot API orqali rangli ReplyKeyboard yuborish ──
-def send_colored_kb(chat_id: int, text: str):
-    """
-    Pyrogram KeyboardButton style qo'llab-quvvatlamagani uchun
-    to'g'ridan-to'g'ri HTTP Bot API ishlatiladi.
-    """
-    keyboard = {
-        "keyboard": [
-            [{"text": "🎬 Kino qismlarini birlashtirish", "style": "success"}],
-            [{"text": "🎞 Video ishlash", "style": "primary"},
-             {"text": "🖼 Rasm ishlash", "style": "primary"}],
-            [{"text": "📊 Statistika", "style": "primary"},
-             {"text": "❓ Yordam",     "style": "danger"}]
-        ],
-        "resize_keyboard": True
-    }
-    try:
-        requests.post(
-            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-            json={
-                "chat_id": chat_id,
-                "text": text,
-                "parse_mode": "Markdown",
-                "reply_markup": keyboard
-            },
-            timeout=10
-        )
-    except Exception as e:
-        print(f"[HTTP KB ERROR] {e}")
 
 @app.on_message(filters.command("start"))
 async def cmd_start(client, message):
@@ -764,7 +744,7 @@ async def handle_video(client, message):
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("🚀 Taqiqni olib tashlash", callback_data="bp_medium", style="success")],
-                [InlineKeyboardButton("❌ Bekor qilish",          callback_data="cr_cancel", style="danger")]
+                [InlineKeyboardButton("❌ Bekor qilish",          callback_data="cr_cancel",  style="danger")]
             ])
         )
         return
@@ -804,7 +784,6 @@ async def on_callback(client, q):
     uid  = q.from_user.id
     data = q.data
 
-    # ── BIRLASHTIRISH ──
     if data == "cancel_merge":
         clean_user(uid)
         await q.message.edit_text("❌ Birlashtirish bekor qilindi.")
@@ -873,7 +852,6 @@ async def on_callback(client, q):
         user_data.pop(uid, None)
         return
 
-    # ── TO'LIQ OVOZ O'CHIRISH ──
     if data == "cr_mute_full":
         if uid not in user_data or "path" not in user_data.get(uid, {}):
             await q.answer("Fayl topilmadi.", show_alert=True)
@@ -946,7 +924,6 @@ async def on_callback(client, q):
         clean_user(uid)
         return
 
-    # ── BYPASS CALLBACK ──
     if data == "cr_bypass":
         if uid not in user_data or "path" not in user_data.get(uid, {}):
             await q.answer("Fayl topilmadi.", show_alert=True)
@@ -1016,7 +993,6 @@ async def on_callback(client, q):
         clean_user(uid)
         return
 
-    # ── ANIQLASH + O'CHIRISH ──
     if data == "cr_cancel":
         clean_user(uid)
         await q.message.edit_text("❌ Bekor qilindi.")
@@ -1082,7 +1058,6 @@ async def on_callback(client, q):
         clean_user(uid)
         return
 
-    # ── VIDEO SIQISH / BO'LISH ──
     if data == "v_comp":
         if uid not in user_data:
             await q.answer("Ma'lumot topilmadi.", show_alert=True)
