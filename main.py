@@ -17,6 +17,22 @@ from static_ffmpeg import add_paths
 add_paths()
 
 # ──────────────────────────────────────────────
+#  RANGLI TUGMA YORDAMCHISI  (Bot API 9.4)
+# ──────────────────────────────────────────────
+
+def btn(text, callback_data, style=None, emoji_id=None):
+    """
+    InlineKeyboardButton yasaydi.
+    style: None (ko'k/default) | "destructive" (qizil) | "secondary" (kulrang)
+    """
+    b = InlineKeyboardButton(text, callback_data=callback_data)
+    if style:
+        b.style = style
+    if emoji_id:
+        b.icon_custom_emoji_id = emoji_id
+    return b
+
+# ──────────────────────────────────────────────
 #  SOZLAMALAR
 # ──────────────────────────────────────────────
 
@@ -72,10 +88,8 @@ def get_video_info(path):
 def merge_keyboard(count):
     rows = []
     if count >= 1:
-        rows.append([InlineKeyboardButton(
-            f"🎬 Birlashtir  ({count} ta qism)", callback_data="do_merge"
-        )])
-    rows.append([InlineKeyboardButton("❌ Bekor qilish", callback_data="cancel_merge")])
+        rows.append([btn(f"🎬 Birlashtir  ({count} ta qism)", "do_merge")])  # ko'k (default)
+    rows.append([btn("❌ Bekor qilish", "cancel_merge", style="destructive")])  # qizil
     return InlineKeyboardMarkup(rows)
 
 async def safe_edit(msg, text, kb=None, last_t=None, min_gap=0.8):
@@ -736,8 +750,8 @@ async def handle_video(client, message):
             "_ContentID vizual va audio fingerprint tanimaydi_",
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🚀 Taqiqni olib tashlash", callback_data="bp_medium")],
-                [InlineKeyboardButton("❌ Bekor qilish",          callback_data="cr_cancel")]
+                [btn("🚀 Taqiqni olib tashlash", "bp_medium")],          # ko'k
+                [btn("❌ Bekor qilish",          "cr_cancel", style="destructive")]  # qizil
             ])
         )
         return
@@ -763,8 +777,8 @@ async def handle_video(client, message):
     await msg.edit_text(
         "✅ Video yuklandi. Tanlang:",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("🗜 Siqish",  callback_data="v_comp"),
-             InlineKeyboardButton("✂️ Bo'lish", callback_data="v_split")]
+            [btn("🗜 Siqish",  "v_comp"),
+             btn("✂️ Bo'lish", "v_split")]
         ])
     )
 
@@ -931,10 +945,10 @@ async def on_callback(client, q):
             "🔴 *Kuchli* — +4% pitch + EQ + shovqin\n",
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🟢 Yengil", callback_data="bp_soft")],
-                [InlineKeyboardButton("🟡 O'rta",  callback_data="bp_medium")],
-                [InlineKeyboardButton("🔴 Kuchli", callback_data="bp_hard")],
-                [InlineKeyboardButton("❌ Bekor",  callback_data="cr_cancel")],
+                [btn("🟢 Yengil", "bp_soft",   style="secondary")],   # kulrang
+                [btn("🟡 O'rta",  "bp_medium")],                       # ko'k
+                [btn("🔴 Kuchli", "bp_hard",   style="destructive")],  # qizil
+                [btn("❌ Bekor",  "cr_cancel",  style="destructive")],  # qizil
             ])
         )
         return
@@ -1017,7 +1031,7 @@ async def on_callback(client, q):
                 "«🔧 Bypass» usulini ishlatib ko'ring!",
                 parse_mode=ParseMode.MARKDOWN,
                 reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("🔧 Bypass usulini ishlatish", callback_data="cr_bypass")]
+                    [btn("🔧 Bypass usulini ishlatish", "cr_bypass")]  # ko'k
                 ])
             )
             return
