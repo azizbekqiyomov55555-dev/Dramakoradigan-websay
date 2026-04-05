@@ -36,40 +36,39 @@ def kbtn(text, style=None):
         d["style"] = style
     return d
 
-def _tg(method, **kw):
+def _tg_sync(method, **kw):
+    """Sinxron HTTP so'rov (thread ichida ishlatiladi)."""
     try:
-        requests.post(
+        r = requests.post(
             f"https://api.telegram.org/bot{BOT_TOKEN}/{method}",
             json=kw, timeout=10
         )
+        return r.json()
     except Exception as e:
         print(f"[TG:{method}] {e}")
+        return {}
+
+async def _tg(method, **kw):
+    """Asinxron HTTP so'rov — event loop ni bloklamaydi."""
+    return await asyncio.to_thread(_tg_sync, method, **kw)
 
 async def send_kb(chat_id, text, rows, kb_type="inline", parse_mode="Markdown"):
     """Rangli tugmalar bilan yangi xabar yuboradi, message_id qaytaradi."""
     rm = {"inline_keyboard": rows} if kb_type == "inline" else {"keyboard": rows, "resize_keyboard": True}
-    try:
-        r = requests.post(
-            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-            json={"chat_id": chat_id, "text": text,
-                  "parse_mode": parse_mode, "reply_markup": rm},
-            timeout=10
-        )
-        return r.json().get("result", {}).get("message_id")
-    except Exception as e:
-        print(f"[send_kb] {e}")
-        return None
+    r = await _tg("sendMessage", chat_id=chat_id, text=text,
+                  parse_mode=parse_mode, reply_markup=rm)
+    return r.get("result", {}).get("message_id")
 
 async def edit_kb(chat_id, message_id, text, rows, kb_type="inline", parse_mode="Markdown"):
     """Rangli tugmalar bilan xabarni tahrirlaydi."""
     rm = {"inline_keyboard": rows} if kb_type == "inline" else {"keyboard": rows, "resize_keyboard": True}
-    _tg("editMessageText", chat_id=chat_id, message_id=message_id,
-        text=text, parse_mode=parse_mode, reply_markup=rm)
+    await _tg("editMessageText", chat_id=chat_id, message_id=message_id,
+              text=text, parse_mode=parse_mode, reply_markup=rm)
 
 async def edit_rows(chat_id, message_id, rows):
     """Faqat tugmalarni yangilaydi."""
-    _tg("editMessageReplyMarkup", chat_id=chat_id, message_id=message_id,
-        reply_markup={"inline_keyboard": rows})
+    await _tg("editMessageReplyMarkup", chat_id=chat_id, message_id=message_id,
+              reply_markup={"inline_keyboard": rows})
 
 
 # ──────────────────────────────────────────────
