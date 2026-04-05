@@ -20,27 +20,35 @@ add_paths()
 #  RANGLI TUGMA YORDAMCHISI  (Bot API 9.4)
 # ──────────────────────────────────────────────
 
-def btn(text, callback_data, style=None, emoji_id=None):
-    """
-    InlineKeyboardButton yasaydi.
-    style: None (ko'k/default) | "destructive" (qizil) | "secondary" (kulrang)
-    """
-    b = InlineKeyboardButton(text, callback_data=callback_data)
+# ──────────────────────────────────────────────
+#  RANGLI TUGMALAR — Bot API 9.4 (dict usuli)
+# ──────────────────────────────────────────────
+# Pyrogram style xususiyatini hali qo'llab-quvvatlamaydi,
+# shuning uchun tugmalarni dict sifatida yasab,
+# reply_markup ni to'g'ridan-to'g'ri JSON dict ko'rinishida
+# yuboramiz (Pyrogram bu usulni qabul qiladi).
+
+def btn(text, callback_data, style=None):
+    """Inline tugma dict yasaydi."""
+    d = {"text": text, "callback_data": callback_data}
     if style:
-        b.style = style
-    if emoji_id:
-        b.icon_custom_emoji_id = emoji_id
-    return b
+        d["style"] = style
+    return d
 
 def kbtn(text, style=None):
-    """
-    ReplyKeyboard uchun rangli KeyboardButton yasaydi.
-    style: None (ko'k/default) | "destructive" (qizil) | "secondary" (kulrang)
-    """
-    b = KeyboardButton(text)
+    """Reply keyboard tugma dict yasaydi."""
+    d = {"text": text}
     if style:
-        b.style = style
-    return b
+        d["style"] = style
+    return d
+
+def inline_kb(*rows):
+    """btn() lardan InlineKeyboardMarkup yasaydi."""
+    return {"inline_keyboard": [list(row) for row in rows]}
+
+def reply_kb(*rows, resize=True):
+    """kbtn() lardan ReplyKeyboardMarkup yasaydi."""
+    return {"keyboard": [list(row) for row in rows], "resize_keyboard": resize}
 
 # ──────────────────────────────────────────────
 #  SOZLAMALAR
@@ -98,9 +106,9 @@ def get_video_info(path):
 def merge_keyboard(count):
     rows = []
     if count >= 1:
-        rows.append([btn(f"🎬 Birlashtir  ({count} ta qism)", "do_merge")])  # ko'k (default)
-    rows.append([btn("❌ Bekor qilish", "cancel_merge", style="destructive")])  # qizil
-    return InlineKeyboardMarkup(rows)
+        rows.append([btn(f"🎬 Birlashtir  ({count} ta qism)", "do_merge")])
+    rows.append([btn("❌ Bekor qilish", "cancel_merge", style="destructive")])
+    return {"inline_keyboard": rows}
 
 async def safe_edit(msg, text, kb=None, last_t=None, min_gap=0.8):
     now = time.time()
@@ -632,12 +640,15 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
 # ──────────────────────────────────────────────
 
 def main_kb():
-    return ReplyKeyboardMarkup([
-        [kbtn("🎬 Kino qismlarini birlashtirish", style="success")],
-        [kbtn("🎞 Video ishlash"), kbtn("🖼 Rasm ishlash")],
-        [kbtn("📊 Statistika", style="secondary"),
-         kbtn("❓ Yordam",     style="destructive")]
-    ], resize_keyboard=True)
+    return {
+        "keyboard": [
+            [kbtn("🎬 Kino qismlarini birlashtirish", style="success")],
+            [kbtn("🎞 Video ishlash"), kbtn("🖼 Rasm ishlash")],
+            [kbtn("📊 Statistika", style="secondary"),
+             kbtn("❓ Yordam",     style="destructive")]
+        ],
+        "resize_keyboard": True
+    }
 
 @app.on_message(filters.command("start"))
 async def cmd_start(client, message):
@@ -760,10 +771,10 @@ async def handle_video(client, message):
             "• Audio pitch o'zgartiriladi (+3%)\n\n"
             "_ContentID vizual va audio fingerprint tanimaydi_",
             parse_mode=ParseMode.MARKDOWN,
-            reply_markup=InlineKeyboardMarkup([
-                [btn("🚀 Taqiqni olib tashlash", "bp_medium")],          # ko'k
-                [btn("❌ Bekor qilish",          "cr_cancel", style="destructive")]  # qizil
-            ])
+            reply_markup={"inline_keyboard": [
+                [btn("🚀 Taqiqni olib tashlash", "bp_medium")],
+                [btn("❌ Bekor qilish",          "cr_cancel", style="destructive")]
+            ]}
         )
         return
 
@@ -787,10 +798,10 @@ async def handle_video(client, message):
     }
     await msg.edit_text(
         "✅ Video yuklandi. Tanlang:",
-        reply_markup=InlineKeyboardMarkup([
+        reply_markup={"inline_keyboard": [
             [btn("🗜 Siqish",  "v_comp"),
              btn("✂️ Bo'lish", "v_split")]
-        ])
+        ]}
     )
 
 # ──────────────────────────────────────────────
@@ -955,12 +966,12 @@ async def on_callback(client, q):
             "🟡 *O'rta* — +3% pitch + EQ _(ko'p hollarda yetarli)_\n"
             "🔴 *Kuchli* — +4% pitch + EQ + shovqin\n",
             parse_mode=ParseMode.MARKDOWN,
-            reply_markup=InlineKeyboardMarkup([
-                [btn("🟢 Yengil", "bp_soft",   style="secondary")],   # kulrang
-                [btn("🟡 O'rta",  "bp_medium")],                       # ko'k
-                [btn("🔴 Kuchli", "bp_hard",   style="destructive")],  # qizil
-                [btn("❌ Bekor",  "cr_cancel",  style="destructive")],  # qizil
-            ])
+            reply_markup={"inline_keyboard": [
+                [btn("🟢 Yengil", "bp_soft",   style="secondary")],
+                [btn("🟡 O'rta",  "bp_medium")],
+                [btn("🔴 Kuchli", "bp_hard",   style="destructive")],
+                [btn("❌ Bekor",  "cr_cancel",  style="destructive")],
+            ]}
         )
         return
 
@@ -1041,9 +1052,9 @@ async def on_callback(client, q):
                 "⚠️ *Shazam topolmadi.*\n\n"
                 "«🔧 Bypass» usulini ishlatib ko'ring!",
                 parse_mode=ParseMode.MARKDOWN,
-                reply_markup=InlineKeyboardMarkup([
-                    [btn("🔧 Bypass usulini ishlatish", "cr_bypass")]  # ko'k
-                ])
+                reply_markup={"inline_keyboard": [
+                    [btn("🔧 Bypass usulini ishlatish", "cr_bypass")]
+                ]}
             )
             return
 
