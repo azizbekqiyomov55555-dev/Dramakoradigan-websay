@@ -3,6 +3,7 @@ import math
 import asyncio
 import subprocess
 import time
+import json
 import requests
 from pyrogram import Client, filters
 from pyrogram.types import (
@@ -615,13 +616,42 @@ def main_kb():
         [KeyboardButton("📊 Statistika"),    KeyboardButton("❓ Yordam")]
     ], resize_keyboard=True)
 
+# ── HTTP Bot API orqali rangli ReplyKeyboard yuborish ──
+def send_colored_kb(chat_id: int, text: str):
+    """
+    Pyrogram KeyboardButton style qo'llab-quvvatlamagani uchun
+    to'g'ridan-to'g'ri HTTP Bot API ishlatiladi.
+    """
+    keyboard = {
+        "keyboard": [
+            [{"text": "🎬 Kino qismlarini birlashtirish", "style": "primary"}],
+            [{"text": "🎞 Video ishlash", "style": "success"},
+             {"text": "🖼 Rasm ishlash", "style": "success"}],
+            [{"text": "📊 Statistika", "style": "primary"},
+             {"text": "❓ Yordam",     "style": "primary"}]
+        ],
+        "resize_keyboard": True
+    }
+    try:
+        requests.post(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+            json={
+                "chat_id": chat_id,
+                "text": text,
+                "parse_mode": "Markdown",
+                "reply_markup": keyboard
+            },
+            timeout=10
+        )
+    except Exception as e:
+        print(f"[HTTP KB ERROR] {e}")
+
 @app.on_message(filters.command("start"))
 async def cmd_start(client, message):
-    await message.reply_text(
+    send_colored_kb(
+        message.from_user.id,
         "👋 *Assalomu alaykum!*\n\n"
-        "🎬 Kino birlashtirish, video siqish yoki bo'lish uchun tugmalardan foydalaning.",
-        reply_markup=main_kb(),
-        parse_mode=ParseMode.MARKDOWN
+        "🎬 Kino birlashtirish, video siqish yoki bo'lish uchun tugmalardan foydalaning."
     )
 
 # ──────────────────────────────────────────────
@@ -650,11 +680,7 @@ async def start_copyright(client, message):
     uid = message.from_user.id
     clean_user(uid)
     user_data[uid] = {"mode": "copyright"}
-    await message.reply_text(
-        "🚫 *YT taqiqini olib tashlash*\n\n📌 Video yuboring.",
-        parse_mode=ParseMode.MARKDOWN,
-        reply_markup=main_kb()
-    )
+    send_colored_kb(uid, "🚫 *YT taqiqini olib tashlash*\n\n📌 Video yuboring.")
 
 # ──────────────────────────────────────────────
 #  VIDEO KELGANDA
