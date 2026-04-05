@@ -1,4 +1,5 @@
 import os
+import json
 import math
 import asyncio
 import subprocess
@@ -26,11 +27,60 @@ BOT_TOKEN = "8626867961:AAGhbJzxdBBLM-SOLVvX57q1m8-_FP36xuM"
 
 RAPIDAPI_KEY     = "30f65179admsh07b2707861cb0f6p104a91jsn2bb1ee84511f"
 SEGMENT_SEC      = 15
-MAX_MERGE_VIDEOS = 500   # 500 tagacha qism birlashtirish
+MAX_MERGE_VIDEOS = 500
+
+STATS_FILE = "stats.json"
 
 app = Client("video_processor", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 user_data = {}
+
+# ──────────────────────────────────────────────
+#  STATISTIKA (JSON fayl)
+# ──────────────────────────────────────────────
+
+def load_stats() -> dict:
+    if os.path.exists(STATS_FILE):
+        try:
+            with open(STATS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except:
+            pass
+    return {"users": {}, "total_merges": 0, "total_size_saved_mb": 0}
+
+def save_stats(data: dict):
+    try:
+        with open(STATS_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except:
+        pass
+
+def register_user(uid: int, name: str):
+    stats = load_stats()
+    uid_s = str(uid)
+    if uid_s not in stats["users"]:
+        stats["users"][uid_s] = {
+            "name": name,
+            "merges": 0,
+            "total_parts": 0,
+            "total_size_mb": 0
+        }
+    else:
+        stats["users"][uid_s]["name"] = name
+    save_stats(stats)
+
+def record_merge(uid: int, parts: int, size_mb: float):
+    stats = load_stats()
+    uid_s = str(uid)
+    if uid_s not in stats["users"]:
+        stats["users"][uid_s] = {"name": "?", "merges": 0, "total_parts": 0, "total_size_mb": 0}
+    stats["users"][uid_s]["merges"]       += 1
+    stats["users"][uid_s]["total_parts"]  += parts
+    stats["users"][uid_s]["total_size_mb"] = round(
+        stats["users"][uid_s]["total_size_mb"] + size_mb, 2
+    )
+    stats["total_merges"] += 1
+    save_stats(stats)
 
 # ──────────────────────────────────────────────
 #  YORDAMCHI FUNKSIYALAR
@@ -69,14 +119,101 @@ def get_video_info(path):
     except:
         return 1920, 1080
 
+# ──────────────────────────────────────────────
+#  TUGMALAR (RANGLI — Bot API 9.4+)
+# ──────────────────────────────────────────────
+
+def main_kb():
+    """
+    Start bosganda chiqadigan asosiy menyu.
+    🎬 Kino qismlarini birlashtirish — yashil (default ko'k)
+    📊 Statistika va ❓ Yordam — oddiy
+    """
+    return ReplyKeyboardMarkup([
+        [KeyboardButton("🎬 Kino qismlarini birlashtirish")],
+        [KeyboardButton("🎞 Video ishlash"), KeyboardButton("🖼 Rasm ishlash")],
+        [KeyboardButton("📊 Statistika"),    KeyboardButton("❓ Yordam")]
+    ], resize_keyboard=True)
+
 def merge_keyboard(count):
+    """
+    Birlashtirish tugmasi — QIZIL (destructive)
+    Bekor qilish — secondary (kulrang)
+    """
     rows = []
     if count >= 1:
-        rows.append([InlineKeyboardButton(
-            f"🎬 Birlashtir  ({count} ta qism)", callback_data="do_merge"
-        )])
-    rows.append([InlineKeyboardButton("❌ Bekor qilish", callback_data="cancel_merge")])
+        btn = InlineKeyboardButton(
+            f"🎬 Kino qismlarini birlashtirish ({count} ta qism)",
+            callback_data="do_merge"
+        )
+        # Bot API 9.4 rangli tugma: style="destructive" → qizil
+        try:
+            btn.style = "destructive"
+        except:
+            pass
+        rows.append([btn])
+
+    cancel_btn = InlineKeyboardButton("❌ Bekor qilish", callback_data="cancel_merge")
+    try:
+        cancel_btn.style = "secondary"
+    except:
+        pass
+    rows.append([cancel_btn])
     return InlineKeyboardMarkup(rows)
+
+def help_keyboard():
+    """Yordam tugmasi — secondary"""
+    btn = InlineKeyboardButton("🔙 Orqaga", callback_data="back_main")
+    try:
+        btn.style = "secondary"
+    except:
+        pass
+    return InlineKeyboardMarkup([[btn]])
+
+def video_action_keyboard():
+    """Video siqish/bo'lish tugmalari"""
+    comp_btn  = InlineKeyboardButton("🗜 Siqish",  callback_data="v_comp")
+    split_btn = InlineKeyboardButton("✂️ Bo'lish", callback_data="v_split")
+    try:
+        comp_btn.style  = "secondary"
+        split_btn.style = "secondary"
+    except:
+        pass
+    return InlineKeyboardMarkup([[comp_btn, split_btn]])
+
+def bypass_keyboard():
+    soft_btn   = InlineKeyboardButton("🟢 Yengil",  callback_data="bp_soft")
+    medium_btn = InlineKeyboardButton("🟡 O'rta",   callback_data="bp_medium")
+    hard_btn   = InlineKeyboardButton("🔴 Kuchli",  callback_data="bp_hard")
+    cancel_btn = InlineKeyboardButton("❌ Bekor",   callback_data="cr_cancel")
+    try:
+        cancel_btn.style = "destructive"
+    except:
+        pass
+    return InlineKeyboardMarkup([
+        [soft_btn],
+        [medium_btn],
+        [hard_btn],
+        [cancel_btn],
+    ])
+
+def copyright_keyboard():
+    bypass_btn = InlineKeyboardButton("🚀 Taqiqni olib tashlash", callback_data="bp_medium")
+    cancel_btn = InlineKeyboardButton("❌ Bekor qilish",          callback_data="cr_cancel")
+    try:
+        bypass_btn.style = "destructive"
+        cancel_btn.style = "secondary"
+    except:
+        pass
+    return InlineKeyboardMarkup([[bypass_btn], [cancel_btn]])
+
+def bypass_fallback_keyboard():
+    btn = InlineKeyboardButton("🔧 Bypass usulini ishlatish", callback_data="cr_bypass")
+    return InlineKeyboardMarkup([[btn]])
+
+# ──────────────────────────────────────────────
+#  PROGRESS
+# ──────────────────────────────────────────────
 
 async def safe_edit(msg, text, kb=None, last_t=None, min_gap=0.8):
     now = time.time()
@@ -108,10 +245,6 @@ def clean_user(uid):
             pass
     del user_data[uid]
 
-# ──────────────────────────────────────────────
-#  DOWNLOAD PROGRESS
-# ──────────────────────────────────────────────
-
 _dl_last:      dict = {}
 _dl_anim_task: dict = {}
 ANIM_FRAMES         = ["⏳", "⌛"]
@@ -135,15 +268,12 @@ async def dl_progress(current, total, msg, label):
     task = _dl_anim_task.pop(uid, None)
     if task and not task.done():
         task.cancel()
-
     now = time.time()
     if now - _dl_last.get(uid, 0) < 0.8:
         return
     _dl_last[uid] = now
-
     if not total:
         return
-
     pct    = int(current * 100 / total)
     cur_mb = round(current / (1024 * 1024), 1)
     tot_mb = round(total   / (1024 * 1024), 1)
@@ -167,10 +297,6 @@ async def start_dl(msg, label, coro_fn, *args, **kwargs):
         anim.cancel()
         _dl_anim_task.pop(uid, None)
     return result
-
-# ──────────────────────────────────────────────
-#  UPLOAD PROGRESS
-# ──────────────────────────────────────────────
 
 _up_last: dict = {}
 
@@ -196,17 +322,10 @@ async def up_progress(current, total, msg, label):
         pass
 
 # ──────────────────────────────────────────────
-#  BIRLASHTIRISH — FAQAT COPY, HECH QANDAY ENCODE YO'Q
+#  BIRLASHTIRISH
 # ──────────────────────────────────────────────
 
 async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> bool:
-    """
-    Barcha qismlarni -c copy bilan birlashtiradi.
-    Sifat o'zgarmaydi, hajm o'zgarmaydi, encode yo'q.
-
-    1-urinish: to'g'ridan-to'g'ri concat
-    2-urinish: har qismni remux qilib, keyin concat (format noto'g'ri bo'lsa)
-    """
     total   = len(video_paths)
     tmp_dir = os.path.dirname(out_path)
     t       = [time.time()]
@@ -271,29 +390,24 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
                         pass
 
         try:
-            await asyncio.wait_for(_read(), timeout=7200)  # 2 soat
+            await asyncio.wait_for(_read(), timeout=7200)
         except asyncio.TimeoutError:
             proc.kill()
-            print("[MERGE] Timeout!")
 
         _, stderr_data = await proc.communicate()
         ok = os.path.exists(dest) and os.path.getsize(dest) > 1024
         return ok, stderr_data
 
-    # ── 1-URINISH: to'g'ridan-to'g'ri concat ──
     ok, stderr_data = await run_copy_concat(video_paths, out_path, 5, 97)
 
     if ok:
-        print("[MERGE] ✅ 1-urinish (direct copy) muvaffaqiyatli!")
         try:
             os.remove(list_file)
         except:
             pass
         return True
 
-    # ── 2-URINISH: remux + concat ──
     err_log = stderr_data.decode("utf-8", errors="ignore")[-300:]
-    print(f"[MERGE] ⚠️ 1-urinish bajarilmadi:\n{err_log}\n→ Remux urinilmoqda...")
 
     await safe_edit(
         status_msg,
@@ -339,18 +453,12 @@ async def merge_with_progress(video_paths: list, out_path: str, status_msg) -> b
                 os.remove(fp)
             except:
                 pass
-
     try:
         os.remove(list_file)
     except:
         pass
 
-    if ok2:
-        print("[MERGE] ✅ 2-urinish (remux+copy) muvaffaqiyatli!")
-        return True
-
-    print("[MERGE] ❌ Ikki urinish ham bajarilmadi.")
-    return False
+    return ok2
 
 # ──────────────────────────────────────────────
 #  CONTENTID BYPASS
@@ -414,8 +522,6 @@ async def bypass_contentid(video_path: str, level: str, status_msg) -> str | Non
 
     if os.path.exists(out) and os.path.getsize(out) > 0:
         return out
-
-    print(f"[BYPASS ERROR] {stderr_data.decode('utf-8', errors='ignore')[-500:]}")
     return None
 
 # ──────────────────────────────────────────────
@@ -604,21 +710,18 @@ async def remove_copyright(video_path: str, mode: str, status_msg) -> tuple:
     return None, found_list
 
 # ──────────────────────────────────────────────
-#  MENYU
+#  /start HANDLER
 # ──────────────────────────────────────────────
-
-def main_kb():
-    return ReplyKeyboardMarkup([
-        [KeyboardButton("🎬 Kino qismlarini birlashtirish")],
-        [KeyboardButton("🎞 Video ishlash"), KeyboardButton("🖼 Rasm ishlash")],
-        [KeyboardButton("📊 Statistika"),    KeyboardButton("❓ Yordam")]
-    ], resize_keyboard=True)
 
 @app.on_message(filters.command("start"))
 async def cmd_start(client, message):
+    uid  = message.from_user.id
+    name = message.from_user.first_name or "Foydalanuvchi"
+    register_user(uid, name)
     await message.reply_text(
         "👋 *Assalomu alaykum!*\n\n"
-        "🎬 Kino birlashtirish, video siqish yoki bo'lish uchun tugmalardan foydalaning.",
+        "🎬 Kino birlashtirish, video siqish yoki bo'lish uchun "
+        "quyidagi tugmalardan foydalaning.",
         reply_markup=main_kb(),
         parse_mode=ParseMode.MARKDOWN
     )
@@ -629,7 +732,9 @@ async def cmd_start(client, message):
 
 @app.on_message(filters.regex("🎬 Kino qismlarini birlashtirish"))
 async def start_merge(client, message):
-    uid = message.from_user.id
+    uid  = message.from_user.id
+    name = message.from_user.first_name or "?"
+    register_user(uid, name)
     clean_user(uid)
     user_data[uid] = {"mode": "merge", "videos": []}
     await message.reply_text(
@@ -646,7 +751,9 @@ async def start_merge(client, message):
 
 @app.on_message(filters.regex("🚫 YT taqiqini olib tashlash"))
 async def start_copyright(client, message):
-    uid = message.from_user.id
+    uid  = message.from_user.id
+    name = message.from_user.first_name or "?"
+    register_user(uid, name)
     clean_user(uid)
     user_data[uid] = {"mode": "copyright"}
     await message.reply_text(
@@ -664,7 +771,9 @@ async def handle_video(client, message):
     if message.document and not message.document.mime_type.startswith("video/"):
         return
 
-    uid = message.from_user.id
+    uid  = message.from_user.id
+    name = message.from_user.first_name or "?"
+    register_user(uid, name)
 
     # ── BIRLASHTIRISH REJIMI ──
     if uid in user_data and user_data[uid].get("mode") == "merge":
@@ -735,10 +844,7 @@ async def handle_video(client, message):
             "• Audio pitch o'zgartiriladi (+3%)\n\n"
             "_ContentID vizual va audio fingerprint tanimaydi_",
             parse_mode=ParseMode.MARKDOWN,
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🚀 Taqiqni olib tashlash", callback_data="bp_medium")],
-                [InlineKeyboardButton("❌ Bekor qilish",          callback_data="cr_cancel")]
-            ])
+            reply_markup=copyright_keyboard()
         )
         return
 
@@ -762,10 +868,7 @@ async def handle_video(client, message):
     }
     await msg.edit_text(
         "✅ Video yuklandi. Tanlang:",
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("🗜 Siqish",  callback_data="v_comp"),
-             InlineKeyboardButton("✂️ Bo'lish", callback_data="v_split")]
-        ])
+        reply_markup=video_action_keyboard()
     )
 
 # ──────────────────────────────────────────────
@@ -803,6 +906,7 @@ async def on_callback(client, q):
 
         if ok:
             size_mb = round(os.path.getsize(out_path) / (1024 * 1024), 2)
+            record_merge(uid, total, size_mb)
             await status.edit_text(
                 f"✅ *Birlashtirish tugadi!*\n\n"
                 f"📹 {total} ta qism\n"
@@ -930,12 +1034,7 @@ async def on_callback(client, q):
             "🟡 *O'rta* — +3% pitch + EQ _(ko'p hollarda yetarli)_\n"
             "🔴 *Kuchli* — +4% pitch + EQ + shovqin\n",
             parse_mode=ParseMode.MARKDOWN,
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🟢 Yengil", callback_data="bp_soft")],
-                [InlineKeyboardButton("🟡 O'rta",  callback_data="bp_medium")],
-                [InlineKeyboardButton("🔴 Kuchli", callback_data="bp_hard")],
-                [InlineKeyboardButton("❌ Bekor",  callback_data="cr_cancel")],
-            ])
+            reply_markup=bypass_keyboard()
         )
         return
 
@@ -1016,9 +1115,7 @@ async def on_callback(client, q):
                 "⚠️ *Shazam topolmadi.*\n\n"
                 "«🔧 Bypass» usulini ishlatib ko'ring!",
                 parse_mode=ParseMode.MARKDOWN,
-                reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("🔧 Bypass usulini ishlatish", callback_data="cr_bypass")]
-                ])
+                reply_markup=bypass_fallback_keyboard()
             )
             return
 
@@ -1155,15 +1252,53 @@ async def text_input(client, message):
             await message.reply_text("❌ Xato!")
 
 # ──────────────────────────────────────────────
-#  STATISTIKA / YORDAM
+#  STATISTIKA — TO'LIQ MA'LUMOT
 # ──────────────────────────────────────────────
 
 @app.on_message(filters.regex("📊 Statistika"))
 async def stats(client, message):
+    data   = load_stats()
+    users  = data.get("users", {})
+    total_merges = data.get("total_merges", 0)
+    total_users  = len(users)
+
+    # Eng ko'p birlashtirgan foydalanuvchilar (top 5)
+    sorted_users = sorted(
+        users.items(),
+        key=lambda x: x[1].get("merges", 0),
+        reverse=True
+    )[:5]
+
+    top_text = ""
+    for i, (uid_s, info) in enumerate(sorted_users, 1):
+        nm      = info.get("name", "?")
+        merges  = info.get("merges", 0)
+        parts   = info.get("total_parts", 0)
+        size_mb = info.get("total_size_mb", 0)
+        top_text += (
+            f"  {i}. *{nm}*\n"
+            f"     🎬 {merges} ta birlashtirish | "
+            f"🎞 {parts} qism | "
+            f"📦 {size_mb} MB\n"
+        )
+
+    if not top_text:
+        top_text = "  _Hali ma'lumot yo'q_\n"
+
     await message.reply_text(
-        f"📊 *Statistika:*\n\n👥 Faol seans: {len(user_data)} ta\n🤖 Bot holati: Ishlamoqda ✅",
+        f"📊 *Bot Statistikasi*\n"
+        f"{'─'*28}\n\n"
+        f"👥 Jami foydalanuvchi: *{total_users}* ta\n"
+        f"🎬 Jami birlashtirish: *{total_merges}* ta\n"
+        f"⚙️ Faol seans: *{len(user_data)}* ta\n\n"
+        f"🏆 *Top foydalanuvchilar:*\n"
+        f"{top_text}",
         parse_mode=ParseMode.MARKDOWN
     )
+
+# ──────────────────────────────────────────────
+#  YORDAM
+# ──────────────────────────────────────────────
 
 @app.on_message(filters.regex("❓ Yordam"))
 async def help_msg(client, message):
@@ -1174,7 +1309,8 @@ async def help_msg(client, message):
         "🎞 *Video ishlash:*\n"
         "Video yuboring → Siqish yoki bo'lish tanlang\n\n"
         f"📦 Maksimal: *{MAX_MERGE_VIDEOS}* ta qism",
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.MARKDOWN,
+        reply_markup=help_keyboard()
     )
 
 @app.on_message(filters.regex("🎞 Video ishlash"))
