@@ -1,2 +1,4 @@
-pyrotgfork
+pyrogram
 tgcrypto
+Pillow
+static-ffmpeg
