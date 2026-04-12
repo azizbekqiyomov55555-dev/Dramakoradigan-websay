@@ -66,7 +66,7 @@
         /* MOVIE CARDS */
         .movie-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
         .movie-card { width: 100%; position: relative; }
-        .movie-card img { width: 100%; height: 160px; border-radius: 20px; object-fit: cover; border: 1px solid var(--border); }
+        .movie-card img { width: 100%; height: 160px; border-radius: 20px; object-fit: cover; border: 1px solid var(--border); background: linear-gradient(135deg, #111 0%, #1e1e1e 100%); }
         .price-badge { 
             position: absolute; top: 10px; right: 10px; 
             background: var(--accent); color: #000; 
@@ -666,7 +666,7 @@
     <!-- YouTube video ichki player -->
     <div id="ytPlayerPage" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:3000;flex-direction:column;">
         <!-- Orqaga tugmasi — yuqori markazda -->
-        <div style="position:absolute;top:20px;left:50%;transform:translateX(-50%);z-index:3100;pointer-events:auto;">
+        <div style="position:absolute;top:58px;left:50%;transform:translateX(-50%);z-index:3100;pointer-events:auto;">
             <button onclick="closeYtPlayer()" style="
                 display:flex;align-items:center;gap:7px;
                 background:rgba(30,30,30,0.92);
@@ -1304,7 +1304,7 @@
         <div id="igMaskBot" style="display:none;position:absolute;bottom:0;left:0;width:100%;background:#000;z-index:3025;pointer-events:none;"></div>
 
         <!-- Fullscreen holat: orqaga tugma — DOIM ustida -->
-        <div id="playerTopBar" style="position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:3030;pointer-events:auto;">
+        <div id="playerTopBar" style="position:fixed;top:58px;left:50%;transform:translateX(-50%);z-index:3030;pointer-events:auto;">
             <div onclick="closePlayer()" style="display:flex;align-items:center;gap:7px;background:rgba(30,30,30,0.92);border:1.5px solid rgba(255,255,255,0.3);border-radius:10px;padding:10px 24px;cursor:pointer;">
                 <i class="fa fa-arrow-left" style="font-size:15px;color:#fff;"></i>
                 <span style="color:#fff;font-size:14px;font-weight:700;">Orqaga</span>
@@ -6206,16 +6206,18 @@
         }
 
         // ===== POSTER AUTO-REFRESH (URL muddati tugaganda) =====
+        const POSTER_PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='160'%3E%3Crect width='200' height='160' fill='%231a1a1a' rx='20'/%3E%3Ctext x='50%25' y='44%25' dominant-baseline='middle' text-anchor='middle' font-size='38' fill='%23333'%3E%F0%9F%8E%AC%3C/text%3E%3Ctext x='50%25' y='72%25' dominant-baseline='middle' text-anchor='middle' font-size='13' fill='%23444' font-family='sans-serif'%3EYuklanmoqda...%3C/text%3E%3C/svg%3E";
+
         async function reloadPoster(imgEl, fileId, movieId) {
             imgEl.onerror = null; // Cheksiz loop bo'lmasin
-            imgEl.style.background = '#1a1a1a';
+            imgEl.style.background = 'linear-gradient(135deg,#111,#1e1e1e)';
             if(!fileId) {
-                imgEl.src = '';
+                imgEl.src = POSTER_PLACEHOLDER;
                 return;
             }
             try {
                 const token = (await db.settings.get('token'))?.value;
-                if(!token) return;
+                if(!token) { imgEl.src = POSTER_PLACEHOLDER; return; }
                 const r = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`);
                 const d = await r.json();
                 if(d.ok) {
@@ -6232,8 +6234,10 @@
                             }
                         } catch(e) {}
                     }
+                } else {
+                    imgEl.src = POSTER_PLACEHOLDER;
                 }
-            } catch(e) {}
+            } catch(e) { imgEl.src = POSTER_PLACEHOLDER; }
         }
 
         // ===== NAKRUTKA API KALITLAR BOSHQARUVI =====
