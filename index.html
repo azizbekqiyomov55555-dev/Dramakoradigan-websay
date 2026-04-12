@@ -2,8 +2,11 @@
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="robots" content="noindex, nofollow">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>KINO DRAMA PREMIUM</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -28,7 +31,10 @@
         body { 
             background: var(--bg); color: white; 
             font-family: -apple-system, system-ui, sans-serif; 
-            margin: 0; padding-bottom: 90px; overflow-x: hidden;
+            margin: 0; 
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+            overflow-x: hidden;
         }
 
         .tap-active { transition: transform 0.1s ease; cursor: pointer; }
@@ -1679,6 +1685,14 @@
             loadContentProtectState();
 
             tg.expand();
+            // To'liq ekran - yangi Telegram API (Bot API 8.0+)
+            if (window.Telegram?.WebApp?.requestFullscreen) {
+                try { Telegram.WebApp.requestFullscreen(); } catch(e) {}
+            }
+            // Vertikal swipe bilan yopilishni o'chirish
+            if (window.Telegram?.WebApp?.disableVerticalSwipes) {
+                Telegram.WebApp.disableVerticalSwipes();
+            }
             initStackSwipe();
             setInterval(updateCountdown, 1000);
 
