@@ -1283,7 +1283,7 @@
 
     <div id="detailPage" class="detail-page">
         <div style="position:sticky; top:0; left:0; width:100%; z-index:2100; pointer-events:none; height:0;">
-            <div onclick="closeDetail()" style="pointer-events:auto; position:absolute; top:60px; left:16px; width:44px; height:44px; background:rgba(0,0,0,0.85); border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid rgba(255,255,255,0.35); cursor:pointer; box-shadow:0 2px 12px rgba(0,0,0,0.7);">
+            <div onclick="closeDetail()" style="pointer-events:auto; position:absolute; top:120px; left:16px; width:44px; height:44px; background:rgba(0,0,0,0.85); border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid rgba(255,255,255,0.35); cursor:pointer; box-shadow:0 2px 12px rgba(0,0,0,0.7);">
                 <i class="fa fa-arrow-left" style="font-size:17px; color:#fff;"></i>
             </div>
         </div>
@@ -1298,9 +1298,10 @@
         <div id="igMaskBot" style="display:none;position:absolute;bottom:0;left:0;width:100%;background:#000;z-index:3025;pointer-events:none;"></div>
 
         <!-- Fullscreen holat: orqaga tugma — DOIM ustida -->
-        <div id="playerTopBar" style="position:absolute;top:0;left:0;width:100%;display:flex;justify-content:space-between;align-items:center;padding:20px 20px 10px;box-sizing:border-box;z-index:3030;background:transparent;pointer-events:auto;">
-            <div onclick="closePlayer()" style="width:40px;height:40px;background:rgba(0,0,0,0.6);border-radius:50%;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.15);cursor:pointer;">
-                <i class="fa fa-arrow-left" style="font-size:18px;color:#fff;"></i>
+        <div id="playerTopBar" style="position:absolute;bottom:0;left:0;width:100%;display:flex;justify-content:space-between;align-items:center;padding:12px 20px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));box-sizing:border-box;z-index:3030;background:rgba(0,0,0,0.85);border-top:1px solid #222;pointer-events:auto;">
+            <div onclick="closePlayer()" style="display:flex;align-items:center;gap:8px;background:#222;border:1.5px solid #555;border-radius:30px;padding:11px 24px;cursor:pointer;">
+                <i class="fa fa-arrow-left" style="font-size:16px;color:#fff;"></i>
+                <span style="color:#fff;font-size:15px;font-weight:700;">Orqaga</span>
             </div>
             <div style="display:flex;gap:12px;align-items:center;">
                 <div id="miniBtn" onclick="miniPlayer()" style="display:none;width:40px;height:40px;background:rgba(0,0,0,0.6);border-radius:50%;align-items:center;justify-content:center;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.15);cursor:pointer;">
