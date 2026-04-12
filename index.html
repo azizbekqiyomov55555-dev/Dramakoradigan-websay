@@ -665,26 +665,23 @@
 
     <!-- YouTube video ichki player -->
     <div id="ytPlayerPage" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:3000;flex-direction:column;">
+        <!-- "Yopish" dan pastda — orqaga tugmasi -->
+        <div style="background:#0a0a0a;padding:8px 14px;display:flex;align-items:center;flex-shrink:0;border-bottom:1px solid #222;">
+            <button onclick="closeYtPlayer()" style="
+                display:flex;align-items:center;gap:8px;
+                background:#222;border:1.5px solid #555;
+                color:#fff;font-size:15px;font-weight:700;
+                cursor:pointer;padding:10px 22px;border-radius:30px;
+            ">← Orqaga</button>
+            <div id="ytPlayerTitle" style="font-size:13px;font-weight:700;color:#fff;margin-left:12px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1;"></div>
+        </div>
+        <!-- Video -->
         <iframe id="ytPlayerFrame"
             style="width:100%;flex:1;border:none;background:#000;"
             allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
             allowfullscreen>
         </iframe>
-        <!-- Video OSTIDA: kino nomi + orqaga tugmasi -->
-        <div style="background:#111;border-top:1px solid #222;padding:12px 16px;padding-bottom:calc(16px + env(safe-area-inset-bottom, 0px));flex-shrink:0;">
-            <div id="ytPlayerTitle" style="font-size:14px;font-weight:700;color:#fff;margin-bottom:10px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;"></div>
-            <div id="ytPlayerDesc" style="font-size:12px;color:#aaa;line-height:1.5;margin-bottom:12px;display:none;"></div>
-            <button onclick="closeYtPlayer()" style="
-                display:flex;align-items:center;gap:8px;
-                background:#1e1e1e;
-                border:1.5px solid #444;
-                color:#fff;font-size:15px;font-weight:700;
-                cursor:pointer;padding:12px 28px;
-                border-radius:30px;
-            ">
-                ← Orqaga
-            </button>
-        </div>
+        <div id="ytPlayerDesc" style="display:none;"></div>
     </div>
 
     <!-- MENING PAGE -->
