@@ -417,11 +417,6 @@
             100% { transform: scale(1); }
         }
 
-        @keyframes slideUp {
-            from { opacity:0; transform: translateX(-50%) translateY(20px); }
-            to   { opacity:1; transform: translateX(-50%) translateY(0); }
-        }
-
         /* YASHIL QULF belgisi (CSS chizilgan) */
         .green-lock {
             display: inline-block;
@@ -1369,233 +1364,45 @@
 
     <div id="player">
 
-        <!-- IG qora yopuvchi -->
+        <!-- IG qora yopuvchi: yuqori qism -->
         <div id="igMaskTop" style="display:none;position:absolute;top:0;left:0;width:100%;background:#000;z-index:3025;pointer-events:none;"></div>
+        <!-- IG qora yopuvchi: pastki qism -->
         <div id="igMaskBot" style="display:none;position:absolute;bottom:0;left:0;width:100%;background:#000;z-index:3025;pointer-events:none;"></div>
 
-        <!-- VIDEO (controls olib tashlandi — custom controls ishlatiladi) -->
-        <video id="mainVideo" style="width:100%;height:100%;display:block;object-fit:contain;" playsinline></video>
+        <!-- Fullscreen holat: orqaga tugma — DOIM ustida -->
+        <div id="playerTopBar" style="position:fixed;top:58px;left:50%;transform:translateX(-50%);z-index:3030;pointer-events:auto;">
+            <div onclick="closePlayer()" style="display:flex;align-items:center;gap:7px;background:rgba(30,30,30,0.92);border:1.5px solid rgba(255,255,255,0.3);border-radius:10px;padding:10px 24px;cursor:pointer;">
+                <i class="fa fa-arrow-left" style="font-size:15px;color:#fff;"></i>
+                <span style="color:#fff;font-size:14px;font-weight:700;">Orqaga</span>
+            </div>
+        </div>
 
-        <!-- IFRAME (YouTube / Telegram embed) -->
+        <!-- 2x tap: -10s -->
+        <div id="seekLeft" style="position:absolute;left:0;top:0;width:35%;height:100%;z-index:3015;"></div>
+        <!-- 2x tap: +10s -->
+        <div id="seekRight" style="position:absolute;right:0;top:0;width:35%;height:100%;z-index:3015;"></div>
+
+        <!-- Pastki o'ng: to'liq ekran tugmasi (YouTube embed ustida) -->
+        <div id="fsBtnOverlay" onclick="enterFullscreenLandscape()" style="display:none;position:absolute;bottom:0;right:0;width:60px;height:50px;z-index:3020;cursor:pointer;background:transparent;"></div>
+
+        <!-- Seek feedback animatsiyasi -->
+        <div id="seekFeedback" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:3028;pointer-events:none;opacity:0;transition:opacity 0.3s;background:rgba(0,0,0,0.65);border-radius:14px;padding:10px 20px;font-size:17px;font-weight:900;color:#00ff73;white-space:nowrap;"></div>
+
+        <!-- Normal video player -->
+        <video id="mainVideo" style="width:100%; height:100%; display:block;" playsinline controls></video>
+
+        <!-- Telegram kanal video embed (t.me havolalar uchun) -->
         <iframe id="tgEmbedFrame"
             style="width:100%;height:100%;border:none;display:none;background:#000;position:absolute;top:0;left:0;"
             allowfullscreen
             allow="autoplay; fullscreen; encrypted-media; picture-in-picture; web-share"
             referrerpolicy="no-referrer-when-downgrade"
-            scrolling="no" frameborder="0">
+            scrolling="no"
+            frameborder="0">
         </iframe>
 
-        <!-- ===== CUSTOM CONTROLS OVERLAY ===== -->
-        <div id="playerControls" style="
-            position:absolute;inset:0;z-index:3015;
-            display:flex;flex-direction:column;justify-content:space-between;
-            transition:opacity 0.3s;
-        ">
-            <!-- TOP BAR -->
-            <div id="playerTopBar" style="
-                display:flex;align-items:center;justify-content:space-between;
-                padding:env(safe-area-inset-top,16px) 16px 12px;
-                background:linear-gradient(to bottom,rgba(0,0,0,0.75),transparent);
-                padding-top:calc(env(safe-area-inset-top,0px) + 14px);
-            ">
-                <button onclick="closePlayer()" style="
-                    display:flex;align-items:center;gap:8px;
-                    background:rgba(0,0,0,0.55);border:1.5px solid rgba(255,255,255,0.25);
-                    color:#fff;font-size:14px;font-weight:700;border-radius:10px;
-                    padding:9px 18px;touch-action:manipulation;
-                ">← Orqaga</button>
-
-                <div id="playerTitleBar" style="flex:1;text-align:center;font-size:13px;font-weight:700;color:#fff;
-                    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 10px;
-                    text-shadow:0 1px 4px rgba(0,0,0,0.9);"></div>
-
-                <!-- Lock tugmasi -->
-                <button id="lockBtn" onclick="togglePlayerLock()" style="
-                    background:rgba(0,0,0,0.55);border:1.5px solid rgba(255,255,255,0.2);
-                    color:#fff;font-size:16px;border-radius:10px;padding:9px 12px;
-                    touch-action:manipulation;
-                ">🔓</button>
-            </div>
-
-            <!-- MARKAZIY: double tap zonalar + play/pause -->
-            <div style="position:absolute;inset:0;display:flex;">
-                <!-- Chap zona: 2x tap = -10s -->
-                <div id="seekLeft" style="width:35%;height:100%;position:relative;z-index:3016;"
-                    ontouchstart="handleSeekTouch(event,'left')" ontouchend="handleSeekTouchEnd(event,'left')">
-                    <div id="seekLeftAnim" style="
-                        position:absolute;top:50%;left:10px;transform:translateY(-50%);
-                        pointer-events:none;opacity:0;transition:opacity 0.15s;
-                        display:flex;flex-direction:column;align-items:center;gap:6px;
-                    ">
-                        <div style="display:flex;gap:-4px;">
-                            <span style="font-size:28px;color:#fff;text-shadow:0 0 12px rgba(0,0,0,0.9);">⏪</span>
-                        </div>
-                        <div id="seekLeftLabel" style="font-size:15px;font-weight:900;color:#fff;
-                            text-shadow:0 0 8px rgba(0,0,0,1);background:rgba(0,0,0,0.4);
-                            padding:3px 10px;border-radius:20px;">-10s</div>
-                    </div>
-                    <!-- Ripple effekt -->
-                    <div id="seekLeftRipple" style="
-                        position:absolute;top:50%;left:20%;transform:translate(-50%,-50%) scale(0);
-                        width:120px;height:120px;border-radius:50%;
-                        background:rgba(255,255,255,0.15);pointer-events:none;
-                        transition:transform 0.4s ease, opacity 0.4s ease;opacity:0;
-                    "></div>
-                </div>
-
-                <!-- Markaziy: tap = controls toggle, hold = 2x speed -->
-                <div id="playerCenterZone" style="flex:1;height:100%;display:flex;align-items:center;justify-content:center;"
-                    ontouchstart="handleCenterTouch(event)" ontouchend="handleCenterTouchEnd(event)">
-                    <!-- Katta play/pause belgisi (faqat controls ko'rinib turganda) -->
-                    <div id="centerPlayBtn" onclick="togglePlayPause()" style="
-                        width:68px;height:68px;border-radius:50%;
-                        background:rgba(0,0,0,0.55);border:2.5px solid rgba(255,255,255,0.5);
-                        display:flex;align-items:center;justify-content:center;
-                        pointer-events:auto;transition:transform 0.15s;
-                    ">
-                        <span id="centerPlayIcon" style="font-size:28px;color:#fff;margin-left:3px;">▶</span>
-                    </div>
-                </div>
-
-                <!-- O'ng zona: 2x tap = +10s -->
-                <div id="seekRight" style="width:35%;height:100%;position:relative;z-index:3016;"
-                    ontouchstart="handleSeekTouch(event,'right')" ontouchend="handleSeekTouchEnd(event,'right')">
-                    <div id="seekRightAnim" style="
-                        position:absolute;top:50%;right:10px;transform:translateY(-50%);
-                        pointer-events:none;opacity:0;transition:opacity 0.15s;
-                        display:flex;flex-direction:column;align-items:center;gap:6px;
-                    ">
-                        <span style="font-size:28px;color:#fff;text-shadow:0 0 12px rgba(0,0,0,0.9);">⏩</span>
-                        <div id="seekRightLabel" style="font-size:15px;font-weight:900;color:#fff;
-                            text-shadow:0 0 8px rgba(0,0,0,1);background:rgba(0,0,0,0.4);
-                            padding:3px 10px;border-radius:20px;">+10s</div>
-                    </div>
-                    <div id="seekRightRipple" style="
-                        position:absolute;top:50%;right:20%;transform:translate(50%,-50%) scale(0);
-                        width:120px;height:120px;border-radius:50%;
-                        background:rgba(255,255,255,0.15);pointer-events:none;
-                        transition:transform 0.4s ease, opacity 0.4s ease;opacity:0;
-                    "></div>
-                </div>
-            </div>
-
-            <!-- BRIGHTNESS indicator (chap) -->
-            <div id="brightnessIndicator" style="
-                position:absolute;left:18px;top:50%;transform:translateY(-50%);
-                display:none;flex-direction:column;align-items:center;gap:8px;
-                background:rgba(0,0,0,0.65);border-radius:30px;padding:14px 10px;
-                z-index:3020;pointer-events:none;
-            ">
-                <span style="font-size:18px;">☀️</span>
-                <div style="height:100px;width:4px;background:#333;border-radius:4px;position:relative;overflow:hidden;">
-                    <div id="brightnessBar" style="position:absolute;bottom:0;width:100%;background:#fff;border-radius:4px;height:50%;transition:height 0.1s;"></div>
-                </div>
-                <span id="brightnessVal" style="font-size:11px;color:#fff;font-weight:900;">50%</span>
-            </div>
-
-            <!-- VOLUME indicator (o'ng) -->
-            <div id="volumeIndicator" style="
-                position:absolute;right:18px;top:50%;transform:translateY(-50%);
-                display:none;flex-direction:column;align-items:center;gap:8px;
-                background:rgba(0,0,0,0.65);border-radius:30px;padding:14px 10px;
-                z-index:3020;pointer-events:none;
-            ">
-                <span id="volIcon" style="font-size:18px;">🔊</span>
-                <div style="height:100px;width:4px;background:#333;border-radius:4px;position:relative;overflow:hidden;">
-                    <div id="volumeBar" style="position:absolute;bottom:0;width:100%;background:#00ff73;border-radius:4px;height:100%;transition:height 0.1s;"></div>
-                </div>
-                <span id="volumeVal" style="font-size:11px;color:#fff;font-weight:900;">100%</span>
-            </div>
-
-            <!-- 2X TEZLIK belgisi -->
-            <div id="speedBadge" style="
-                position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-                background:rgba(0,0,0,0.75);border:2px solid #fff;
-                color:#fff;font-size:20px;font-weight:900;
-                padding:10px 20px;border-radius:14px;
-                display:none;pointer-events:none;z-index:3025;
-            ">⚡ 2x</div>
-
-            <!-- PASTKI CONTROLS -->
-            <div id="playerBottomBar" style="
-                background:linear-gradient(to top,rgba(0,0,0,0.88),transparent);
-                padding:10px 14px calc(env(safe-area-inset-bottom,0px) + 14px);
-            ">
-                <!-- PROGRESS BAR -->
-                <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-                    <span id="currentTimeLabel" style="font-size:12px;color:#fff;font-weight:700;white-space:nowrap;min-width:38px;">0:00</span>
-                    <!-- Scrub area -->
-                    <div id="progressTouchArea" style="flex:1;height:28px;display:flex;align-items:center;cursor:pointer;touch-action:none;"
-                        ontouchstart="scrubStart(event)" ontouchmove="scrubMove(event)" ontouchend="scrubEnd(event)"
-                        onmousedown="scrubStart(event)" onmousemove="scrubMove(event)" onmouseup="scrubEnd(event)">
-                        <div id="progressBg" style="width:100%;height:4px;background:rgba(255,255,255,0.25);border-radius:4px;position:relative;overflow:visible;">
-                            <div id="progressBufferBar" style="position:absolute;left:0;top:0;height:100%;background:rgba(255,255,255,0.35);border-radius:4px;width:0%;"></div>
-                            <div id="progressPlayedBar" style="position:absolute;left:0;top:0;height:100%;background:var(--accent);border-radius:4px;width:0%;"></div>
-                            <div id="progressThumb" style="
-                                position:absolute;top:50%;width:16px;height:16px;
-                                background:#fff;border-radius:50%;
-                                transform:translate(-50%,-50%);left:0%;
-                                box-shadow:0 0 6px rgba(0,0,0,0.8);
-                                transition:transform 0.1s;
-                            "></div>
-                        </div>
-                    </div>
-                    <span id="durationLabel" style="font-size:12px;color:#fff;font-weight:700;white-space:nowrap;min-width:38px;text-align:right;">0:00</span>
-                </div>
-
-                <!-- TUGMALAR QATORI -->
-                <div style="display:flex;align-items:center;justify-content:space-between;">
-                    <!-- Play/Pause -->
-                    <button id="playPauseBtn" onclick="togglePlayPause()" style="
-                        background:none;border:none;color:#fff;font-size:26px;
-                        padding:6px 10px;touch-action:manipulation;
-                    ">▶</button>
-
-                    <!-- Ortga/Oldinga 10s -->
-                    <button onclick="seekVideo(-10)" style="
-                        background:none;border:none;color:#fff;font-size:22px;
-                        padding:6px 8px;touch-action:manipulation;
-                    ">⏪</button>
-                    <button onclick="seekVideo(10)" style="
-                        background:none;border:none;color:#fff;font-size:22px;
-                        padding:6px 8px;touch-action:manipulation;
-                    ">⏩</button>
-
-                    <div style="flex:1;"></div>
-
-                    <!-- Tezlik -->
-                    <button id="speedToggleBtn" onclick="openSpeedMenu()" style="
-                        background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);
-                        color:#fff;font-size:12px;font-weight:900;border-radius:8px;
-                        padding:6px 10px;touch-action:manipulation;min-width:42px;
-                    ">1x</button>
-
-                    <!-- Fullscreen -->
-                    <button onclick="toggleFullscreen()" style="
-                        background:none;border:none;color:#fff;font-size:22px;
-                        padding:6px 8px;touch-action:manipulation;
-                    ">⛶</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ===== TEZLIK MENYUSI ===== -->
-        <div id="speedMenu" style="
-            display:none;position:absolute;bottom:90px;right:14px;
-            background:#111;border:1.5px solid #333;border-radius:16px;
-            overflow:hidden;z-index:3050;min-width:130px;
-            box-shadow:0 8px 32px rgba(0,0,0,0.8);
-        ">
-            <div style="padding:10px 14px 6px;font-size:11px;color:#888;font-weight:700;letter-spacing:1px;">⚡ TEZLIK</div>
-        </div>
-
-        <!-- Fullscreen overlay button (iframe uchun) -->
-        <div id="fsBtnOverlay" onclick="toggleFullscreen()" style="display:none;position:absolute;bottom:10px;right:10px;width:44px;height:44px;z-index:3020;cursor:pointer;background:rgba(0,0,0,0.5);border-radius:10px;display:none;align-items:center;justify-content:center;">
-            <span style="font-size:20px;color:#fff;">⛶</span>
-        </div>
-
         <!-- YUKLANISH OVERLAY -->
-        <div id="videoLoadingOverlay" style="display:none;position:absolute;inset:0;z-index:3035;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;flex-direction:column;gap:16px;">
+        <div id="videoLoadingOverlay" style="display:none;position:absolute;inset:0;z-index:3035;background:#000;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
             <div style="width:56px;height:56px;border:4px solid #222;border-top:4px solid #00ff73;border-radius:50%;animation:spinLoader 0.9s linear infinite;"></div>
             <div style="color:#888;font-size:14px;font-weight:700;" id="videoLoadingText">Video yuklanmoqda...</div>
         </div>
@@ -1611,17 +1418,7 @@
             </div>
         </div>
 
-        <!-- LOCK ekrani -->
-        <div id="playerLockOverlay" style="display:none;position:absolute;inset:0;z-index:3040;background:transparent;">
-            <button onclick="togglePlayerLock()" style="
-                position:absolute;bottom:30px;left:50%;transform:translateX(-50%);
-                background:rgba(0,0,0,0.7);border:1.5px solid #555;
-                color:#fff;font-size:14px;font-weight:700;border-radius:12px;
-                padding:12px 28px;touch-action:manipulation;
-            ">🔒 Qulfdan chiqarish</button>
-        </div>
-
-        <!-- WATERMARK -->
+        <!-- WATERMARK OVERLAY -->
         <div id="wmContainer" style="position:absolute;inset:0;pointer-events:none;z-index:3010;overflow:hidden;"></div>
     </div>
 
@@ -3205,31 +3002,21 @@
                     <div style="font-weight:900;margin-top:8px;font-size:13px;line-height:1.3;pointer-events:none;">${m.title}</div>
                     <div style="font-size:11px;color:#555;margin-top:2px;pointer-events:none;">${m.genre||''}</div>
                 </div>`;
-                aHtml += `<div class="del-item" style="flex-direction:column;gap:10px;padding:14px;">
-                    <div style="display:flex;align-items:center;gap:12px;">
-                        <img src="${img || POSTER_PLACEHOLDER}" 
-                            style="width:52px;height:52px;border-radius:10px;object-fit:cover;border:1.5px solid #333;flex-shrink:0;background:#222;"
-                            onerror="this.src='';this.style.background='#222';">
-                        <div style="flex:1;min-width:0;">
-                            <div style="font-weight:900;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.title}</div>
-                            <div style="font-size:11px;color:#888;margin-top:3px;">${m.videos?m.videos.length:0} ta qism${m.genre?' • '+m.genre:''}</div>
+                aHtml += `<div class="del-item">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <img src="${img}" style="width:44px;height:44px;border-radius:10px;object-fit:cover;border:1.5px solid #333;flex-shrink:0;" onerror="this.style.background='#222';this.src='';">
+                        <div>
+                            <div style="font-weight:900;">${m.title}</div>
+                            <div style="font-size:11px;color:#888;margin-top:2px;">${m.videos?m.videos.length:0} ta qism</div>
                         </div>
                     </div>
-                    <div style="display:flex;gap:8px;width:100%;">
-                        <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
-                            background:#1a0d2e;color:#b46fff;border:1.5px solid rgba(180,111,255,0.4);
-                            padding:10px 0;border-radius:10px;font-weight:900;font-size:13px;cursor:pointer;
-                            touch-action:manipulation;">
+                    <div style="display:flex;gap:8px;margin-top:8px;">
+                        <label style="background:#1a1429;color:#b46fff;border:1px solid rgba(180,111,255,0.4);padding:6px 10px;border-radius:8px;font-weight:900;font-size:12px;cursor:pointer;white-space:nowrap;">
                             🖼️ Poster
                             <input type="file" accept="image/*" style="display:none;" onchange="changePosterForMovie('${m.id}', this)">
                         </label>
-                        <button onclick="openAddEpisode('${m.id}')" 
-                            style="flex:1;background:#0d1f14;color:var(--accent);border:1.5px solid rgba(0,255,115,0.3);
-                            padding:10px 0;border-radius:10px;font-weight:900;font-size:15px;
-                            touch-action:manipulation;">➕ Qism</button>
-                        <button onclick="deleteMovie('${m.id}')" 
-                            style="width:44px;background:#8b0000;color:white;border:none;
-                            border-radius:10px;font-size:16px;touch-action:manipulation;">🗑️</button>
+                        <button onclick="openAddEpisode('${m.id}')" style="background:#0d1f14;color:var(--accent);border:1px solid rgba(0,255,115,0.3);padding:6px 10px;border-radius:8px;font-weight:900;font-size:13px;">➕</button>
+                        <button onclick="deleteMovie('${m.id}')" style="background:#8b0000;color:white;border:none;padding:6px 10px;border-radius:8px;font-size:13px;">🗑️</button>
                     </div>
                 </div>`;
             });
@@ -3565,73 +3352,6 @@
         }
 
         let _currentVideoSrc = '';
-        let _currentPartIdx  = 0;   // Hozirgi qism indeksi
-
-        // ===== VIDEO POZITSIYA SAQLASH (localStorage) =====
-        const VP_KEY = 'kd_vp'; // kino drama video progress
-
-        function vpSave(movieId, partIdx, time) {
-            if(!movieId || time < 3) return;
-            try {
-                const d = JSON.parse(localStorage.getItem(VP_KEY) || '{}');
-                d[movieId + '_' + partIdx] = { t: Math.floor(time), at: Date.now() };
-                // Eski yozuvlarni tozalash (30 tadan ko'p bo'lsa)
-                const keys = Object.keys(d);
-                if(keys.length > 30) {
-                    keys.sort((a,b) => (d[a].at||0) - (d[b].at||0));
-                    keys.slice(0, keys.length - 30).forEach(k => delete d[k]);
-                }
-                localStorage.setItem(VP_KEY, JSON.stringify(d));
-            } catch(e) {}
-        }
-
-        function vpGet(movieId, partIdx) {
-            try {
-                const d = JSON.parse(localStorage.getItem(VP_KEY) || '{}');
-                return d[movieId + '_' + partIdx]?.t || 0;
-            } catch(e) { return 0; }
-        }
-
-        function vpClear(movieId, partIdx) {
-            try {
-                const d = JSON.parse(localStorage.getItem(VP_KEY) || '{}');
-                delete d[movieId + '_' + partIdx];
-                localStorage.setItem(VP_KEY, JSON.stringify(d));
-            } catch(e) {}
-        }
-
-        // "Davom ettirish" toast
-        function showResumeToast(savedTime, onResume, onRestart) {
-            const mins = Math.floor(savedTime / 60);
-            const secs = Math.floor(savedTime % 60);
-            const timeStr = mins > 0 ? `${mins}:${String(secs).padStart(2,'0')}` : `${secs}s`;
-
-            const box = document.createElement('div');
-            box.id = '_resumeBox';
-            box.style.cssText = `
-                position:fixed; bottom:100px; left:50%; transform:translateX(-50%);
-                background:#111; border:1.5px solid var(--accent); border-radius:18px;
-                padding:16px 18px; z-index:9999; width:88%; max-width:340px;
-                box-shadow:0 8px 32px rgba(0,0,0,0.7); box-sizing:border-box;
-                animation: slideUp 0.3s ease;
-            `;
-            box.innerHTML = `
-                <div style="font-size:13px;color:#888;margin-bottom:10px;">🕐 Oxirgi to'xtagan joy: <b style="color:var(--accent);">${timeStr}</b></div>
-                <div style="display:flex;gap:10px;">
-                    <button id="_resumeBtn" style="flex:1;background:linear-gradient(90deg,#00ff73,#00cc5c);color:#000;border:none;padding:12px;border-radius:12px;font-weight:900;font-size:14px;touch-action:manipulation;">▶ Davom etish</button>
-                    <button id="_restartBtn" style="flex:1;background:#1a1a1a;color:#888;border:1.5px solid #333;padding:12px;border-radius:12px;font-weight:900;font-size:14px;touch-action:manipulation;">↺ Boshidan</button>
-                </div>`;
-            document.body.appendChild(box);
-
-            document.getElementById('_resumeBtn').onclick  = () => { box.remove(); onResume(); };
-            document.getElementById('_restartBtn').onclick = () => { box.remove(); onRestart(); };
-
-            // 8 soniyadan keyin avtomatik davom etish
-            const autoTimer = setTimeout(() => {
-                if(document.getElementById('_resumeBox')) { box.remove(); onResume(); }
-            }, 8000);
-            box.querySelector('#_restartBtn').addEventListener('click', () => clearTimeout(autoTimer));
-        }
 
         function showVideoLoading(text) {
             const el = document.getElementById('videoLoadingOverlay');
@@ -3883,16 +3603,6 @@
                             v.autoplay = true;
                             v.setAttribute('controlslist', 'nodownload noremoteplayback');
                             v.setAttribute('disablepictureinpicture', '');
-                            // Resume
-                            const _sv1 = currentMovieId ? vpGet(currentMovieId, _currentPartIdx) : 0;
-                            if(_sv1 > 5) {
-                                v.addEventListener('loadedmetadata', function _m1() {
-                                    v.removeEventListener('loadedmetadata', _m1);
-                                    if(_sv1 < (v.duration||9999) - 10) {
-                                        showResumeToast(_sv1, () => { v.currentTime=_sv1; v.play().catch(()=>{}); }, () => { v.currentTime=0; v.play().catch(()=>{}); vpClear(currentMovieId,_currentPartIdx); });
-                                    }
-                                }, {once:true});
-                            }
                             v.play().catch(() => {});
                             return;
                         }
@@ -3919,16 +3629,6 @@
                         v.autoplay = true;
                         v.setAttribute('controlslist', 'nodownload noremoteplayback');
                         v.setAttribute('disablepictureinpicture', '');
-                        // Resume
-                        const _sv2 = currentMovieId ? vpGet(currentMovieId, _currentPartIdx) : 0;
-                        if(_sv2 > 5) {
-                            v.addEventListener('loadedmetadata', function _m2() {
-                                v.removeEventListener('loadedmetadata', _m2);
-                                if(_sv2 < (v.duration||9999) - 10) {
-                                    showResumeToast(_sv2, () => { v.currentTime=_sv2; v.play().catch(()=>{}); }, () => { v.currentTime=0; v.play().catch(()=>{}); vpClear(currentMovieId,_currentPartIdx); });
-                                }
-                            }, {once:true});
-                        }
                         v.play().catch(() => {});
                     } catch(e) {
                         showVideoError('Video yuklanmadi: ' + e.message);
@@ -3943,6 +3643,8 @@
 
                 // Eski event handlerlarni tozalash
                 v.onerror = null; v.oncanplay = null; v.onstalled = null; v.onwaiting = null;
+
+                v.oncanplay = () => { hideVideoLoading(); v.oncanplay = null; };
 
                 v.onerror = (e) => {
                     const code = v.error ? v.error.code : 0;
@@ -3960,26 +3662,9 @@
                         showVideoError('Video juda sekin yuklanmoqda. Internet aloqasini tekshiring yoki qayta urining.');
                     }
                 }, 15000);
-
                 v.oncanplay = () => { clearTimeout(_loadTimer); hideVideoLoading(); v.oncanplay = null; };
 
                 v.src = videoSrc;
-
-                // Saqlangan pozitsiyani tekshir
-                const savedTime = currentMovieId ? vpGet(currentMovieId, _currentPartIdx) : 0;
-                if(savedTime > 5) {
-                    v.addEventListener('loadedmetadata', function _onMeta() {
-                        v.removeEventListener('loadedmetadata', _onMeta);
-                        if(savedTime < (v.duration || 9999) - 10) {
-                            showResumeToast(
-                                savedTime,
-                                () => { v.currentTime = savedTime; v.play().catch(()=>{}); },
-                                () => { v.currentTime = 0; v.play().catch(()=>{}); vpClear(currentMovieId, _currentPartIdx); }
-                            );
-                        }
-                    }, {once: true});
-                }
-
                 v.play().catch(() => {});
             }
 
@@ -3992,21 +3677,36 @@
             playerEl.style.height = '100vh';
             playerEl.style.zIndex = '3000';
             playerEl.style.overflow = 'hidden';
-            playerEl.style.filter = ''; // brightness reset
 
-            // iframe yoki direct video mode
-            const isIframeType = ['youtube','telegram','gdrive','vk','vk_embed','instagram'].includes(info.type);
-            setupIframeMode(isIframeType);
-
-            // Speed reset
-            const mainV2 = document.getElementById('mainVideo');
-            if(mainV2) mainV2.playbackRate = currentSpeed;
-
-            // Kino nomini ko'rsat
-            if(currentMovieId) {
-                const m2 = cachedMovies.find(x => x.id === currentMovieId);
-                const titleBar = document.getElementById('playerTitleBar');
-                if(titleBar && m2) titleBar.textContent = m2.title + (m2.videos?.length > 1 ? ` — ${_currentPartIdx+1}-qism` : '');
+            // iframe bo'lsa mini tugma yashiriladi, direct video uchun ko'rinadi
+            const miniBtn = document.getElementById('miniBtn');
+            if(miniBtn) {
+                miniBtn.style.display = (info.type === 'direct' || info.type === 'tgfile' || info.type === 'tgfile_legacy') ? 'flex' : 'none';
+            }
+            // Pastki o'ng fullscreen overlay — YouTube va boshqa iframe uchun
+            const fsOverlay = document.getElementById('fsBtnOverlay');
+            if(fsOverlay) {
+                fsOverlay.style.display = (info.type === 'youtube' || info.type === 'telegram' || info.type === 'gdrive') ? 'block' : 'none';
+            }
+            // Instagram emas bo'lsa masklarni yashiramiz
+            if(info.type !== 'instagram') {
+                const mT = document.getElementById('igMaskTop');
+                const mB = document.getElementById('igMaskBot');
+                if(mT) mT.style.display = 'none';
+                if(mB) mB.style.display = 'none';
+                const igV = document.getElementById('igViewer');
+                if(igV) igV.style.display = 'none';
+            }
+            // Seek div'lari faqat oddiy video uchun — iframe da touch eventlarni bloklamaydi
+            const seekL = document.getElementById('seekLeft');
+            const seekR = document.getElementById('seekRight');
+            if(info.type === 'direct' || info.type === 'tgfile' || info.type === 'tgfile_legacy') {
+                if(seekL) seekL.style.pointerEvents = 'auto';
+                if(seekR) seekR.style.pointerEvents = 'auto';
+            } else {
+                // YouTube/Instagram/Telegram: seek div'larini o'chiramiz — iframe o'z kontrollariga ega
+                if(seekL) seekL.style.pointerEvents = 'none';
+                if(seekR) seekR.style.pointerEvents = 'none';
             }
 
             showWatermarks();
@@ -4036,8 +3736,6 @@
                 if(!videoSrc) return showToast('❌ Video topilmadi', 'error');
                 if(videoSrc.startsWith('blob:')) return showToast('❌ Bu video eski formatda, qayta joylang!', 'error');
 
-                currentMovieId  = id;
-                _currentPartIdx = activePart;
                 playVideo(videoSrc);
                 db.history.add({mId: id, part: activePart, time: Date.now()});
 
@@ -4253,116 +3951,96 @@
         function pickPosterFile(input) {}
         function previewPosterUrlLive(url) {}
 
-        // ===== RASM YUKLASH: Telegraph CDN (kalit shart emas, muddatsiz URL) =====
-        async function uploadImageToCloud(file) {
-            // 1. USUL: Telegraph (Telegram CDN) — kalit shart emas
-            try {
-                const tgFd = new FormData();
-                tgFd.append('file', file, file.name || 'poster.jpg');
-                const r = await fetch('https://telegra.ph/upload', { method: 'POST', body: tgFd });
-                const d = await r.json();
-                if(Array.isArray(d) && d[0]?.src) {
-                    return 'https://telegra.ph' + d[0].src;
-                }
-            } catch(e) {}
-
-            // 2. USUL: Bot token orqali Telegram ga yuklash
-            try {
-                const token   = (await db.settings.get('token'))?.value;
-                const adminId = (await db.settings.get('admin_id'))?.value;
-                if(token && adminId) {
-                    const tgFd = new FormData();
-                    tgFd.append('chat_id', adminId);
-                    tgFd.append('photo', file);
-                    const tr = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method:'POST', body:tgFd });
-                    const td = await tr.json();
-                    if(td.ok) {
-                        const photos = td.result.photo;
-                        const fileId = photos[photos.length - 1].file_id;
-                        const fr = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`);
-                        const fd2 = await fr.json();
-                        if(fd2.ok) {
-                            return { url: `https://api.telegram.org/file/bot${token}/${fd2.result.file_path}`, fileId };
-                        }
-                    }
-                }
-            } catch(e) {}
-
-            // 3. USUL: freeimage.host (kalit kerak emas)
-            try {
-                const base64 = await fileToBase64(file);
-                const fd = new FormData();
-                fd.append('source', base64);
-                fd.append('type', 'base64');
-                const r = await fetch('https://freeimage.host/api/1/upload?key=6d207e02198a847aa98d0a2a901485a5', { method:'POST', body:fd });
-                const d = await r.json();
-                if(d.status_code === 200 && d.image?.url) return d.image.url;
-            } catch(e) {}
-
-            return null;
-        }
-
-        function fileToBase64(file) {
-            return new Promise((res, rej) => {
-                const r = new FileReader();
-                r.onload = () => res(r.result.split(',')[1]);
-                r.onerror = () => rej(new Error('Fayl o\'qilmadi'));
-                r.readAsDataURL(file);
-            });
-        }
+        // ImgBB API kalitlari (bepul, muddatsiz URL)
+        const IMGBB_KEYS = [
+            'c2e2e2fcdc9cefb9cff97e17c97fc7c5',
+            'f6e9c5c5e8f9b8e8c5c5e9f6b8c5f9e8'
+        ];
 
         async function uploadPosterToTelegram(input) {
             const file = input.files[0];
             if(!file) return;
 
-            const nameEl   = document.getElementById('posterPickName');
-            const progWrap = document.getElementById('posterUploadProgress');
-            const progTxt  = document.getElementById('posterUploadTxt');
-            const progBar  = document.getElementById('posterUploadBar');
+            const nameEl    = document.getElementById('posterPickName');
+            const progWrap  = document.getElementById('posterUploadProgress');
+            const progTxt   = document.getElementById('posterUploadTxt');
+            const progBar   = document.getElementById('posterUploadBar');
 
             nameEl.textContent = file.name;
             nameEl.style.color = '#fff';
             progWrap.style.display = 'block';
-            progBar.style.width = '20%';
-            progTxt.textContent = '⏳ Yuklanmoqda...';
+            progBar.style.width = '15%';
+            progTxt.textContent = 'Rasm yuklanmoqda...';
 
             try {
-                progBar.style.width = '50%';
-                const result = await uploadImageToCloud(file);
-                
+                // Rasmni base64 ga o'giramiz
+                const base64 = await new Promise((res, rej) => {
+                    const r = new FileReader();
+                    r.onload = () => res(r.result.split(',')[1]);
+                    r.onerror = () => rej(new Error('Fayl o\'qilmadi'));
+                    r.readAsDataURL(file);
+                });
+
+                progBar.style.width = '40%';
+                progTxt.textContent = 'ImgBB ga yuklanmoqda...';
+
+                // ImgBB ga yuklash (muddatsiz URL)
                 let imageUrl = '';
-                let fileId   = '';
-                
-                if(typeof result === 'object' && result?.url) {
-                    imageUrl = result.url;
-                    fileId   = result.fileId || '';
-                } else if(typeof result === 'string' && result) {
-                    imageUrl = result;
+                let lastErr = '';
+                for(const key of IMGBB_KEYS) {
+                    try {
+                        const fd = new FormData();
+                        fd.append('key', key);
+                        fd.append('image', base64);
+                        const r = await fetch('https://api.imgbb.com/1/upload', { method: 'POST', body: fd });
+                        const d = await r.json();
+                        if(d.success && d.data?.url) {
+                            imageUrl = d.data.display_url || d.data.url;
+                            break;
+                        } else {
+                            lastErr = d.error?.message || 'ImgBB xatosi';
+                        }
+                    } catch(e) { lastErr = e.message; }
                 }
 
-                if(!imageUrl) throw new Error('Rasm yuklanmadi. Bot token va Admin ID ni tekshiring.');
+                // ImgBB ishlamasa — Telegram ga yuklashga urinib ko'ramiz
+                if(!imageUrl) {
+                    progTxt.textContent = 'Telegram orqali yuklanmoqda...';
+                    progBar.style.width = '60%';
+                    const token   = (await db.settings.get('token'))?.value;
+                    const adminId = (await db.settings.get('admin_id'))?.value;
+                    if(token && adminId) {
+                        const tgFd = new FormData();
+                        tgFd.append('chat_id', adminId);
+                        tgFd.append('photo', file);
+                        const tr = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method:'POST', body:tgFd });
+                        const td = await tr.json();
+                        if(td.ok) {
+                            const photos = td.result.photo;
+                            const fileId = photos[photos.length-1].file_id;
+                            const fr = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`);
+                            const fd2 = await fr.json();
+                            if(fd2.ok) imageUrl = `https://api.telegram.org/file/bot${token}/${fd2.result.file_path}`;
+                            let pidInp = document.getElementById('kPosterId');
+                            if(!pidInp) { pidInp = document.createElement('input'); pidInp.type='hidden'; pidInp.id='kPosterId'; document.getElementById('kPosterUrl').parentNode.appendChild(pidInp); }
+                            pidInp.value = fileId;
+                        }
+                    }
+                }
+
+                if(!imageUrl) throw new Error('Rasm yuklanmadi: ' + lastErr);
 
                 progBar.style.width = '100%';
                 document.getElementById('kPosterUrl').value = imageUrl;
                 document.getElementById('posterImg').src = imageUrl;
                 document.getElementById('posterPreview').style.display = 'block';
                 progWrap.style.display = 'none';
-
-                // fileId ni saqlaymiz (Telegram URL muddati o'tsa yangilash uchun)
-                let pidInp = document.getElementById('kPosterId');
-                if(!pidInp) {
-                    pidInp = document.createElement('input');
-                    pidInp.type = 'hidden'; pidInp.id = 'kPosterId';
-                    document.getElementById('kPosterUrl').parentNode.appendChild(pidInp);
-                }
-                pidInp.value = fileId;
-
-                showToast('✅ Poster yuklandi!', 'success');
+                showToast('✅ Poster yuklandi! (muddatsiz URL)', 'success');
 
             } catch(err) {
                 progWrap.style.display = 'none';
                 progBar.style.width = '0%';
-                showToast('❌ ' + err.message, 'error');
+                showToast('❌ Xato: ' + err.message, 'error');
             }
         }
 
@@ -4370,51 +4048,60 @@
         async function changePosterForMovie(movieId, input) {
             const file = input.files[0];
             if(!file) return;
-
-            // Label ni loading holatiga o'tkazamiz
-            const label = input.closest('label');
-            const origHtml = label ? label.innerHTML : '';
-            if(label) label.innerHTML = `<span style="pointer-events:none;">⏳ Yuklanmoqda...</span>`;
-
-            showToast('⏳ Poster yuklanmoqda...', '');
+            showToast('⏳ Yangi poster yuklanmoqda...', '');
             try {
-                const result = await uploadImageToCloud(file);
-                
+                const base64 = await new Promise((res, rej) => {
+                    const r = new FileReader();
+                    r.onload = () => res(r.result.split(',')[1]);
+                    r.onerror = () => rej(new Error('Fayl o\'qilmadi'));
+                    r.readAsDataURL(file);
+                });
                 let imageUrl = '';
-                let fileId   = '';
-                
-                if(typeof result === 'object' && result?.url) {
-                    imageUrl = result.url;
-                    fileId   = result.fileId || '';
-                } else if(typeof result === 'string' && result) {
-                    imageUrl = result;
+                for(const key of IMGBB_KEYS) {
+                    try {
+                        const fd = new FormData();
+                        fd.append('key', key);
+                        fd.append('image', base64);
+                        const r = await fetch('https://api.imgbb.com/1/upload', { method:'POST', body:fd });
+                        const d = await r.json();
+                        if(d.success && d.data?.url) { imageUrl = d.data.display_url || d.data.url; break; }
+                    } catch(e) {}
                 }
-
-                if(!imageUrl) throw new Error('Rasm yuklanmadi. Bot token va Admin ID ni tekshiring!');
-
+                // Fallback: Telegram
+                if(!imageUrl) {
+                    const token   = (await db.settings.get('token'))?.value;
+                    const adminId = (await db.settings.get('admin_id'))?.value;
+                    if(token && adminId) {
+                        const tgFd = new FormData();
+                        tgFd.append('chat_id', adminId);
+                        tgFd.append('photo', file);
+                        const tr = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method:'POST', body:tgFd });
+                        const td = await tr.json();
+                        if(td.ok) {
+                            const photos = td.result.photo;
+                            const fileId = photos[photos.length-1].file_id;
+                            const fr = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`);
+                            const fd2 = await fr.json();
+                            if(fd2.ok) imageUrl = `https://api.telegram.org/file/bot${token}/${fd2.result.file_path}`;
+                        }
+                    }
+                }
+                if(!imageUrl) throw new Error('Rasm yuklanmadi');
                 // Kinoni yangilaymiz
-                const movies = await moviesGet(true);
+                const movies = await moviesGet();
                 const idx = movies.findIndex(m => m.id === movieId);
                 if(idx !== -1) {
-                    movies[idx].poster   = imageUrl;
-                    movies[idx].imgUrl   = imageUrl;
-                    movies[idx].posterId = fileId;
+                    movies[idx].poster = imageUrl;
+                    movies[idx].posterId = '';
                     await moviesSet(movies);
-
-                    // Ekrandagi rasmlarni ham yangilaymiz
-                    document.querySelectorAll(`[data-poster-id="${movieId}"]`).forEach(el => {
-                        el.src = imageUrl;
-                    });
-
+                    // Ekrandagi rasmni ham yangilaymiz
+                    const imgEl = document.querySelector(`[data-poster-id="${movieId}"]`);
+                    if(imgEl) imgEl.src = imageUrl;
                     showToast('✅ Poster almashtirildi!', 'success');
                     await loadContent();
                 }
             } catch(err) {
-                showToast('❌ ' + err.message, 'error');
-            } finally {
-                if(label && origHtml) label.innerHTML = origHtml;
-                // input ni reset qilamiz — qayta yuklash mumkin bo'lsin
-                input.value = '';
+                showToast('❌ Xato: ' + err.message, 'error');
             }
         }
 
@@ -4725,18 +4412,6 @@
 
         function closePlayer() {
             const v = document.getElementById('mainVideo');
-
-            // Pozitsiyani saqlash (iframe bo'lmasa)
-            const iframeEl2 = document.getElementById('tgEmbedFrame');
-            const isIframe = iframeEl2 && iframeEl2.style.display !== 'none' && iframeEl2.src;
-            if(!isIframe && currentMovieId && v.currentTime > 3 && !v.ended) {
-                vpSave(currentMovieId, _currentPartIdx, v.currentTime);
-            }
-
-            // Resume toast ni yopish
-            const rb = document.getElementById('_resumeBox');
-            if(rb) rb.remove();
-
             v.pause(); v.src = '';
             v.onerror = null; v.oncanplay = null;
             const iframeEl = document.getElementById('tgEmbedFrame');
@@ -4773,15 +4448,13 @@
             playerEl.style.top = '0';
             playerEl.style.height = '100vh';
             playerEl.style.marginTop = '0';
-            playerEl.style.filter = '';
-            playerLocked = false;
-            const lo = document.getElementById('playerLockOverlay');
-            if(lo) lo.style.display = 'none';
-            const lb = document.getElementById('lockBtn');
-            if(lb) lb.textContent = '🔓';
-            clearTimeout(controlsHideTimer);
-            const menu = document.getElementById('speedMenu');
-            if(menu) menu.style.display = 'none';
+            if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+            else if(document.webkitFullscreenElement) document.webkitExitFullscreen();
+            // Seek div'larini qayta yoqish
+            const seekL = document.getElementById('seekLeft');
+            const seekR = document.getElementById('seekRight');
+            if(seekL) seekL.style.pointerEvents = 'auto';
+            if(seekR) seekR.style.pointerEvents = 'auto';
             stopWatermarks();
         }
         function closeDetail() { document.getElementById('detailPage').style.display = 'none'; }
@@ -5875,363 +5548,34 @@
             }
         }
 
-        // ========================================
-        //   CUSTOM VIDEO PLAYER - To'liq boshqaruv
-        // ========================================
+        // === DOUBLE TAP SEEK ===
+        let tapTimerL = null, tapTimerR = null;
+        function setupDoubleTap() {
+            const left  = document.getElementById('seekLeft');
+            const right = document.getElementById('seekRight');
 
-        let playerLocked   = false;
-        let controlsHideTimer = null;
-        let controlsVisible   = true;
-        let isScrubbing       = false;
-        let currentSpeed      = 1;
-        let holdSpeedTimer    = null;
-        const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
+            left.addEventListener('click', () => {
+                if(tapTimerL) { clearTimeout(tapTimerL); tapTimerL = null; seekVideo(-10); }
+                else { tapTimerL = setTimeout(() => { tapTimerL = null; }, 300); }
+            });
+            right.addEventListener('click', () => {
+                if(tapTimerR) { clearTimeout(tapTimerR); tapTimerR = null; seekVideo(10); }
+                else { tapTimerR = setTimeout(() => { tapTimerR = null; }, 300); }
+            });
+        }
+        setupDoubleTap();
 
-        // --- CONTROLS SHOW/HIDE ---
-        function showControls() {
-            if(playerLocked) return;
-            const ctrl = document.getElementById('playerControls');
-            if(ctrl) { ctrl.style.opacity = '1'; ctrl.style.pointerEvents = 'auto'; }
-            controlsVisible = true;
-            resetHideTimer();
-        }
-        function hideControls() {
-            const ctrl = document.getElementById('playerControls');
-            if(ctrl) { ctrl.style.opacity = '0'; ctrl.style.pointerEvents = 'none'; }
-            controlsVisible = false;
-        }
-        function resetHideTimer() {
-            clearTimeout(controlsHideTimer);
-            const v = document.getElementById('mainVideo');
-            if(!v || v.paused) return; // Paused bo'lsa yashirmaymiz
-            controlsHideTimer = setTimeout(hideControls, 3500);
-        }
-
-        // --- PLAY / PAUSE ---
-        function togglePlayPause() {
-            const v = document.getElementById('mainVideo');
-            if(!v.src) return;
-            if(v.paused) { v.play(); } else { v.pause(); }
-            showControls();
-        }
-        function updatePlayPauseUI() {
-            const v  = document.getElementById('mainVideo');
-            const b  = document.getElementById('playPauseBtn');
-            const cb = document.getElementById('centerPlayIcon');
-            const icon = v.paused ? '▶' : '⏸';
-            if(b)  b.textContent  = icon;
-            if(cb) cb.textContent = icon;
-            if(!v.paused) resetHideTimer();
-            else { clearTimeout(controlsHideTimer); showControls(); }
-        }
-
-        // --- PROGRESS BAR ---
-        function updateProgress() {
-            const v = document.getElementById('mainVideo');
-            if(!v || !v.duration) return;
-            const pct = (v.currentTime / v.duration) * 100;
-            const pb  = document.getElementById('progressPlayedBar');
-            const pt  = document.getElementById('progressThumb');
-            const ct  = document.getElementById('currentTimeLabel');
-            if(pb) pb.style.width  = pct + '%';
-            if(pt) pt.style.left   = pct + '%';
-            if(ct) ct.textContent  = fmtTime(v.currentTime);
-            // Buffer
-            if(v.buffered.length) {
-                const buf = (v.buffered.end(v.buffered.length - 1) / v.duration) * 100;
-                const bb = document.getElementById('progressBufferBar');
-                if(bb) bb.style.width = buf + '%';
-            }
-        }
-        function updateDuration() {
-            const v = document.getElementById('mainVideo');
-            const d = document.getElementById('durationLabel');
-            if(v && d && v.duration) d.textContent = fmtTime(v.duration);
-        }
-        function fmtTime(s) {
-            if(!s || isNaN(s)) return '0:00';
-            const h = Math.floor(s / 3600);
-            const m = Math.floor((s % 3600) / 60);
-            const sec = Math.floor(s % 60);
-            if(h > 0) return h + ':' + String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
-            return m + ':' + String(sec).padStart(2,'0');
-        }
-
-        // --- SCRUB ---
-        let _scrubActive = false;
-        function scrubStart(e) {
-            _scrubActive = true;
-            clearTimeout(controlsHideTimer);
-            scrubMove(e);
-        }
-        function scrubMove(e) {
-            if(!_scrubActive) return;
-            const v = document.getElementById('mainVideo');
-            if(!v || !v.duration) return;
-            const area = document.getElementById('progressTouchArea');
-            const rect = area.getBoundingClientRect();
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-            const newTime = pct * v.duration;
-            const pb = document.getElementById('progressPlayedBar');
-            const pt = document.getElementById('progressThumb');
-            const ct = document.getElementById('currentTimeLabel');
-            if(pb) pb.style.width = (pct * 100) + '%';
-            if(pt) pt.style.left  = (pct * 100) + '%';
-            if(pt) pt.style.transform = 'translate(-50%,-50%) scale(1.4)';
-            if(ct) ct.textContent = fmtTime(newTime);
-            v.currentTime = newTime;
-        }
-        function scrubEnd(e) {
-            _scrubActive = false;
-            const pt = document.getElementById('progressThumb');
-            if(pt) pt.style.transform = 'translate(-50%,-50%) scale(1)';
-            resetHideTimer();
-        }
-
-        // --- CENTER ZONE: tap = toggle controls, hold = 2x speed ---
-        function handleCenterTouch(e) {
-            holdSpeedTimer = setTimeout(() => {
-                const v = document.getElementById('mainVideo');
-                if(v && !v.paused) {
-                    v.playbackRate = 2;
-                    const badge = document.getElementById('speedBadge');
-                    if(badge) badge.style.display = 'flex';
-                }
-            }, 500);
-        }
-        function handleCenterTouchEnd(e) {
-            clearTimeout(holdSpeedTimer);
-            const v = document.getElementById('mainVideo');
-            if(v && v.playbackRate === 2) {
-                v.playbackRate = currentSpeed;
-                const badge = document.getElementById('speedBadge');
-                if(badge) badge.style.display = 'none';
-                return;
-            }
-            if(controlsVisible) hideControls();
-            else showControls();
-        }
-
-        // --- DOUBLE TAP SEEK ---
-        let _tapTimerL = null, _tapTimerR = null;
-        let _seekAccumL = 0, _seekAccumR = 0;
-        let _seekLabelTimerL = null, _seekLabelTimerR = null;
-
-        function handleSeekTouch(e, side) {
-            e.stopPropagation();
-            showControls();
-        }
-        function handleSeekTouchEnd(e, side) {
-            e.stopPropagation();
-            if(side === 'left') {
-                _seekAccumL += 10;
-                if(_tapTimerL) clearTimeout(_tapTimerL);
-                _tapTimerL = setTimeout(() => {
-                    const v = document.getElementById('mainVideo');
-                    if(v) v.currentTime = Math.max(0, v.currentTime - _seekAccumL);
-                    showSeekAnim('left', -_seekAccumL);
-                    _seekAccumL = 0; _tapTimerL = null;
-                }, 280);
-            } else {
-                _seekAccumR += 10;
-                if(_tapTimerR) clearTimeout(_tapTimerR);
-                _tapTimerR = setTimeout(() => {
-                    const v = document.getElementById('mainVideo');
-                    if(v) v.currentTime = Math.min(v.duration || 9999, v.currentTime + _seekAccumR);
-                    showSeekAnim('right', _seekAccumR);
-                    _seekAccumR = 0; _tapTimerR = null;
-                }, 280);
-            }
-            // Ripple effekt
-            const ripple = document.getElementById(side === 'left' ? 'seekLeftRipple' : 'seekRightRipple');
-            if(ripple) {
-                ripple.style.transition = 'none';
-                ripple.style.transform = side === 'left' ? 'translate(-50%,-50%) scale(0)' : 'translate(50%,-50%) scale(0)';
-                ripple.style.opacity = '1';
-                requestAnimationFrame(() => {
-                    ripple.style.transition = 'transform 0.5s ease, opacity 0.5s ease';
-                    ripple.style.transform = side === 'left' ? 'translate(-50%,-50%) scale(3)' : 'translate(50%,-50%) scale(3)';
-                    ripple.style.opacity = '0';
-                });
-            }
-        }
-
-        function showSeekAnim(side, secs) {
-            const anim  = document.getElementById(side === 'left' ? 'seekLeftAnim'  : 'seekRightAnim');
-            const label = document.getElementById(side === 'left' ? 'seekLeftLabel' : 'seekRightLabel');
-            if(!anim || !label) return;
-            label.textContent = (secs > 0 ? '+' : '') + secs + 's';
-            anim.style.opacity = '1';
-            clearTimeout(side === 'left' ? _seekLabelTimerL : _seekLabelTimerR);
-            const t = setTimeout(() => { anim.style.opacity = '0'; }, 900);
-            if(side === 'left') _seekLabelTimerL = t; else _seekLabelTimerR = t;
-        }
-
-        // --- SEEK (tugma orqali) ---
+        // === SEEK FEEDBACK ===
         let seekFbTimer = null;
         function seekVideo(secs) {
             const v = document.getElementById('mainVideo');
-            if(!v) return;
             v.currentTime = Math.max(0, Math.min(v.duration || 0, v.currentTime + secs));
-            showSeekAnim(secs < 0 ? 'left' : 'right', secs);
-            showControls();
+            const fb = document.getElementById('seekFeedback');
+            fb.textContent = secs > 0 ? `▶▶ +${secs}s` : `◀◀ ${secs}s`;
+            fb.style.opacity = '1';
+            clearTimeout(seekFbTimer);
+            seekFbTimer = setTimeout(() => { fb.style.opacity = '0'; }, 900);
         }
-
-        // --- TEZLIK ---
-        function openSpeedMenu() {
-            const menu = document.getElementById('speedMenu');
-            if(!menu) return;
-            if(menu.style.display !== 'none') { menu.style.display = 'none'; return; }
-            menu.innerHTML = '<div style="padding:10px 14px 6px;font-size:11px;color:#888;font-weight:700;letter-spacing:1px;">⚡ TEZLIK</div>';
-            SPEEDS.forEach(s => {
-                const item = document.createElement('div');
-                item.style.cssText = `padding:13px 18px;font-size:15px;font-weight:${s===currentSpeed?'900':'700'};
-                    color:${s===currentSpeed?'var(--accent)':'#fff'};cursor:pointer;
-                    background:${s===currentSpeed?'rgba(0,255,115,0.1)':'transparent'};
-                    display:flex;align-items:center;justify-content:space-between;
-                    touch-action:manipulation;`;
-                item.innerHTML = `<span>${s}x</span>${s===currentSpeed?'<span>✓</span>':''}`;
-                item.ontouchend = (e) => { e.preventDefault(); setSpeed(s); };
-                item.onclick    = () => setSpeed(s);
-                menu.appendChild(item);
-            });
-            menu.style.display = 'block';
-            clearTimeout(controlsHideTimer);
-        }
-        function setSpeed(s) {
-            currentSpeed = s;
-            const v = document.getElementById('mainVideo');
-            if(v) v.playbackRate = s;
-            const btn = document.getElementById('speedToggleBtn');
-            if(btn) btn.textContent = s + 'x';
-            const menu = document.getElementById('speedMenu');
-            if(menu) menu.style.display = 'none';
-            showControls();
-        }
-
-        // --- FULLSCREEN ---
-        function toggleFullscreen() {
-            const p = document.getElementById('player');
-            if(!document.fullscreenElement && !document.webkitFullscreenElement) {
-                if(p.requestFullscreen) p.requestFullscreen().catch(()=>{});
-                else if(p.webkitRequestFullscreen) p.webkitRequestFullscreen();
-            } else {
-                if(document.exitFullscreen) document.exitFullscreen().catch(()=>{});
-                else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
-            }
-        }
-
-        // --- LOCK ---
-        function togglePlayerLock() {
-            playerLocked = !playerLocked;
-            const lockBtn = document.getElementById('lockBtn');
-            const lockOverlay = document.getElementById('playerLockOverlay');
-            if(playerLocked) {
-                if(lockBtn) lockBtn.textContent = '🔒';
-                if(lockOverlay) lockOverlay.style.display = 'block';
-                hideControls();
-            } else {
-                if(lockBtn) lockBtn.textContent = '🔓';
-                if(lockOverlay) lockOverlay.style.display = 'none';
-                showControls();
-            }
-        }
-
-        // --- VOLUME / BRIGHTNESS SWIPE ---
-        let _swipeStartY = null, _swipeStartX = null, _swipeStartVol = 1, _swipeSide = null;
-        const _playerEl = document.getElementById('player');
-        _playerEl.addEventListener('touchstart', e => {
-            if(e.touches.length !== 1) return;
-            _swipeStartY = e.touches[0].clientY;
-            _swipeStartX = e.touches[0].clientX;
-            _swipeSide   = _swipeStartX < window.innerWidth / 2 ? 'brightness' : 'volume';
-            const v = document.getElementById('mainVideo');
-            _swipeStartVol = v ? v.volume : 1;
-        }, {passive:true});
-        _playerEl.addEventListener('touchmove', e => {
-            if(!_swipeStartY || e.touches.length !== 1) return;
-            const dy   = _swipeStartY - e.touches[0].clientY;
-            const dx   = Math.abs(e.touches[0].clientX - _swipeStartX);
-            if(dx > Math.abs(dy) * 1.5) { _swipeStartY = null; return; } // horizontal — ignore
-            if(Math.abs(dy) < 12) return;
-            const pct  = Math.max(0, Math.min(1, _swipeStartVol + dy / 200));
-            const v    = document.getElementById('mainVideo');
-            if(_swipeSide === 'volume') {
-                if(v) v.volume = pct;
-                const vi = document.getElementById('volumeIndicator');
-                const vb = document.getElementById('volumeBar');
-                const vv = document.getElementById('volumeVal');
-                const vo = document.getElementById('volIcon');
-                if(vi) { vi.style.display = 'flex'; if(vb) vb.style.height=(pct*100)+'%'; if(vv) vv.textContent=Math.round(pct*100)+'%'; if(vo) vo.textContent=pct<0.05?'🔇':pct<0.5?'🔉':'🔊'; }
-            } else {
-                const bi = document.getElementById('brightnessIndicator');
-                const bb = document.getElementById('brightnessBar');
-                const bv = document.getElementById('brightnessVal');
-                if(bi) { bi.style.display='flex'; if(bb) bb.style.height=(pct*100)+'%'; if(bv) bv.textContent=Math.round(pct*100)+'%'; }
-                document.getElementById('player').style.filter = `brightness(${pct * 1.5 + 0.2})`;
-            }
-        }, {passive:true});
-        _playerEl.addEventListener('touchend', () => {
-            _swipeStartY = null;
-            setTimeout(() => {
-                const vi = document.getElementById('volumeIndicator');
-                const bi = document.getElementById('brightnessIndicator');
-                if(vi) vi.style.display = 'none';
-                if(bi) bi.style.display = 'none';
-            }, 1200);
-        }, {passive:true});
-
-        // --- VIDEO EVENT LISTENERS ---
-        function initPlayerEvents() {
-            const v = document.getElementById('mainVideo');
-            if(!v) return;
-            v.addEventListener('timeupdate',    updateProgress);
-            v.addEventListener('loadedmetadata', updateDuration);
-            v.addEventListener('play',   updatePlayPauseUI);
-            v.addEventListener('pause',  updatePlayPauseUI);
-            v.addEventListener('ended',  () => {
-                if(currentMovieId) vpClear(currentMovieId, _currentPartIdx);
-                updatePlayPauseUI();
-            });
-            v.addEventListener('click', () => {
-                if(controlsVisible) hideControls(); else showControls();
-            });
-        }
-        initPlayerEvents();
-
-        // --- IFRAME uchun back button (YouTube/Telegram) ---
-        // iframe-da custom controls yashiriladi
-        function setupIframeMode(show) {
-            const ctrl = document.getElementById('playerControls');
-            const topBar = document.getElementById('playerTopBar');
-            if(show) {
-                // iframe mode: faqat back button, custom controls yashiriladi
-                if(ctrl) { ctrl.style.opacity = '1'; ctrl.style.pointerEvents = 'auto'; }
-                const bottom = document.getElementById('playerBottomBar');
-                const center = document.getElementById('playerCenterZone');
-                const seekL  = document.getElementById('seekLeft');
-                const seekR  = document.getElementById('seekRight');
-                if(bottom) bottom.style.display = 'none';
-                if(center) center.style.pointerEvents = 'none';
-                if(seekL)  seekL.style.pointerEvents  = 'none';
-                if(seekR)  seekR.style.pointerEvents  = 'none';
-            } else {
-                // Direct video mode: barcha controls ko'rinadi
-                const bottom = document.getElementById('playerBottomBar');
-                const center = document.getElementById('playerCenterZone');
-                const seekL  = document.getElementById('seekLeft');
-                const seekR  = document.getElementById('seekRight');
-                if(bottom) bottom.style.display = '';
-                if(center) center.style.pointerEvents = 'auto';
-                if(seekL)  seekL.style.pointerEvents  = 'auto';
-                if(seekR)  seekR.style.pointerEvents  = 'auto';
-                showControls();
-            }
-        }
-
-        // Eski setupDoubleTap — endi yuqorida qayta yozildi
-        function setupDoubleTap() {} // stub — ishlatilmaydi
 
         // === MINI PROGRESS BAR ===
         function startMiniProgress() {
@@ -7259,4 +6603,406 @@
                 const apis = data.nk_apis || [];
                 if(apis.length) {
                     apis.forEach(a => addNkApiRow(a.url||'', a.key||'', a.label||''));
-                    updat
+                    updateNkApiSelect(apis.length);
+                    // Balanslarni ham darhol ko'rsatamiz
+                    await showNkApiBotBalances(apis);
+                } else {
+                    addNkApiRow(); // Bo'sh bitta ko'rsatamiz
+                }
+            } catch(e) { addNkApiRow(); }
+        }
+
+        async function refreshNkBotBalances() {
+            try {
+                const data = await binGet();
+                const apis = data.nk_apis || [];
+                if(!apis.length) { showToast('⚠️ Avval API kalitlarni saqlang!', 'error'); return; }
+                showToast('⏳ Balanslar tekshirilmoqda...', '');
+                await showNkApiBotBalances(apis);
+                showToast('✅ Balanslar yangilandi!', 'success');
+            } catch(e) {
+                showToast('❌ Xatolik: ' + e.message, 'error');
+            }
+        }
+
+        // SMM API dan xizmatlarni avtomatik yuklash + foiz qo'shish
+        async function loadServicesFromApi() {
+            const apiIdx = parseInt(document.getElementById('nkAdmApiIndex')?.value) || 0;
+            const markup = parseFloat(document.getElementById('nkAdmMarkup')?.value) || 0;
+            const platform = document.getElementById('nkAdmPlatform')?.value || 'telegram';
+            try {
+                const data = await binGet();
+                const apis = data.nk_apis || [];
+                const api = apis[apiIdx];
+                if(!api || !api.url || !api.key) return showToast('⚠️ Avval API ni saqlang!', 'error');
+                showToast('⏳ API dan yuklanmoqda...', '');
+                
+                let list = null;
+                const svcUrl = `${api.url}?key=${encodeURIComponent(api.key)}&action=services`;
+                // 1-usul: to'g'ridan
+                try {
+                    const fd = new FormData();
+                    fd.append('key', api.key); fd.append('action', 'services');
+                    const r = await fetch(api.url, {method:'POST', body:fd, signal: AbortSignal.timeout(6000)});
+                    list = await r.json();
+                } catch(e) {}
+                // 2-usul: allorigins
+                if(!list) try {
+                    const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(svcUrl)}`, {signal: AbortSignal.timeout(9000)});
+                    list = JSON.parse(await r.text());
+                } catch(e) {}
+                // 3-usul: thingproxy
+                if(!list) try {
+                    const r = await fetch(`https://thingproxy.freeboard.io/fetch/${svcUrl}`, {signal: AbortSignal.timeout(9000)});
+                    list = JSON.parse(await r.text());
+                } catch(e) {}
+                
+                if(!Array.isArray(list)) return showToast('❌ API dan noto\'g\'ri javob', 'error');
+
+                // Ro'yxatni ko'rsatamiz — admin tanlaydi
+                const el = document.getElementById('nkApiServicesList');
+                if(el) {
+                    el.innerHTML = `<div style="font-size:12px;color:#888;margin-bottom:8px;">API dan ${list.length} ta xizmat topildi. Keraklisini qo'shing:</div>` +
+                        list.slice(0, 50).map((s, i) => {
+                            const basePrice = parseFloat(s.rate) || 0;
+                            const markedPrice = Math.ceil(basePrice * (1 + markup/100));
+                            return `
+                            <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+                                <div style="flex:1;">
+                                    <div style="font-size:13px;font-weight:900;color:#fff;">${s.name||'Xizmat '+s.service}</div>
+                                    <div style="font-size:11px;color:#888;">ID:${s.service} • ${markedPrice.toLocaleString()} so'm (API: ${basePrice})</div>
+                                </div>
+                                <button onclick="quickAddService('${s.name?.replace(/'/g,"\\'")||"Xizmat"}', ${s.service}, ${markedPrice}, '${platform}', ${apiIdx})" style="background:#0d1f14;color:var(--accent);border:1.5px solid var(--accent);padding:7px 12px;border-radius:9px;font-weight:900;font-size:12px;flex-shrink:0;">+ Qo'sh</button>
+                            </div>`;
+                        }).join('');
+                    el.style.display = 'block';
+                }
+                showToast(`✅ ${list.length} ta xizmat topildi!`, 'success');
+            } catch(e) { showToast('❌ API xatosi: ' + e.message, 'error'); }
+        }
+
+        async function quickAddService(name, serviceId, price, platform, apiIdx) {
+            if(!price || price < 1) return showToast('⚠️ Narx noto\'g\'ri!', 'error');
+            const services = await getNakrutkaServices();
+            services.push({id: Date.now(), platform, name, price, serviceId: String(serviceId), apiIndex: apiIdx});
+            await setNakrutkaServices(services);
+            showToast(`✅ "${name}" qo'shildi!`, 'success');
+            loadNakrutkaAdminList();
+        }
+
+        // closeModal already defined above
+        function enterFullscreenLandscape() {
+            const player = document.getElementById('player');
+            const iframe = document.getElementById('tgEmbedFrame');
+
+            // 1. Telefonni yotiq holga o'tkazish
+            if(screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('landscape').catch(() => {});
+            } else if(window.screen && window.screen.lockOrientation) {
+                window.screen.lockOrientation('landscape');
+            } else if(window.screen && window.screen.mozLockOrientation) {
+                window.screen.mozLockOrientation('landscape');
+            }
+
+            // 2. Player div ni fullscreen qilish
+            const el = player;
+            const requestFS = el.requestFullscreen
+                || el.webkitRequestFullscreen
+                || el.mozRequestFullScreen
+                || el.msRequestFullscreen;
+            if(requestFS) {
+                requestFS.call(el).catch(() => {});
+            }
+
+            // 3. YouTube iframe ga ham fullscreen so'rov yuborish
+            if(iframe && iframe.style.display !== 'none' && iframe.src.includes('youtube')) {
+                try { iframe.contentWindow.postMessage('{"event":"command","func":"requestFullscreen","args":""}', '*'); } catch(e) {}
+            }
+        }
+
+        function handleOrientation() {
+            const player = document.getElementById('player');
+            const iframe = document.getElementById('tgEmbedFrame');
+            const v = document.getElementById('mainVideo');
+            const isLandscape = window.innerWidth > window.innerHeight;
+            if(player.style.display !== 'none') {
+                player.style.position = 'fixed';
+                player.style.top = '0';
+                player.style.left = '0';
+                player.style.width = '100vw';
+                player.style.height = '100vh';
+                player.style.zIndex = '3000';
+
+                if(iframe && iframe.style.display !== 'none') {
+                    if(isLandscape) {
+                        player.style.zIndex = '9999';
+                        if(player.requestFullscreen) player.requestFullscreen().catch(()=>{});
+                        else if(player.webkitRequestFullscreen) player.webkitRequestFullscreen();
+                    }
+                } else {
+                    if(isLandscape) {
+                        v.style.objectFit = 'contain';
+                        if(v.requestFullscreen) v.requestFullscreen().catch(()=>{});
+                        else if(v.webkitEnterFullscreen) v.webkitEnterFullscreen();
+                    } else {
+                        if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+                        v.style.objectFit = 'cover';
+                    }
+                }
+            }
+        }
+        window.addEventListener('resize', handleOrientation);
+        screen.orientation && screen.orientation.addEventListener('change', handleOrientation);
+
+        // ===== KONTENTNI HIMOYALASH =====
+        let contentProtectEnabled = false;
+
+        async function loadContentProtectState() {
+            try {
+                const data = await binGet();
+                contentProtectEnabled = !!data.content_protect;
+            } catch(e) { contentProtectEnabled = false; }
+            applyContentProtect(contentProtectEnabled);
+            updateContentProtectUI(contentProtectEnabled);
+            const el = document.getElementById('contentProtectStatus');
+            if(el) el.textContent = contentProtectEnabled ? '🔒 Himoya yoqilgan' : '🔓 Himoya o\'chirilgan';
+        }
+
+        async function toggleContentProtect() {
+            contentProtectEnabled = !contentProtectEnabled;
+            applyContentProtect(contentProtectEnabled);
+            updateContentProtectUI(contentProtectEnabled);
+            const el = document.getElementById('contentProtectStatus');
+            if(el) el.textContent = '⏳ Saqlanmoqda...';
+            try {
+                const data = await binGet();
+                data.content_protect = contentProtectEnabled;
+                await binSet(data);
+                if(el) el.textContent = contentProtectEnabled ? '🔒 Himoya yoqilgan' : '🔓 Himoya o\'chirilgan';
+                showToast(contentProtectEnabled ? '🔒 Himoya yoqildi!' : '🔓 Himoya o\'chirildi!', 'success');
+            } catch(e) {
+                if(el) el.textContent = '❌ Xatolik!';
+            }
+        }
+
+        function updateContentProtectUI(on) {
+            const toggle = document.getElementById('contentProtectToggle');
+            const thumb  = document.getElementById('contentProtectThumb');
+            if(!toggle || !thumb) return;
+            toggle.style.background = on ? 'var(--accent)' : '#333';
+            thumb.style.left   = on ? '24px' : '3px';
+            thumb.style.background = on ? '#000' : '#888';
+        }
+
+        function applyContentProtect(on) {
+            let cpStyle = document.getElementById('_cpStyle');
+            if(!cpStyle) {
+                cpStyle = document.createElement('style');
+                cpStyle.id = '_cpStyle';
+                document.head.appendChild(cpStyle);
+            }
+            let overlay = document.getElementById('_cpOverlay');
+            if(!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = '_cpOverlay';
+                overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:2147483647;display:none;background:#000;opacity:0;transition:opacity 0.05s;';
+                document.body.appendChild(overlay);
+            }
+
+            if(on) {
+                // 1. CSS himoya — user-select + video controls + iframe ustidan shaffof qatlam
+                cpStyle.textContent = `
+                    * { -webkit-user-select:none!important; user-select:none!important; -webkit-touch-callout:none!important; }
+                    video { pointer-events:none!important; }
+                    video::-webkit-media-controls, video::-webkit-media-controls-enclosure, video::-webkit-media-controls-panel { display:none!important; }
+                    img { -webkit-user-drag:none!important; user-drag:none!important; pointer-events:none!important; }
+                    iframe { -webkit-user-select:none!important; }
+                `;
+
+                // 2. Overlay ko'rinadi
+                overlay.style.display = 'block';
+
+                // 3. Visibility change — app background'ga o'tganda
+                document.addEventListener('visibilitychange', _onVisChange);
+
+                // 4. Barcha event bloklash
+                document.addEventListener('contextmenu', _blockCtx, true);
+                document.addEventListener('keydown', _blockKeys, true);
+                document.addEventListener('dragstart', _blockCtx, true);
+                document.addEventListener('selectstart', _blockCtx, true);
+                document.addEventListener('copy', _blockCtx, true);
+                document.addEventListener('cut', _blockCtx, true);
+
+                // 5. Video himoya
+                _protectVideos(true);
+
+                // 6. Screenshot detection
+                _startScreenshotDetection();
+
+                // 7. Telegram Kanalga saqlashni bloklash
+                try {
+                    if(window.Telegram?.WebApp) {
+                        Telegram.WebApp.enableClosingConfirmation?.();
+                        // Telegram WebApp ichida forward/save ni cheklash
+                        Telegram.WebApp.disableVerticalSwipes?.();
+                        // Telegram media download ni o'chirish
+                        if(Telegram.WebApp.isVersionAtLeast?.('6.9')) {
+                            Telegram.WebApp.lockOrientation?.();
+                        }
+                    }
+                } catch(e){}
+
+                // 8. Iframe ustiga himoya qatlami (Telegram kanal vidyosi ustida)
+                _addIframeProtectionLayer(true);
+
+                // 9. Saqlash tugmasini o'chirish (Telegram WebApp)
+                try {
+                    document.querySelectorAll('iframe').forEach(fr => {
+                        fr.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation');
+                        // Iframe kontentini saqlashni qiyinlashtirish
+                        const fakeEl = document.createElement('div');
+                        fakeEl.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none;background:transparent;';
+                        fakeEl.id = '_iframeBlocker_' + Math.random().toString(36).slice(2);
+                        fr.parentNode?.appendChild(fakeEl);
+                    });
+                } catch(e) {}
+
+            } else {
+                cpStyle.textContent = '';
+                overlay.style.display = 'none';
+                overlay.style.opacity = '0';
+                document.removeEventListener('visibilitychange', _onVisChange);
+                document.removeEventListener('contextmenu', _blockCtx, true);
+                document.removeEventListener('keydown', _blockKeys, true);
+                document.removeEventListener('dragstart', _blockCtx, true);
+                document.removeEventListener('selectstart', _blockCtx, true);
+                document.removeEventListener('copy', _blockCtx, true);
+                document.removeEventListener('cut', _blockCtx, true);
+                _protectVideos(false);
+                _stopScreenshotDetection();
+                _addIframeProtectionLayer(false);
+                // iframe blockerlarni tozalash
+                document.querySelectorAll('[id^="_iframeBlocker_"]').forEach(el => el.remove());
+            }
+        }
+
+        // Iframe ustiga shaffof himoya qatlami (Telegram kanal video saqlashni bloklaydi)
+        let _iframeProtLayer = null;
+        function _addIframeProtectionLayer(on) {
+            if(on) {
+                if(!_iframeProtLayer) {
+                    _iframeProtLayer = document.createElement('div');
+                    _iframeProtLayer.id = '_iframeProtLayer';
+                    _iframeProtLayer.style.cssText = `
+                        position:fixed;top:0;left:0;width:100%;height:100%;
+                        z-index:2999;pointer-events:none;
+                        background:transparent;
+                    `;
+                    document.body.appendChild(_iframeProtLayer);
+                }
+                _iframeProtLayer.style.display = 'block';
+            } else {
+                if(_iframeProtLayer) _iframeProtLayer.style.display = 'none';
+            }
+        }
+
+        let _ssDetectInterval = null;
+        let _lastW = window.innerWidth, _lastH = window.innerHeight;
+
+        function _startScreenshotDetection() {
+            _ssDetectInterval = setInterval(() => {
+                const w = window.innerWidth, h = window.innerHeight;
+                if(w !== _lastW || h !== _lastH) { _lastW = w; _lastH = h; _flashBlack(200); }
+            }, 150);
+            window.addEventListener('keyup', _onKeyUp);
+            // Android: screenshot paytida focus yo'qoladi
+            window.addEventListener('blur', _onWinBlur);
+        }
+
+        function _stopScreenshotDetection() {
+            clearInterval(_ssDetectInterval);
+            window.removeEventListener('keyup', _onKeyUp);
+            window.removeEventListener('blur', _onWinBlur);
+        }
+
+        let _blurTimer = null;
+        function _onWinBlur() {
+            if(!contentProtectEnabled) return;
+            // Focus yo'qoldi — screenshot yoki app switch
+            _flashBlack(600);
+        }
+
+        function _onKeyUp(e) {
+            if(e.key === 'PrintScreen' || e.keyCode === 44) _flashBlack(300);
+        }
+
+        function _onVisChange() {
+            if(!contentProtectEnabled) return;
+            if(document.hidden) {
+                _flashBlack(800);
+                const v = document.getElementById('mainVideo');
+                if(v && !v.paused) v.pause();
+            }
+        }
+
+        function _flashBlack(ms) {
+            const ov = document.getElementById('_cpOverlay');
+            if(!ov) return;
+            ov.style.opacity = '1';
+            ov.style.pointerEvents = 'all';
+            clearTimeout(_blurTimer);
+            _blurTimer = setTimeout(() => {
+                ov.style.opacity = '0';
+                ov.style.pointerEvents = 'none';
+            }, ms || 300);
+        }
+
+        function _protectVideos(on) {
+            document.querySelectorAll('video').forEach(v => {
+                if(on) {
+                    v.setAttribute('controlslist', 'nodownload noremoteplayback nofullscreen');
+                    v.setAttribute('disablepictureinpicture', '');
+                    v.setAttribute('disableremoteplayback', '');
+                    v.oncontextmenu = e => { e.preventDefault(); return false; };
+                } else {
+                    v.removeAttribute('controlslist');
+                    v.removeAttribute('disablepictureinpicture');
+                    v.removeAttribute('disableremoteplayback');
+                    v.oncontextmenu = null;
+                }
+            });
+        }
+
+        function _blockCtx(e) { e.preventDefault(); e.stopPropagation(); return false; }
+
+        function _blockKeys(e) {
+            if(e.key === 'PrintScreen' || e.keyCode === 44 ||
+               (e.ctrlKey && ['s','u','p','a','c','x'].includes(e.key.toLowerCase())) ||
+               e.key === 'F12') {
+                e.preventDefault(); e.stopPropagation();
+                _flashBlack(400);
+                return false;
+            }
+        }
+
+        // Rasmlarni saqlashdan himoya (CSS pointer-events o'rniga JS)
+        document.addEventListener('contextmenu', function(e) {
+            if(e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO') {
+                e.preventDefault(); return false;
+            }
+        });
+        document.addEventListener('dragstart', function(e) {
+            if(e.target.tagName === 'IMG') { e.preventDefault(); return false; }
+        });
+        // iOS long-press saqlash dialogini bloklash faqat rasm va videolarda
+        document.addEventListener('touchstart', function(e) {
+            if(e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO') {
+                // Long press timer
+                e.target._lpTimer = setTimeout(() => { /* bloklangan */ }, 500);
+            }
+        }, {passive: true});
+
+        init();
+    </script>
+</body>
+</html>
