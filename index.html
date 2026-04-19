@@ -417,6 +417,11 @@
             100% { transform: scale(1); }
         }
 
+        @keyframes slideUp {
+            from { opacity:0; transform: translateX(-50%) translateY(20px); }
+            to   { opacity:1; transform: translateX(-50%) translateY(0); }
+        }
+
         /* YASHIL QULF belgisi (CSS chizilgan) */
         .green-lock {
             display: inline-block;
@@ -3362,6 +3367,73 @@
         }
 
         let _currentVideoSrc = '';
+        let _currentPartIdx  = 0;   // Hozirgi qism indeksi
+
+        // ===== VIDEO POZITSIYA SAQLASH (localStorage) =====
+        const VP_KEY = 'kd_vp'; // kino drama video progress
+
+        function vpSave(movieId, partIdx, time) {
+            if(!movieId || time < 3) return;
+            try {
+                const d = JSON.parse(localStorage.getItem(VP_KEY) || '{}');
+                d[movieId + '_' + partIdx] = { t: Math.floor(time), at: Date.now() };
+                // Eski yozuvlarni tozalash (30 tadan ko'p bo'lsa)
+                const keys = Object.keys(d);
+                if(keys.length > 30) {
+                    keys.sort((a,b) => (d[a].at||0) - (d[b].at||0));
+                    keys.slice(0, keys.length - 30).forEach(k => delete d[k]);
+                }
+                localStorage.setItem(VP_KEY, JSON.stringify(d));
+            } catch(e) {}
+        }
+
+        function vpGet(movieId, partIdx) {
+            try {
+                const d = JSON.parse(localStorage.getItem(VP_KEY) || '{}');
+                return d[movieId + '_' + partIdx]?.t || 0;
+            } catch(e) { return 0; }
+        }
+
+        function vpClear(movieId, partIdx) {
+            try {
+                const d = JSON.parse(localStorage.getItem(VP_KEY) || '{}');
+                delete d[movieId + '_' + partIdx];
+                localStorage.setItem(VP_KEY, JSON.stringify(d));
+            } catch(e) {}
+        }
+
+        // "Davom ettirish" toast
+        function showResumeToast(savedTime, onResume, onRestart) {
+            const mins = Math.floor(savedTime / 60);
+            const secs = Math.floor(savedTime % 60);
+            const timeStr = mins > 0 ? `${mins}:${String(secs).padStart(2,'0')}` : `${secs}s`;
+
+            const box = document.createElement('div');
+            box.id = '_resumeBox';
+            box.style.cssText = `
+                position:fixed; bottom:100px; left:50%; transform:translateX(-50%);
+                background:#111; border:1.5px solid var(--accent); border-radius:18px;
+                padding:16px 18px; z-index:9999; width:88%; max-width:340px;
+                box-shadow:0 8px 32px rgba(0,0,0,0.7); box-sizing:border-box;
+                animation: slideUp 0.3s ease;
+            `;
+            box.innerHTML = `
+                <div style="font-size:13px;color:#888;margin-bottom:10px;">🕐 Oxirgi to'xtagan joy: <b style="color:var(--accent);">${timeStr}</b></div>
+                <div style="display:flex;gap:10px;">
+                    <button id="_resumeBtn" style="flex:1;background:linear-gradient(90deg,#00ff73,#00cc5c);color:#000;border:none;padding:12px;border-radius:12px;font-weight:900;font-size:14px;touch-action:manipulation;">▶ Davom etish</button>
+                    <button id="_restartBtn" style="flex:1;background:#1a1a1a;color:#888;border:1.5px solid #333;padding:12px;border-radius:12px;font-weight:900;font-size:14px;touch-action:manipulation;">↺ Boshidan</button>
+                </div>`;
+            document.body.appendChild(box);
+
+            document.getElementById('_resumeBtn').onclick  = () => { box.remove(); onResume(); };
+            document.getElementById('_restartBtn').onclick = () => { box.remove(); onRestart(); };
+
+            // 8 soniyadan keyin avtomatik davom etish
+            const autoTimer = setTimeout(() => {
+                if(document.getElementById('_resumeBox')) { box.remove(); onResume(); }
+            }, 8000);
+            box.querySelector('#_restartBtn').addEventListener('click', () => clearTimeout(autoTimer));
+        }
 
         function showVideoLoading(text) {
             const el = document.getElementById('videoLoadingOverlay');
@@ -3613,6 +3685,16 @@
                             v.autoplay = true;
                             v.setAttribute('controlslist', 'nodownload noremoteplayback');
                             v.setAttribute('disablepictureinpicture', '');
+                            // Resume
+                            const _sv1 = currentMovieId ? vpGet(currentMovieId, _currentPartIdx) : 0;
+                            if(_sv1 > 5) {
+                                v.addEventListener('loadedmetadata', function _m1() {
+                                    v.removeEventListener('loadedmetadata', _m1);
+                                    if(_sv1 < (v.duration||9999) - 10) {
+                                        showResumeToast(_sv1, () => { v.currentTime=_sv1; v.play().catch(()=>{}); }, () => { v.currentTime=0; v.play().catch(()=>{}); vpClear(currentMovieId,_currentPartIdx); });
+                                    }
+                                }, {once:true});
+                            }
                             v.play().catch(() => {});
                             return;
                         }
@@ -3639,6 +3721,16 @@
                         v.autoplay = true;
                         v.setAttribute('controlslist', 'nodownload noremoteplayback');
                         v.setAttribute('disablepictureinpicture', '');
+                        // Resume
+                        const _sv2 = currentMovieId ? vpGet(currentMovieId, _currentPartIdx) : 0;
+                        if(_sv2 > 5) {
+                            v.addEventListener('loadedmetadata', function _m2() {
+                                v.removeEventListener('loadedmetadata', _m2);
+                                if(_sv2 < (v.duration||9999) - 10) {
+                                    showResumeToast(_sv2, () => { v.currentTime=_sv2; v.play().catch(()=>{}); }, () => { v.currentTime=0; v.play().catch(()=>{}); vpClear(currentMovieId,_currentPartIdx); });
+                                }
+                            }, {once:true});
+                        }
                         v.play().catch(() => {});
                     } catch(e) {
                         showVideoError('Video yuklanmadi: ' + e.message);
@@ -3653,8 +3745,6 @@
 
                 // Eski event handlerlarni tozalash
                 v.onerror = null; v.oncanplay = null; v.onstalled = null; v.onwaiting = null;
-
-                v.oncanplay = () => { hideVideoLoading(); v.oncanplay = null; };
 
                 v.onerror = (e) => {
                     const code = v.error ? v.error.code : 0;
@@ -3672,9 +3762,26 @@
                         showVideoError('Video juda sekin yuklanmoqda. Internet aloqasini tekshiring yoki qayta urining.');
                     }
                 }, 15000);
+
                 v.oncanplay = () => { clearTimeout(_loadTimer); hideVideoLoading(); v.oncanplay = null; };
 
                 v.src = videoSrc;
+
+                // Saqlangan pozitsiyani tekshir
+                const savedTime = currentMovieId ? vpGet(currentMovieId, _currentPartIdx) : 0;
+                if(savedTime > 5) {
+                    v.addEventListener('loadedmetadata', function _onMeta() {
+                        v.removeEventListener('loadedmetadata', _onMeta);
+                        if(savedTime < (v.duration || 9999) - 10) {
+                            showResumeToast(
+                                savedTime,
+                                () => { v.currentTime = savedTime; v.play().catch(()=>{}); },
+                                () => { v.currentTime = 0; v.play().catch(()=>{}); vpClear(currentMovieId, _currentPartIdx); }
+                            );
+                        }
+                    }, {once: true});
+                }
+
                 v.play().catch(() => {});
             }
 
@@ -3746,6 +3853,8 @@
                 if(!videoSrc) return showToast('❌ Video topilmadi', 'error');
                 if(videoSrc.startsWith('blob:')) return showToast('❌ Bu video eski formatda, qayta joylang!', 'error');
 
+                currentMovieId  = id;
+                _currentPartIdx = activePart;
                 playVideo(videoSrc);
                 db.history.add({mId: id, part: activePart, time: Date.now()});
 
@@ -4433,6 +4542,18 @@
 
         function closePlayer() {
             const v = document.getElementById('mainVideo');
+
+            // Pozitsiyani saqlash (iframe bo'lmasa)
+            const iframeEl2 = document.getElementById('tgEmbedFrame');
+            const isIframe = iframeEl2 && iframeEl2.style.display !== 'none' && iframeEl2.src;
+            if(!isIframe && currentMovieId && v.currentTime > 3 && !v.ended) {
+                vpSave(currentMovieId, _currentPartIdx, v.currentTime);
+            }
+
+            // Resume toast ni yopish
+            const rb = document.getElementById('_resumeBox');
+            if(rb) rb.remove();
+
             v.pause(); v.src = '';
             v.onerror = null; v.oncanplay = null;
             const iframeEl = document.getElementById('tgEmbedFrame');
@@ -7022,6 +7143,15 @@
                 e.target._lpTimer = setTimeout(() => { /* bloklangan */ }, 500);
             }
         }, {passive: true});
+
+        // Video pozitsiyasini har 5 sekundda avtomatik saqlash
+        setInterval(() => {
+            const v = document.getElementById('mainVideo');
+            if(!v || v.paused || !v.src || !currentMovieId) return;
+            if(v.currentTime > 3 && !v.ended) {
+                vpSave(currentMovieId, _currentPartIdx, v.currentTime);
+            }
+        }, 5000);
 
         init();
     </script>
