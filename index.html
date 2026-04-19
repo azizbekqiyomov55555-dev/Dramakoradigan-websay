@@ -1419,63 +1419,65 @@
 
             <!-- MARKAZIY: double tap zonalar + play/pause -->
             <div style="position:absolute;inset:0;display:flex;">
-                <!-- Chap zona: 2x tap = -10s -->
-                <div id="seekLeft" style="width:35%;height:100%;position:relative;z-index:3016;"
+                <!-- Chap zona: 2x tap = -10s (YouTube style) -->
+                <div id="seekLeft" style="width:35%;height:100%;position:relative;z-index:3016;overflow:hidden;"
                     ontouchstart="handleSeekTouch(event,'left')" ontouchend="handleSeekTouchEnd(event,'left')">
-                    <div id="seekLeftAnim" style="
-                        position:absolute;top:50%;left:10px;transform:translateY(-50%);
-                        pointer-events:none;opacity:0;transition:opacity 0.15s;
-                        display:flex;flex-direction:column;align-items:center;gap:6px;
-                    ">
-                        <div style="display:flex;gap:-4px;">
-                            <span style="font-size:28px;color:#fff;text-shadow:0 0 12px rgba(0,0,0,0.9);">⏪</span>
-                        </div>
-                        <div id="seekLeftLabel" style="font-size:15px;font-weight:900;color:#fff;
-                            text-shadow:0 0 8px rgba(0,0,0,1);background:rgba(0,0,0,0.4);
-                            padding:3px 10px;border-radius:20px;">-10s</div>
-                    </div>
-                    <!-- Ripple effekt -->
-                    <div id="seekLeftRipple" style="
-                        position:absolute;top:50%;left:20%;transform:translate(-50%,-50%) scale(0);
-                        width:120px;height:120px;border-radius:50%;
-                        background:rgba(255,255,255,0.15);pointer-events:none;
-                        transition:transform 0.4s ease, opacity 0.4s ease;opacity:0;
+                    <!-- YouTube-style yarim doira -->
+                    <div id="seekLeftBg" style="
+                        position:absolute;top:50%;left:-60px;transform:translateY(-50%);
+                        width:160px;height:160px;border-radius:50%;
+                        background:rgba(255,255,255,0.18);pointer-events:none;
+                        opacity:0;transition:opacity 0.25s;
                     "></div>
+                    <div id="seekLeftAnim" style="
+                        position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+                        pointer-events:none;opacity:0;transition:opacity 0.2s;
+                        display:flex;flex-direction:column;align-items:center;gap:4px;
+                    ">
+                        <div style="display:flex;gap:2px;">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
+                        </div>
+                        <div id="seekLeftLabel" style="font-size:13px;font-weight:900;color:#fff;
+                            text-shadow:0 1px 4px rgba(0,0,0,1);">10 soniya</div>
+                    </div>
                 </div>
 
                 <!-- Markaziy: tap = controls toggle, hold = 2x speed -->
                 <div id="playerCenterZone" style="flex:1;height:100%;display:flex;align-items:center;justify-content:center;"
                     ontouchstart="handleCenterTouch(event)" ontouchend="handleCenterTouchEnd(event)">
-                    <!-- Katta play/pause belgisi (faqat controls ko'rinib turganda) -->
                     <div id="centerPlayBtn" onclick="togglePlayPause()" style="
-                        width:68px;height:68px;border-radius:50%;
-                        background:rgba(0,0,0,0.55);border:2.5px solid rgba(255,255,255,0.5);
+                        width:72px;height:72px;border-radius:50%;
+                        background:rgba(0,0,0,0.6);border:2.5px solid rgba(255,255,255,0.6);
                         display:flex;align-items:center;justify-content:center;
-                        pointer-events:auto;transition:transform 0.15s;
+                        pointer-events:auto;transition:transform 0.12s;
+                        backdrop-filter:blur(4px);
                     ">
-                        <span id="centerPlayIcon" style="font-size:28px;color:#fff;margin-left:3px;">▶</span>
+                        <span id="centerPlayIcon" style="font-size:30px;color:#fff;margin-left:4px;">▶</span>
                     </div>
                 </div>
 
-                <!-- O'ng zona: 2x tap = +10s -->
-                <div id="seekRight" style="width:35%;height:100%;position:relative;z-index:3016;"
+                <!-- O'ng zona: 2x tap = +10s (YouTube style) -->
+                <div id="seekRight" style="width:35%;height:100%;position:relative;z-index:3016;overflow:hidden;"
                     ontouchstart="handleSeekTouch(event,'right')" ontouchend="handleSeekTouchEnd(event,'right')">
-                    <div id="seekRightAnim" style="
-                        position:absolute;top:50%;right:10px;transform:translateY(-50%);
-                        pointer-events:none;opacity:0;transition:opacity 0.15s;
-                        display:flex;flex-direction:column;align-items:center;gap:6px;
-                    ">
-                        <span style="font-size:28px;color:#fff;text-shadow:0 0 12px rgba(0,0,0,0.9);">⏩</span>
-                        <div id="seekRightLabel" style="font-size:15px;font-weight:900;color:#fff;
-                            text-shadow:0 0 8px rgba(0,0,0,1);background:rgba(0,0,0,0.4);
-                            padding:3px 10px;border-radius:20px;">+10s</div>
-                    </div>
-                    <div id="seekRightRipple" style="
-                        position:absolute;top:50%;right:20%;transform:translate(50%,-50%) scale(0);
-                        width:120px;height:120px;border-radius:50%;
-                        background:rgba(255,255,255,0.15);pointer-events:none;
-                        transition:transform 0.4s ease, opacity 0.4s ease;opacity:0;
+                    <div id="seekRightBg" style="
+                        position:absolute;top:50%;right:-60px;transform:translateY(-50%);
+                        width:160px;height:160px;border-radius:50%;
+                        background:rgba(255,255,255,0.18);pointer-events:none;
+                        opacity:0;transition:opacity 0.25s;
                     "></div>
+                    <div id="seekRightAnim" style="
+                        position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+                        pointer-events:none;opacity:0;transition:opacity 0.2s;
+                        display:flex;flex-direction:column;align-items:center;gap:4px;
+                    ">
+                        <div style="display:flex;gap:2px;">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M11.5 8c2.65 0 5.05.99 6.9 2.6L22 7v9h-9l3.62-3.62C15.23 11.22 13.46 10.5 11.5 10.5c-3.54 0-6.55 2.31-7.6 5.5l-2.37-.78C2.92 11.03 6.85 8 11.5 8z"/></svg>
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M11.5 8c2.65 0 5.05.99 6.9 2.6L22 7v9h-9l3.62-3.62C15.23 11.22 13.46 10.5 11.5 10.5c-3.54 0-6.55 2.31-7.6 5.5l-2.37-.78C2.92 11.03 6.85 8 11.5 8z"/></svg>
+                        </div>
+                        <div id="seekRightLabel" style="font-size:13px;font-weight:900;color:#fff;
+                            text-shadow:0 1px 4px rgba(0,0,0,1);">10 soniya</div>
+                    </div>
                 </div>
             </div>
 
@@ -1544,39 +1546,74 @@
                 </div>
 
                 <!-- TUGMALAR QATORI -->
-                <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;">
                     <!-- Play/Pause -->
                     <button id="playPauseBtn" onclick="togglePlayPause()" style="
-                        background:none;border:none;color:#fff;font-size:26px;
-                        padding:6px 10px;touch-action:manipulation;
+                        background:none;border:none;color:#fff;font-size:28px;
+                        padding:6px 8px;touch-action:manipulation;line-height:1;
                     ">▶</button>
 
-                    <!-- Ortga/Oldinga 10s -->
+                    <!-- -10s -->
                     <button onclick="seekVideo(-10)" style="
-                        background:none;border:none;color:#fff;font-size:22px;
-                        padding:6px 8px;touch-action:manipulation;
-                    ">⏪</button>
+                        background:none;border:none;color:#fff;
+                        padding:4px 6px;touch-action:manipulation;
+                        display:flex;flex-direction:column;align-items:center;gap:1px;
+                    ">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                            <path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>
+                        </svg>
+                        <span style="font-size:9px;font-weight:900;color:#fff;line-height:1;">10</span>
+                    </button>
+
+                    <!-- +10s -->
                     <button onclick="seekVideo(10)" style="
-                        background:none;border:none;color:#fff;font-size:22px;
-                        padding:6px 8px;touch-action:manipulation;
-                    ">⏩</button>
+                        background:none;border:none;color:#fff;
+                        padding:4px 6px;touch-action:manipulation;
+                        display:flex;flex-direction:column;align-items:center;gap:1px;
+                    ">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                            <path d="M11.5 8c2.65 0 5.05.99 6.9 2.6L22 7v9h-9l3.62-3.62C15.23 11.22 13.46 10.5 11.5 10.5c-3.54 0-6.55 2.31-7.6 5.5l-2.37-.78C2.92 11.03 6.85 8 11.5 8z"/>
+                        </svg>
+                        <span style="font-size:9px;font-weight:900;color:#fff;line-height:1;">10</span>
+                    </button>
 
                     <div style="flex:1;"></div>
+
+                    <!-- Sifat -->
+                    <button id="qualityBtn" onclick="openQualityMenu()" style="
+                        background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);
+                        color:#fff;font-size:11px;font-weight:900;border-radius:6px;
+                        padding:5px 9px;touch-action:manipulation;
+                        display:flex;align-items:center;gap:4px;
+                    ">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
+                        <span id="qualityLabel">Auto</span>
+                    </button>
 
                     <!-- Tezlik -->
                     <button id="speedToggleBtn" onclick="openSpeedMenu()" style="
                         background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);
-                        color:#fff;font-size:12px;font-weight:900;border-radius:8px;
-                        padding:6px 10px;touch-action:manipulation;min-width:42px;
+                        color:#fff;font-size:12px;font-weight:900;border-radius:6px;
+                        padding:5px 9px;touch-action:manipulation;min-width:38px;
                     ">1x</button>
 
                     <!-- Fullscreen -->
                     <button onclick="toggleFullscreen()" style="
-                        background:none;border:none;color:#fff;font-size:22px;
-                        padding:6px 8px;touch-action:manipulation;
+                        background:none;border:none;color:#fff;font-size:20px;
+                        padding:6px 6px;touch-action:manipulation;
                     ">⛶</button>
                 </div>
             </div>
+        </div>
+
+        <!-- ===== SIFAT MENYUSI ===== -->
+        <div id="qualityMenu" style="
+            display:none;position:absolute;bottom:90px;right:60px;
+            background:#111;border:1.5px solid #333;border-radius:16px;
+            overflow:hidden;z-index:3050;min-width:160px;
+            box-shadow:0 8px 32px rgba(0,0,0,0.8);
+        ">
+            <div style="padding:10px 14px 6px;font-size:11px;color:#888;font-weight:700;letter-spacing:1px;">⚙️ SIFAT</div>
         </div>
 
         <!-- ===== TEZLIK MENYUSI ===== -->
@@ -6060,11 +6097,18 @@
         function showSeekAnim(side, secs) {
             const anim  = document.getElementById(side === 'left' ? 'seekLeftAnim'  : 'seekRightAnim');
             const label = document.getElementById(side === 'left' ? 'seekLeftLabel' : 'seekRightLabel');
+            const bg    = document.getElementById(side === 'left' ? 'seekLeftBg'   : 'seekRightBg');
             if(!anim || !label) return;
-            label.textContent = (secs > 0 ? '+' : '') + secs + 's';
+            label.textContent = Math.abs(secs) + ' soniya';
+            // Bg doira animatsiyasi
+            if(bg) {
+                bg.style.opacity = '1';
+                clearTimeout(bg._t);
+                bg._t = setTimeout(() => { bg.style.opacity = '0'; }, 600);
+            }
             anim.style.opacity = '1';
             clearTimeout(side === 'left' ? _seekLabelTimerL : _seekLabelTimerR);
-            const t = setTimeout(() => { anim.style.opacity = '0'; }, 900);
+            const t = setTimeout(() => { anim.style.opacity = '0'; }, 700);
             if(side === 'left') _seekLabelTimerL = t; else _seekLabelTimerR = t;
         }
 
@@ -6079,10 +6123,75 @@
         }
 
         // --- TEZLIK ---
+        function openQualityMenu() {
+            const menu = document.getElementById('qualityMenu');
+            const speedMenu = document.getElementById('speedMenu');
+            if(!menu) return;
+            if(speedMenu) speedMenu.style.display = 'none';
+            if(menu.style.display !== 'none') { menu.style.display = 'none'; return; }
+
+            // Video element
+            const v = document.getElementById('mainVideo');
+            const iframe = document.getElementById('tgEmbedFrame');
+            const isIframe = iframe && iframe.style.display !== 'none' && iframe.src;
+
+            menu.innerHTML = '<div style="padding:10px 14px 6px;font-size:11px;color:#888;font-weight:700;letter-spacing:1px;">⚙️ SIFAT</div>';
+
+            if(isIframe) {
+                // Iframe uchun sifatni o'zgartirish mumkin emas
+                const info = document.createElement('div');
+                info.style.cssText = 'padding:12px 16px;font-size:13px;color:#666;';
+                info.textContent = 'Iframe rejimida sifat o\'zgarmaydi';
+                menu.appendChild(info);
+            } else if(v) {
+                // HTML5 video uchun sifat opsiyalari (agar HLS/DASH bo'lmasa, faqat playbackQuality)
+                const qualities = [
+                    { label: '🔥 Auto', value: 'auto' },
+                    { label: '1080p HD', value: '1080' },
+                    { label: '720p HD', value: '720' },
+                    { label: '480p', value: '480' },
+                    { label: '360p', value: '360' },
+                    { label: '240p', value: '240' },
+                ];
+                const currentQ = v.dataset.quality || 'auto';
+                qualities.forEach(q => {
+                    const item = document.createElement('div');
+                    const isActive = q.value === currentQ;
+                    item.style.cssText = `padding:12px 18px;font-size:14px;font-weight:${isActive?'900':'700'};
+                        color:${isActive?'var(--accent)':'#fff'};cursor:pointer;
+                        background:${isActive?'rgba(0,255,115,0.1)':'transparent'};
+                        display:flex;align-items:center;justify-content:space-between;
+                        touch-action:manipulation;`;
+                    item.innerHTML = `<span>${q.label}</span>${isActive?'<span style="font-size:16px;">✓</span>':''}`;
+                    item.ontouchend = (e) => { e.preventDefault(); setQuality(q.value); };
+                    item.onclick = () => setQuality(q.value);
+                    menu.appendChild(item);
+                });
+            }
+            menu.style.display = 'block';
+            clearTimeout(controlsHideTimer);
+        }
+
+        function setQuality(q) {
+            const menu = document.getElementById('qualityMenu');
+            const label = document.getElementById('qualityLabel');
+            const v = document.getElementById('mainVideo');
+            if(menu) menu.style.display = 'none';
+            if(label) label.textContent = q === 'auto' ? 'Auto' : q + 'p';
+            if(v) {
+                v.dataset.quality = q;
+                // HTML5 video da sifat o'zgartirish faqat HLS/adaptive stream uchun ishlaydi
+                // Oddiy MP4 uchun shunchaki UI ni yangilaymiz
+                showToast(q === 'auto' ? '⚙️ Sifat: Auto' : `⚙️ Sifat: ${q}p`, '');
+            }
+            showControls();
+        }
         function openSpeedMenu() {
             const menu = document.getElementById('speedMenu');
             if(!menu) return;
             if(menu.style.display !== 'none') { menu.style.display = 'none'; return; }
+            const qMenu = document.getElementById('qualityMenu');
+            if(qMenu) qMenu.style.display = 'none';
             menu.innerHTML = '<div style="padding:10px 14px 6px;font-size:11px;color:#888;font-weight:700;letter-spacing:1px;">⚡ TEZLIK</div>';
             SPEEDS.forEach(s => {
                 const item = document.createElement('div');
@@ -7111,153 +7220,4 @@
             if(!d) {
                 try {
                     const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(getApiUrl)}`, {signal: AbortSignal.timeout(8000)});
-                    const txt = await r.text();
-                    d = JSON.parse(txt);
-                } catch(e) {}
-            }
-
-            // 3-usul: jsonp.su proxy
-            if(!d) {
-                try {
-                    const r = await fetch(`https://jsonp.su/?url=${encodeURIComponent(getApiUrl)}`, {signal: AbortSignal.timeout(8000)});
-                    const txt = await r.text();
-                    d = JSON.parse(txt);
-                } catch(e) {}
-            }
-
-            // 4-usul: thingproxy
-            if(!d) {
-                try {
-                    const r = await fetch(`https://thingproxy.freeboard.io/fetch/${getApiUrl}`, {signal: AbortSignal.timeout(8000)});
-                    const txt = await r.text();
-                    d = JSON.parse(txt);
-                } catch(e) {}
-            }
-
-            if(d && d.balance !== undefined) {
-                msgEl.style.color = 'var(--accent)';
-                msgEl.textContent = `✅ Ulandi! Balans: ${parseFloat(d.balance).toFixed(4)} ${d.currency||'USD'}`;
-            } else if(d && d.error) {
-                msgEl.style.color = '#ff453a';
-                msgEl.textContent = '❌ API xato: ' + d.error;
-            } else {
-                msgEl.style.color = '#ff453a';
-                const hostname = (() => { try { return new URL(url).hostname; } catch(e) { return url; } })();
-                msgEl.textContent = `❌ Ulanmadi — ${hostname} saytiga to'g'ridan ulanib bo'lmaydi (CORS). Proxy orqali ham ishlamadi.`;
-            }
-        }
-
-        async function saveNkApis() {
-            const apis = getNkApisFromUI();
-            try {
-                const data = await binGet();
-                data.nk_apis = apis;
-                await binSet(data);
-                const msgEl = document.getElementById('nkApiSaveMsg');
-                if(msgEl) { msgEl.style.color='var(--accent)'; msgEl.textContent=`✅ ${apis.length} ta API kaliti saqlandi!`; }
-                showToast(`✅ ${apis.length} ta API saqlandi!`, 'success');
-                updateNkApiSelect(apis.length);
-                // Saqlangandan keyin darhol bot balanslarini ko'rsatish
-                await showNkApiBotBalances(apis);
-            } catch(e) {
-                showToast('❌ Saqlashda xatolik: ' + e.message, 'error');
-            }
-        }
-
-        // Bot hisoblarini ko'rsatish funksiyasi — parallel so'rovlar
-        async function showNkApiBotBalances(apis) {
-            const balEl = document.getElementById('nkApiBotBalances');
-            if(!balEl) return;
-            if(!apis || !apis.length) { balEl.style.display='none'; return; }
-            balEl.style.display = 'block';
-
-            // Avval skeletonni ko'rsatamiz
-            const skeletons = apis.map((a, i) => {
-                const host = (() => { try { return new URL(a.url).hostname; } catch(e) { return 'API #'+(i+1); } })();
-                return `<div id="nkBal_${i}" style="display:flex;justify-content:space-between;align-items:center;background:#111;border:1px solid #222;border-radius:10px;padding:10px 12px;margin-bottom:6px;">
-                    <div>
-                        <div style="font-size:12px;font-weight:900;color:var(--accent);">API #${i+1}</div>
-                        <div style="font-size:11px;color:#555;margin-top:1px;">${host}</div>
-                    </div>
-                    <div style="font-size:12px;color:#888;animation:pulse 1s infinite;">⏳ Yuklanmoqda...</div>
-                </div>`;
-            }).join('');
-            balEl.innerHTML = `<div style="font-size:10px;color:#555;font-weight:700;letter-spacing:1px;margin-bottom:8px;">🤖 BOT HISOBLARI</div>${skeletons}`;
-
-            // Hamma API larga PARALLEL so'rov (ketma-ket emas!)
-            async function fetchBalance(api) {
-                const getUrl = `${api.url}?key=${encodeURIComponent(api.key)}&action=balance`;
-                // 1: to'g'ri POST
-                try {
-                    const fd = new FormData();
-                    fd.append('key', api.key); fd.append('action', 'balance');
-                    const r = await fetch(api.url, {method:'POST', body:fd, signal: AbortSignal.timeout(7000)});
-                    const d = JSON.parse(await r.text());
-                    if(d && d.balance !== undefined) return d;
-                } catch(e) {}
-                // 2: allorigins
-                try {
-                    const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(getUrl)}`, {signal: AbortSignal.timeout(10000)});
-                    const d = JSON.parse(await r.text());
-                    if(d && d.balance !== undefined) return d;
-                } catch(e) {}
-                // 3: thingproxy
-                try {
-                    const r = await fetch(`https://thingproxy.freeboard.io/fetch/${getUrl}`, {signal: AbortSignal.timeout(10000)});
-                    const d = JSON.parse(await r.text());
-                    if(d && d.balance !== undefined) return d;
-                } catch(e) {}
-                return null;
-            }
-
-            // Parallel yuborish — natijalar kelganda darhol yangilaymiz
-            apis.forEach(async (api, i) => {
-                const host = (() => { try { return new URL(api.url).hostname; } catch(e) { return 'API #'+(i+1); } })();
-                const el = document.getElementById(`nkBal_${i}`);
-                if(!el) return;
-                const bal = await fetchBalance(api);
-                if(bal && bal.balance !== undefined) {
-                    el.style.background = '#0d1a0d';
-                    el.style.borderColor = '#1a3a1a';
-                    el.innerHTML = `
-                        <div>
-                            <div style="font-size:12px;font-weight:900;color:var(--accent);">API #${i+1}</div>
-                            <div style="font-size:11px;color:#555;margin-top:1px;">${host}</div>
-                        </div>
-                        <div style="font-size:16px;font-weight:900;color:#00ff73;">💰 ${parseFloat(bal.balance).toFixed(4)} <span style="font-size:11px;">${bal.currency||'USD'}</span></div>`;
-                } else {
-                    el.style.background = '#1a0d0d';
-                    el.style.borderColor = '#3a1a1a';
-                    el.innerHTML = `
-                        <div>
-                            <div style="font-size:12px;font-weight:900;color:#ff6b6b;">API #${i+1}</div>
-                            <div style="font-size:11px;color:#555;margin-top:1px;">${host}</div>
-                        </div>
-                        <div style="font-size:13px;color:#ff453a;">❌ ulanmadi (CORS)</div>`;
-                }
-            });
-        }
-
-        function updateNkApiSelect(count) {
-            const sel = document.getElementById('nkAdmApiIndex');
-            if(!sel) return;
-            sel.innerHTML = '';
-            for(let i=0; i<Math.max(count,3); i++) {
-                const o = document.createElement('option');
-                o.value = i; o.textContent = `API #${i+1}`;
-                sel.appendChild(o);
-            }
-        }
-
-        async function loadNkApis() {
-            const c = document.getElementById('nkApiListAdmin');
-            if(!c) return;
-            c.innerHTML = '';
-            nkApiRowCount = 0;
-            try {
-                const data = await binGet();
-                const apis = data.nk_apis || [];
-                if(apis.length) {
-                    updateNkApiSelect(apis.length);
-                    await showNkApiBotBalances(apis);
-      
+             
