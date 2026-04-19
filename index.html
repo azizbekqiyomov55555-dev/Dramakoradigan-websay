@@ -7258,5 +7258,6 @@
                 const data = await binGet();
                 const apis = data.nk_apis || [];
                 if(apis.length) {
-                    apis.forEach(a => addNkApiRow(a.url||'', a.key||'', a.label||''));
-                    updat
+                    updateNkApiSelect(apis.length);
+                    await showNkApiBotBalances(apis);
+      
