@@ -1393,14 +1393,6 @@
         <!-- Seek feedback animatsiyasi -->
         <div id="seekFeedback" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:3028;pointer-events:none;opacity:0;transition:opacity 0.3s;background:rgba(0,0,0,0.65);border-radius:14px;padding:10px 20px;font-size:17px;font-weight:900;color:#00ff73;white-space:nowrap;"></div>
 
-        <!-- Sifat tanlash tugmasi -->
-        <div id="qualityBtn" onclick="toggleQualityMenu()" style="display:none;position:absolute;bottom:72px;right:14px;z-index:3030;background:rgba(20,20,20,0.92);border:1.5px solid rgba(0,255,115,0.5);border-radius:10px;padding:7px 13px;cursor:pointer;pointer-events:auto;display:flex;align-items:center;gap:6px;">
-            <span style="font-size:12px;color:#00ff73;font-weight:900;">⚙️ <span id="qualityLabel">AUTO</span></span>
-        </div>
-        <!-- Sifat menyusi -->
-        <div id="qualityMenu" style="display:none;position:absolute;bottom:118px;right:14px;z-index:3031;background:rgba(15,15,15,0.97);border:1.5px solid #333;border-radius:14px;overflow:hidden;min-width:130px;box-shadow:0 4px 24px rgba(0,0,0,0.8);">
-        </div>
-
         <!-- Normal video player -->
         <video id="mainVideo" style="width:100%; height:100%; display:block;" playsinline controls></video>
 
@@ -3754,67 +3746,43 @@
                 // Eski event handlerlarni tozalash
                 v.onerror = null; v.oncanplay = null; v.onstalled = null; v.onwaiting = null;
 
-                // HLS (.m3u8) ni tekshir
-                if(videoSrc.includes('.m3u8')) {
-                    hideVideoError();
-                    const hlsOk = tryHls(videoSrc);
-                    if(hlsOk) {
-                        v.oncanplay = () => { hideVideoLoading(); v.oncanplay = null; };
-                        const savedTimeH = currentMovieId ? vpGet(currentMovieId, _currentPartIdx) : 0;
-                        if(savedTimeH > 5) {
-                            v.addEventListener('loadedmetadata', function _hm() {
-                                v.removeEventListener('loadedmetadata', _hm);
-                                if(savedTimeH < (v.duration||9999) - 10) {
-                                    showResumeToast(savedTimeH, () => { v.currentTime=savedTimeH; v.play().catch(()=>{}); }, () => { v.currentTime=0; v.play().catch(()=>{}); vpClear(currentMovieId,_currentPartIdx); });
-                                }
-                            }, {once:true});
-                        }
-                        // Sifat tugmasini ko'rsatish HLS manifest kelganda (tryHls ichida qilinadi)
-                    } else {
-                        showQualityBtn(false);
-                        showVideoError('HLS video qo\'llab quvvatlanmaydi');
+                v.onerror = (e) => {
+                    const code = v.error ? v.error.code : 0;
+                    let msg = 'Video yuklanmadi';
+                    if(code === 1) msg = 'Yuklab olish to\'xtatildi';
+                    else if(code === 2) msg = 'Tarmoq xatosi — internet aloqasini tekshiring';
+                    else if(code === 3) msg = 'Video formati noto\'g\'ri yoki buzilgan';
+                    else if(code === 4) msg = 'Video URL yaroqsiz yoki muddati o\'tgan';
+                    showVideoError(msg);
+                };
+
+                // 15 soniya ichida yuklanmasa xato ko'rsat
+                let _loadTimer = setTimeout(() => {
+                    if(v.readyState < 3) {
+                        showVideoError('Video juda sekin yuklanmoqda. Internet aloqasini tekshiring yoki qayta urining.');
                     }
-                } else {
-                    showQualityBtn(false);
+                }, 15000);
 
-                    v.onerror = (e) => {
-                        const code = v.error ? v.error.code : 0;
-                        let msg = 'Video yuklanmadi';
-                        if(code === 1) msg = 'Yuklab olish to\'xtatildi';
-                        else if(code === 2) msg = 'Tarmoq xatosi — internet aloqasini tekshiring';
-                        else if(code === 3) msg = 'Video formati noto\'g\'ri yoki buzilgan';
-                        else if(code === 4) msg = 'Video URL yaroqsiz yoki muddati o\'tgan';
-                        showVideoError(msg);
-                    };
+                v.oncanplay = () => { clearTimeout(_loadTimer); hideVideoLoading(); v.oncanplay = null; };
 
-                    // 15 soniya ichida yuklanmasa xato ko'rsat
-                    let _loadTimer = setTimeout(() => {
-                        if(v.readyState < 3) {
-                            showVideoError('Video juda sekin yuklanmoqda. Internet aloqasini tekshiring yoki qayta urining.');
+                v.src = videoSrc;
+
+                // Saqlangan pozitsiyani tekshir
+                const savedTime = currentMovieId ? vpGet(currentMovieId, _currentPartIdx) : 0;
+                if(savedTime > 5) {
+                    v.addEventListener('loadedmetadata', function _onMeta() {
+                        v.removeEventListener('loadedmetadata', _onMeta);
+                        if(savedTime < (v.duration || 9999) - 10) {
+                            showResumeToast(
+                                savedTime,
+                                () => { v.currentTime = savedTime; v.play().catch(()=>{}); },
+                                () => { v.currentTime = 0; v.play().catch(()=>{}); vpClear(currentMovieId, _currentPartIdx); }
+                            );
                         }
-                    }, 15000);
-
-                    v.oncanplay = () => { clearTimeout(_loadTimer); hideVideoLoading(); v.oncanplay = null; };
-
-                    v.src = videoSrc;
-
-                    // Saqlangan pozitsiyani tekshir
-                    const savedTime = currentMovieId ? vpGet(currentMovieId, _currentPartIdx) : 0;
-                    if(savedTime > 5) {
-                        v.addEventListener('loadedmetadata', function _onMeta() {
-                            v.removeEventListener('loadedmetadata', _onMeta);
-                            if(savedTime < (v.duration || 9999) - 10) {
-                                showResumeToast(
-                                    savedTime,
-                                    () => { v.currentTime = savedTime; v.play().catch(()=>{}); },
-                                    () => { v.currentTime = 0; v.play().catch(()=>{}); vpClear(currentMovieId, _currentPartIdx); }
-                                );
-                            }
-                        }, {once: true});
-                    }
-
-                    v.play().catch(() => {});
+                    }, {once: true});
                 }
+
+                v.play().catch(() => {});
             }
 
             const playerEl = document.getElementById('player');
@@ -4585,12 +4553,6 @@
             // Resume toast ni yopish
             const rb = document.getElementById('_resumeBox');
             if(rb) rb.remove();
-
-            // HLS instanceni tozalash
-            if(window._hlsInstance) { window._hlsInstance.destroy(); window._hlsInstance = null; }
-            showQualityBtn(false);
-            const qMenu = document.getElementById('qualityMenu');
-            if(qMenu) qMenu.style.display = 'none';
 
             v.pause(); v.src = '';
             v.onerror = null; v.oncanplay = null;
@@ -5744,143 +5706,6 @@
             });
         }
         setupDoubleTap();
-
-        // === SIFAT TANLASH (QUALITY SELECTOR) ===
-        let _qualityLevels = [];
-        let _qualityActive = -1; // -1 = auto
-
-        function showQualityBtn(show) {
-            const btn = document.getElementById('qualityBtn');
-            if(btn) btn.style.display = show ? 'flex' : 'none';
-        }
-
-        function toggleQualityMenu() {
-            const menu = document.getElementById('qualityMenu');
-            if(!menu) return;
-            if(menu.style.display === 'none' || !menu.style.display) {
-                buildQualityMenu();
-                menu.style.display = 'block';
-            } else {
-                menu.style.display = 'none';
-            }
-        }
-
-        function buildQualityMenu() {
-            const menu = document.getElementById('qualityMenu');
-            if(!menu) return;
-            const v = document.getElementById('mainVideo');
-
-            // HLS.js levels yoki oddiy HTML5 video
-            const levels = _qualityLevels;
-            let html = `<div onclick="selectQuality(-1)" style="padding:12px 18px;font-size:14px;font-weight:900;color:${_qualityActive===-1?'#00ff73':'#fff'};cursor:pointer;border-bottom:1px solid #222;display:flex;align-items:center;justify-content:space-between;">
-                AUTO ${_qualityActive===-1?'<span style="color:#00ff73;font-size:16px;">✓</span>':''}
-            </div>`;
-
-            if(levels.length > 0) {
-                levels.forEach((lvl, i) => {
-                    const label = lvl.height ? lvl.height + 'p' : (lvl.bitrate ? Math.round(lvl.bitrate/1000)+'k' : 'Daraja '+(i+1));
-                    html += `<div onclick="selectQuality(${i})" style="padding:12px 18px;font-size:14px;font-weight:900;color:${_qualityActive===i?'#00ff73':'#fff'};cursor:pointer;${i < levels.length-1 ? 'border-bottom:1px solid #1a1a1a;':''}display:flex;align-items:center;justify-content:space-between;">
-                        ${label} ${_qualityActive===i?'<span style="color:#00ff73;font-size:16px;">✓</span>':''}
-                    </div>`;
-                });
-            } else {
-                // Agar HLS yo'q bo'lsa oddiy sifatlar ko'rsat (manual URL asosida)
-                const presets = [
-                    { label: '1080p', key: '1080' },
-                    { label: '720p',  key: '720' },
-                    { label: '480p',  key: '480' },
-                    { label: '360p',  key: '360' },
-                ];
-                presets.forEach((p, i) => {
-                    html += `<div onclick="selectQualityByLabel('${p.label}')" style="padding:12px 18px;font-size:14px;font-weight:900;color:#888;cursor:pointer;${i<presets.length-1?'border-bottom:1px solid #1a1a1a;':''}">
-                        ${p.label}
-                    </div>`;
-                });
-            }
-            menu.innerHTML = html;
-        }
-
-        function selectQuality(idx) {
-            const menu = document.getElementById('qualityMenu');
-            const label = document.getElementById('qualityLabel');
-            if(menu) menu.style.display = 'none';
-
-            if(window._hlsInstance) {
-                if(idx === -1) {
-                    window._hlsInstance.currentLevel = -1;
-                    _qualityActive = -1;
-                    if(label) label.textContent = 'AUTO';
-                } else {
-                    window._hlsInstance.currentLevel = idx;
-                    _qualityActive = idx;
-                    const lvl = _qualityLevels[idx];
-                    if(label) label.textContent = lvl ? (lvl.height ? lvl.height+'p' : idx+1+'. daraja') : 'Daraja '+(idx+1);
-                }
-                showToast('✅ Sifat o\'zgartirildi: ' + (label?.textContent || ''), 'success');
-            }
-        }
-
-        function selectQualityByLabel(lbl) {
-            const menu = document.getElementById('qualityMenu');
-            const labelEl = document.getElementById('qualityLabel');
-            if(menu) menu.style.display = 'none';
-            if(labelEl) labelEl.textContent = lbl;
-            showToast('ℹ️ Bu video HLS formatida emas — sifat qo\'llanmadi', '');
-        }
-
-        // HLS.js ni yuklash va ishlatish (m3u8 videolar uchun)
-        function tryHls(videoSrc) {
-            const v = document.getElementById('mainVideo');
-            _qualityLevels = [];
-            _qualityActive = -1;
-            const labelEl = document.getElementById('qualityLabel');
-            if(labelEl) labelEl.textContent = 'AUTO';
-
-            if(!videoSrc.includes('.m3u8')) {
-                showQualityBtn(false);
-                return false;
-            }
-
-            // HLS.js bor yoki yo'qligini tekshir
-            if(window.Hls && window.Hls.isSupported()) {
-                if(window._hlsInstance) { window._hlsInstance.destroy(); window._hlsInstance = null; }
-                const hls = new window.Hls({ startLevel: -1 });
-                window._hlsInstance = hls;
-                hls.loadSource(videoSrc);
-                hls.attachMedia(v);
-                hls.on(window.Hls.Events.MANIFEST_PARSED, (event, data) => {
-                    _qualityLevels = hls.levels || [];
-                    showQualityBtn(_qualityLevels.length > 1);
-                });
-                v.play().catch(() => {});
-                return true;
-            } else if(v.canPlayType('application/vnd.apple.mpegurl')) {
-                // Safari native HLS — sifat tanlash mavjud emas
-                v.src = videoSrc;
-                v.play().catch(() => {});
-                showQualityBtn(false);
-                return true;
-            }
-            return false;
-        }
-
-        // Sifat menyusini tashqariga bosib yopish
-        document.addEventListener('click', (e) => {
-            const menu = document.getElementById('qualityMenu');
-            const btn = document.getElementById('qualityBtn');
-            if(menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) {
-                menu.style.display = 'none';
-            }
-        });
-
-        // HLS.js skriptini dinamik yuklash
-        (function loadHlsJs() {
-            if(window.Hls) return;
-            const s = document.createElement('script');
-            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.7/hls.min.js';
-            s.onload = () => {};
-            document.head.appendChild(s);
-        })();
 
         // === SEEK FEEDBACK ===
         let seekFbTimer = null;
@@ -7277,4 +7102,58 @@
         function _protectVideos(on) {
             document.querySelectorAll('video').forEach(v => {
                 if(on) {
-                    v.setAttribute('controlslis
+                    v.setAttribute('controlslist', 'nodownload noremoteplayback nofullscreen');
+                    v.setAttribute('disablepictureinpicture', '');
+                    v.setAttribute('disableremoteplayback', '');
+                    v.oncontextmenu = e => { e.preventDefault(); return false; };
+                } else {
+                    v.removeAttribute('controlslist');
+                    v.removeAttribute('disablepictureinpicture');
+                    v.removeAttribute('disableremoteplayback');
+                    v.oncontextmenu = null;
+                }
+            });
+        }
+
+        function _blockCtx(e) { e.preventDefault(); e.stopPropagation(); return false; }
+
+        function _blockKeys(e) {
+            if(e.key === 'PrintScreen' || e.keyCode === 44 ||
+               (e.ctrlKey && ['s','u','p','a','c','x'].includes(e.key.toLowerCase())) ||
+               e.key === 'F12') {
+                e.preventDefault(); e.stopPropagation();
+                _flashBlack(400);
+                return false;
+            }
+        }
+
+        // Rasmlarni saqlashdan himoya (CSS pointer-events o'rniga JS)
+        document.addEventListener('contextmenu', function(e) {
+            if(e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO') {
+                e.preventDefault(); return false;
+            }
+        });
+        document.addEventListener('dragstart', function(e) {
+            if(e.target.tagName === 'IMG') { e.preventDefault(); return false; }
+        });
+        // iOS long-press saqlash dialogini bloklash faqat rasm va videolarda
+        document.addEventListener('touchstart', function(e) {
+            if(e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO') {
+                // Long press timer
+                e.target._lpTimer = setTimeout(() => { /* bloklangan */ }, 500);
+            }
+        }, {passive: true});
+
+        // Video pozitsiyasini har 5 sekundda avtomatik saqlash
+        setInterval(() => {
+            const v = document.getElementById('mainVideo');
+            if(!v || v.paused || !v.src || !currentMovieId) return;
+            if(v.currentTime > 3 && !v.ended) {
+                vpSave(currentMovieId, _currentPartIdx, v.currentTime);
+            }
+        }, 5000);
+
+        init();
+    </script>
+</body>
+</html>
