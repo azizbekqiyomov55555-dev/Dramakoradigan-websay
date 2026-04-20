@@ -3488,26 +3488,63 @@
 
             if(info.type === 'youtube') {
                 v.style.display = 'none'; v.src = '';
-                const _ytProxies = [
-                    `https://piped.video/embed/${info.id}?autoplay=1`,
-                    `https://invidious.io.lol/embed/${info.id}?autoplay=1`,
-                    `https://yewtu.be/embed/${info.id}?autoplay=1`,
-                    `https://inv.nadeko.net/embed/${info.id}?autoplay=1`
+                iframe.style.display = 'none'; iframe.src = '';
+                showVideoLoading('YouTube video yuklanmoqda...');
+
+                // Invidious API orqali to'g'ridan video stream URL olamiz
+                const _invInstances = [
+                    'https://invidious.io.lol',
+                    'https://inv.nadeko.net',
+                    'https://invidious.nerdvpn.de',
+                    'https://yt.artemislena.eu'
                 ];
-                let _ytIdx = 0;
-                function _tryYt() {
-                    if(_ytIdx >= _ytProxies.length) { hideVideoLoading(); return; }
-                    iframe.style.display = 'block';
-                    iframe.removeAttribute('sandbox');
-                    iframe.setAttribute('allow', 'autoplay; fullscreen; encrypted-media; picture-in-picture');
-                    iframe.setAttribute('allowfullscreen', '');
-                    showVideoLoading('YouTube yuklanmoqda...');
-                    let _ok = false;
-                    iframe.onload = () => { _ok = true; hideVideoLoading(); };
-                    iframe.src = _ytProxies[_ytIdx];
-                    setTimeout(() => { if(!_ok) { _ytIdx++; _tryYt(); } }, 6000);
+                let _invIdx = 0;
+
+                async function _fetchYtStream() {
+                    if(_invIdx >= _invInstances.length) {
+                        // Hamma instance ishlamadi - tugma ko'rsat
+                        hideVideoLoading();
+                        showVideoError('YouTube video yuklanmadi. Internet yoki server muammosi.');
+                        return;
+                    }
+                    try {
+                        const base = _invInstances[_invIdx];
+                        const res = await fetch(`${base}/api/v1/videos/${info.id}?fields=adaptiveFormats,formatStreams`, {signal: AbortSignal.timeout(8000)});
+                        if(!res.ok) throw new Error('HTTP ' + res.status);
+                        const data = await res.json();
+
+                        // Eng yaxshi video+audio stream topamiz (formatStreams — muxed)
+                        const streams = data.formatStreams || [];
+                        // 720p, 480p, 360p tartibida
+                        const preferred = ['720p','480p','360p','240p'];
+                        let chosen = null;
+                        for(const q of preferred) {
+                            chosen = streams.find(s => s.qualityLabel === q);
+                            if(chosen) break;
+                        }
+                        if(!chosen) chosen = streams[streams.length - 1];
+                        if(!chosen || !chosen.url) throw new Error('Stream URL topilmadi');
+
+                        hideVideoLoading();
+                        v.style.display = 'block';
+                        v.src = chosen.url;
+                        v.controls = true;
+                        v.autoplay = true;
+                        v.setAttribute('controlslist', 'nodownload noremoteplayback');
+                        v.setAttribute('disablepictureinpicture', '');
+                        v.onerror = () => {
+                            _invIdx++;
+                            showVideoLoading('Boshqa server sinab korilmoqda...');
+                            _fetchYtStream();
+                        };
+                        v.play().catch(() => {});
+
+                    } catch(e) {
+                        _invIdx++;
+                        _fetchYtStream();
+                    }
                 }
-                _tryYt();
+                _fetchYtStream();
 
             } else if(info.type === 'vk_embed') {
                 v.style.display = 'none'; v.src = '';
