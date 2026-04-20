@@ -3489,7 +3489,7 @@
             if(info.type === 'youtube') {
                 v.style.display = 'none'; v.src = '';
                 iframe.style.display = 'block';
-                iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation allow-popups');
+                iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation allow-popups allow-forms allow-popups-to-escape-sandbox');
                 showVideoLoading('YouTube yuklanmoqda...');
                 iframe.onload = () => { setTimeout(hideVideoLoading, 1500); };
                 iframe.src = `https://www.youtube.com/embed/${info.id}?autoplay=1&rel=0&modestbranding=1&playsinline=1&fs=1&iv_load_policy=3&enablejsapi=0`;
