@@ -3472,6 +3472,10 @@
             const _vkV = document.getElementById('vkViewer');
             if(_vkV) _vkV.style.display = 'none';
 
+            // ytViewer ni yashirish
+            const _ytV = document.getElementById('ytViewer');
+            if(_ytV) _ytV.style.display = 'none';
+
             // Iframe ni tozalash
             iframe.style.width = '100%';
             iframe.style.height = '100%';
@@ -3488,11 +3492,60 @@
 
             if(info.type === 'youtube') {
                 v.style.display = 'none'; v.src = '';
-                iframe.style.display = 'block';
-                iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation allow-popups allow-forms allow-popups-to-escape-sandbox');
-                showVideoLoading('YouTube yuklanmoqda...');
-                iframe.onload = () => { setTimeout(hideVideoLoading, 1500); };
-                iframe.src = `https://www.youtube.com/embed/${info.id}?autoplay=1&rel=0&modestbranding=1&playsinline=1&fs=1&iv_load_policy=3&enablejsapi=0`;
+                iframe.style.display = 'none'; iframe.src = '';
+                hideVideoLoading();
+
+                // YouTube Telegram WebApp ichida embed bloklanadi.
+                // Shuning uchun ilovaning ichki brauzerida ochish yechimi ishlatiladi.
+                let ytViewer = document.getElementById('ytViewer');
+                if(!ytViewer) {
+                    ytViewer = document.createElement('div');
+                    ytViewer.id = 'ytViewer';
+                    ytViewer.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000;z-index:10;';
+                    document.getElementById('player').appendChild(ytViewer);
+                }
+                const ytUrl = `https://www.youtube.com/watch?v=${info.id}`;
+                const ytEmbedUrl = `https://www.youtube-nocookie.com/embed/${info.id}?autoplay=1&rel=0&playsinline=1`;
+                ytViewer.style.display = 'flex';
+                ytViewer.innerHTML = `
+                    <div style="width:100%;height:100%;position:relative;background:#000;">
+                        <iframe
+                            src="${ytEmbedUrl}"
+                            style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"
+                            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                            allowfullscreen
+                            referrerpolicy="no-referrer"
+                        ></iframe>
+                        <div id="ytFallback" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:#000;flex-direction:column;align-items:center;justify-content:center;">
+                            <div style="text-align:center;padding:30px 24px;">
+                                <div style="font-size:52px;margin-bottom:16px;">▶️</div>
+                                <div style="font-size:20px;font-weight:900;color:#fff;margin-bottom:8px;">YouTube Video</div>
+                                <div style="font-size:13px;color:#888;margin-bottom:28px;line-height:1.6;">
+                                    Video ichki oynada yuklanmadi.<br>Quyida YouTube ilovasida oching.
+                                </div>
+                                <button onclick="if(window.Telegram?.WebApp?.openLink){Telegram.WebApp.openLink('${ytUrl}')}else{window.open('${ytUrl}','_blank')}"
+                                    style="background:linear-gradient(135deg,#ff0000,#cc0000);
+                                           color:#fff;border:none;padding:16px 32px;border-radius:16px;
+                                           font-size:16px;font-weight:900;width:100%;max-width:280px;
+                                           display:flex;align-items:center;justify-content:center;gap:10px;margin:0 auto 12px;">
+                                    ▶ YouTube da Ko'rish
+                                </button>
+                                <div style="margin-top:8px;font-size:11px;color:#444;">Telegram ichki brauzeri orqali ochiladi</div>
+                            </div>
+                        </div>
+                    </div>`;
+
+                // Agar nocookie iframe ham ishlamasa, 5 soniyadan keyin fallback ko'rsat
+                const ytIframe = ytViewer.querySelector('iframe');
+                const ytFallback = ytViewer.querySelector('#ytFallback');
+                let ytLoaded = false;
+                ytIframe.onload = () => { ytLoaded = true; };
+                setTimeout(() => {
+                    if(!ytLoaded && ytFallback) {
+                        ytFallback.style.display = 'flex';
+                        ytIframe.style.display = 'none';
+                    }
+                }, 5000);
 
             } else if(info.type === 'vk_embed') {
                 v.style.display = 'none'; v.src = '';
@@ -4583,6 +4636,18 @@
             // Instagram viewer yashirish
             const igViewer = document.getElementById('igViewer');
             if(igViewer) igViewer.style.display = 'none';
+
+            // YouTube viewer yashirish va iframe src ni tozalash
+            const ytViewer = document.getElementById('ytViewer');
+            if(ytViewer) {
+                const ytIfr = ytViewer.querySelector('iframe');
+                if(ytIfr) ytIfr.src = '';
+                ytViewer.style.display = 'none';
+            }
+
+            // VK viewer yashirish
+            const vkViewerEl = document.getElementById('vkViewer');
+            if(vkViewerEl) vkViewerEl.style.display = 'none';
 
             v.style.display = 'block';
             const playerEl = document.getElementById('player');
