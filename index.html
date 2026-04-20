@@ -3491,60 +3491,70 @@
                 iframe.style.display = 'none'; iframe.src = '';
                 showVideoLoading('YouTube video yuklanmoqda...');
 
-                // Invidious API orqali to'g'ridan video stream URL olamiz
-                const _invInstances = [
-                    'https://invidious.io.lol',
-                    'https://inv.nadeko.net',
-                    'https://invidious.nerdvpn.de',
-                    'https://yt.artemislena.eu'
-                ];
-                let _invIdx = 0;
-
-                async function _fetchYtStream() {
-                    if(_invIdx >= _invInstances.length) {
-                        // Hamma instance ishlamadi - tugma ko'rsat
-                        hideVideoLoading();
-                        showVideoError('YouTube video yuklanmadi. Internet yoki server muammosi.');
-                        return;
-                    }
+                (async function() {
                     try {
-                        const base = _invInstances[_invIdx];
-                        const res = await fetch(`${base}/api/v1/videos/${info.id}?fields=adaptiveFormats,formatStreams`, {signal: AbortSignal.timeout(8000)});
-                        if(!res.ok) throw new Error('HTTP ' + res.status);
-                        const data = await res.json();
+                        // cobalt.tools API - bepul, CORS yo'q, YouTube stream URL beradi
+                        const resp = await fetch('https://api.cobalt.tools/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                url: `https://www.youtube.com/watch?v=${info.id}`,
+                                videoQuality: '720',
+                                filenameStyle: 'basic',
+                                downloadMode: 'auto'
+                            })
+                        });
+                        const data = await resp.json();
 
-                        // Eng yaxshi video+audio stream topamiz (formatStreams — muxed)
-                        const streams = data.formatStreams || [];
-                        // 720p, 480p, 360p tartibida
-                        const preferred = ['720p','480p','360p','240p'];
-                        let chosen = null;
-                        for(const q of preferred) {
-                            chosen = streams.find(s => s.qualityLabel === q);
-                            if(chosen) break;
+                        if(data.status === 'stream' || data.status === 'redirect') {
+                            const streamUrl = data.url;
+                            hideVideoLoading();
+                            v.style.display = 'block';
+                            v.src = streamUrl;
+                            v.controls = true;
+                            v.autoplay = true;
+                            v.setAttribute('controlslist', 'nodownload noremoteplayback');
+                            v.setAttribute('disablepictureinpicture', '');
+                            v.onerror = () => showVideoError('Video yuklanmadi. Qayta urining.');
+                            v.play().catch(() => {});
+                        } else if(data.status === 'picker') {
+                            // Bir nechta format - birinchisini ol
+                            const streamUrl = data.picker[0]?.url;
+                            if(streamUrl) {
+                                hideVideoLoading();
+                                v.style.display = 'block';
+                                v.src = streamUrl;
+                                v.controls = true;
+                                v.autoplay = true;
+                                v.setAttribute('controlslist', 'nodownload noremoteplayback');
+                                v.setAttribute('disablepictureinpicture', '');
+                                v.onerror = () => showVideoError('Video yuklanmadi. Qayta urining.');
+                                v.play().catch(() => {});
+                            } else {
+                                throw new Error('URL topilmadi');
+                            }
+                        } else {
+                            throw new Error(data.error?.code || 'Noma'lum xato');
                         }
-                        if(!chosen) chosen = streams[streams.length - 1];
-                        if(!chosen || !chosen.url) throw new Error('Stream URL topilmadi');
-
-                        hideVideoLoading();
-                        v.style.display = 'block';
-                        v.src = chosen.url;
-                        v.controls = true;
-                        v.autoplay = true;
-                        v.setAttribute('controlslist', 'nodownload noremoteplayback');
-                        v.setAttribute('disablepictureinpicture', '');
-                        v.onerror = () => {
-                            _invIdx++;
-                            showVideoLoading('Boshqa server sinab korilmoqda...');
-                            _fetchYtStream();
-                        };
-                        v.play().catch(() => {});
-
                     } catch(e) {
-                        _invIdx++;
-                        _fetchYtStream();
+                        // Cobalt ishlamasa - oxirgi chora sifatida embed
+                        try {
+                            iframe.removeAttribute('sandbox');
+                            iframe.setAttribute('allow', 'autoplay; fullscreen; encrypted-media; picture-in-picture');
+                            iframe.setAttribute('allowfullscreen', '');
+                            iframe.style.display = 'block';
+                            showVideoLoading('Yuklanmoqda...');
+                            iframe.onload = () => { hideVideoLoading(); };
+                            iframe.src = `https://www.youtube-nocookie.com/embed/${info.id}?autoplay=1&rel=0&playsinline=1`;
+                        } catch(e2) {
+                            hideVideoLoading();
+                            showVideoError('YouTube video yuklanmadi.');
+                        }
                     }
-                }
-                _fetchYtStream();
+                })();
 
             } else if(info.type === 'vk_embed') {
                 v.style.display = 'none'; v.src = '';
