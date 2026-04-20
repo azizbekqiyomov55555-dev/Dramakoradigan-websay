@@ -1396,6 +1396,31 @@
         <!-- Normal video player -->
         <video id="mainVideo" style="width:100%; height:100%; display:block;" playsinline controls></video>
 
+        <!-- CUSTOM PROGRESS BAR (qo'sh qizil nuqta) -->
+        <div id="customProgressBar">
+            <!-- Vaqt + start mark tugmasi -->
+            <div class="cpb-controls-row">
+                <button class="cpb-btn" id="cpbPlayBtn" title="Play/Pause">
+                    <svg id="cpbPlayIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </button>
+                <span id="cpbTimeLabel" style="font-size:12px;font-weight:700;color:#ccc;white-space:nowrap;">0:00 / 0:00</span>
+                <div class="cpb-spacer"></div>
+                <button class="cpb-setbtn" id="cpbSetStartBtn" title="Shu joyni boshlash nuqtasi qil">📍 Boshlash</button>
+            </div>
+            <!-- Progress track -->
+            <div class="cpb-track-wrap" id="cpbTrackWrap">
+                <div class="cpb-track" id="cpbTrack">
+                    <div class="cpb-buf"  id="cpbBuf"></div>
+                    <div class="cpb-fill" id="cpbFill"></div>
+                    <div class="cpb-dot1" id="cpbDot1"></div>
+                    <div class="cpb-dot2" id="cpbDot2"></div>
+                </div>
+                <div class="cpb-tooltip" id="cpbTooltip">0:00</div>
+            </div>
+            <!-- Start mark info -->
+            <div id="cpbStartInfo" style="display:none;font-size:11px;color:#ff5555;font-weight:700;padding:2px 14px 6px;"></div>
+        </div>
+
         <!-- Telegram kanal video embed (t.me havolalar uchun) -->
         <iframe id="tgEmbedFrame"
             style="width:100%;height:100%;border:none;display:none;background:#000;position:absolute;top:0;left:0;"
@@ -1507,6 +1532,96 @@
         /* MINI PLAYER drag */
         #miniPlayerBox { touch-action: none; cursor: grab; }
         #miniPlayerBox:active { cursor: grabbing; }
+
+        /* ===== CUSTOM PROGRESS BAR ===== */
+        #customProgressBar {
+            position: absolute;
+            bottom: 0; left: 0; width: 100%;
+            z-index: 3022;
+            padding: 0 0 env(safe-area-inset-bottom, 8px);
+            background: linear-gradient(0deg, rgba(0,0,0,0.85) 0%, transparent 100%);
+            display: none;
+        }
+        #customProgressBar.cpb-visible { display: block; }
+        .cpb-time-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 14px 4px; font-size: 12px; font-weight: 700; color: #ccc;
+        }
+        .cpb-track-wrap {
+            position: relative; height: 28px;
+            display: flex; align-items: center;
+            padding: 0 14px; cursor: pointer;
+            touch-action: none;
+        }
+        .cpb-track {
+            position: relative; width: 100%; height: 4px;
+            background: rgba(255,255,255,0.18); border-radius: 2px;
+        }
+        .cpb-buf {
+            position: absolute; left:0; top:0; height:100%;
+            background: rgba(255,255,255,0.28); border-radius:2px;
+            pointer-events:none; width:0%;
+        }
+        .cpb-fill {
+            position: absolute; left:0; top:0; height:100%;
+            background: #e00; border-radius:2px;
+            pointer-events:none; width:0%;
+        }
+        /* Dot 1: current playhead */
+        .cpb-dot1 {
+            position: absolute; top:50%;
+            transform: translate(-50%,-50%);
+            width: 16px; height: 16px;
+            border-radius: 50%; background: #e00;
+            cursor: grab; z-index: 10;
+            transition: box-shadow 0.15s;
+            left: 0%;
+        }
+        .cpb-dot1:active { cursor: grabbing; }
+        .cpb-dot1:hover  { box-shadow: 0 0 0 6px rgba(220,0,0,0.3); }
+        /* Dot 2: start mark */
+        .cpb-dot2 {
+            position: absolute; top:50%;
+            transform: translate(-50%,-50%);
+            width: 13px; height: 13px;
+            border-radius: 50%;
+            background: #ff5555;
+            border: 2.5px solid #fff;
+            cursor: grab; z-index: 9;
+            display: none;
+            left: 0%;
+        }
+        .cpb-dot2:hover { box-shadow: 0 0 0 5px rgba(255,85,85,0.3); }
+        .cpb-tooltip {
+            position: absolute; bottom: 30px;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.85); color:#fff;
+            font-size:11px; font-weight:700; padding:3px 7px;
+            border-radius:6px; pointer-events:none;
+            white-space:nowrap; opacity:0; transition:opacity 0.15s;
+            left: 50%;
+        }
+        .cpb-track-wrap:hover .cpb-tooltip { opacity:1; }
+        /* Start-mark set button */
+        .cpb-setbtn {
+            background: none; border: 1px solid #ff5555;
+            color: #ff5555; font-size: 11px; font-weight:700;
+            padding: 3px 10px; border-radius: 12px; cursor:pointer;
+            margin-left: 8px; flex-shrink:0;
+        }
+        .cpb-setbtn:active { background: rgba(255,85,85,0.2); }
+        .cpb-controls-row {
+            display:flex; align-items:center; gap:8px;
+            padding: 0 10px 8px;
+        }
+        .cpb-btn {
+            background:none; border:none; color:#fff; cursor:pointer;
+            padding:6px; border-radius:8px; display:flex; align-items:center;
+            transition: background 0.15s; flex-shrink:0;
+        }
+        .cpb-btn:active { background: rgba(255,255,255,0.12); }
+        .cpb-btn svg { width:22px; height:22px; fill:#fff; }
+        .cpb-spacer { flex:1; }
     </style>
 
     <!-- NAKRUTKA MODAL (pastdan chiquvchi sheet) -->
@@ -3826,6 +3941,18 @@
                 if(seekR) seekR.style.pointerEvents = 'none';
             }
 
+            // Custom progress bar: faqat oddiy video uchun ko'rsat
+            const cpbBar = document.getElementById('customProgressBar');
+            if(cpbBar) {
+                if(info.type === 'direct' || info.type === 'tgfile' || info.type === 'tgfile_legacy') {
+                    cpbBar.classList.add('cpb-visible');
+                    document.getElementById('mainVideo').removeAttribute('controls');
+                } else {
+                    cpbBar.classList.remove('cpb-visible');
+                    document.getElementById('mainVideo').setAttribute('controls', '');
+                }
+            }
+
             showWatermarks();
         }
 
@@ -4597,6 +4724,13 @@
             const seekR = document.getElementById('seekRight');
             if(seekL) seekL.style.pointerEvents = 'auto';
             if(seekR) seekR.style.pointerEvents = 'auto';
+            // Custom progress bar yashirish
+            const cpbBarClose = document.getElementById('customProgressBar');
+            if(cpbBarClose) cpbBarClose.classList.remove('cpb-visible');
+            // Controls ni qayta tiklash
+            const mainVid = document.getElementById('mainVideo');
+            if(mainVid) mainVid.setAttribute('controls', '');
+
             stopWatermarks();
         }
         function closeDetail() { document.getElementById('detailPage').style.display = 'none'; }
@@ -5707,7 +5841,164 @@
         }
         setupDoubleTap();
 
-        // === SEEK FEEDBACK ===
+        // ===== CUSTOM PROGRESS BAR JS =====
+        (function(){
+            let cpbStartMark = null;
+            let cpbDragging  = false;
+            let cpbDragTarget = null;
+
+            function getVid() { return document.getElementById('mainVideo'); }
+
+            function fmt(s) {
+                if(!s && s !== 0) return '0:00';
+                const m = Math.floor(s / 60), sec = Math.floor(s % 60);
+                return m + ':' + String(sec).padStart(2,'0');
+            }
+
+            function pctFromEv(e) {
+                const track = document.getElementById('cpbTrack');
+                if(!track) return 0;
+                const rect = track.getBoundingClientRect();
+                const cx = e.touches ? e.touches[0].clientX : e.clientX;
+                return Math.max(0, Math.min(1, (cx - rect.left) / rect.width));
+            }
+
+            function cpbUpdate() {
+                const vid = getVid();
+                if(!vid) return;
+                const p = vid.duration ? vid.currentTime / vid.duration : 0;
+                const fill = document.getElementById('cpbFill');
+                const dot1 = document.getElementById('cpbDot1');
+                const lbl  = document.getElementById('cpbTimeLabel');
+                const buf  = document.getElementById('cpbBuf');
+                if(fill) fill.style.width = (p * 100) + '%';
+                if(dot1) dot1.style.left  = (p * 100) + '%';
+                if(lbl)  lbl.textContent  = fmt(vid.currentTime) + ' / ' + fmt(vid.duration);
+                if(buf && vid.buffered.length) {
+                    buf.style.width = (vid.buffered.end(vid.buffered.length-1) / vid.duration * 100) + '%';
+                }
+            }
+
+            function cpbSetDot2(pct) {
+                const dot2 = document.getElementById('cpbDot2');
+                const info = document.getElementById('cpbStartInfo');
+                if(pct === null) {
+                    if(dot2) dot2.style.display = 'none';
+                    if(info) info.style.display = 'none';
+                    return;
+                }
+                if(dot2) { dot2.style.display = 'block'; dot2.style.left = (pct * 100) + '%'; }
+                if(info) { info.style.display = 'block'; info.textContent = '📍 Boshlash nuqtasi: ' + fmt((getVid().duration || 0) * pct); }
+            }
+
+            function initCpb() {
+                const vid   = getVid();
+                const wrap  = document.getElementById('cpbTrackWrap');
+                const track = document.getElementById('cpbTrack');
+                const playBtn  = document.getElementById('cpbPlayBtn');
+                const playIcon = document.getElementById('cpbPlayIcon');
+                const setBtn   = document.getElementById('cpbSetStartBtn');
+                const tooltip  = document.getElementById('cpbTooltip');
+
+                if(!vid || !wrap) return;
+
+                // Video events
+                vid.addEventListener('timeupdate', cpbUpdate);
+                vid.addEventListener('progress',   cpbUpdate);
+                vid.addEventListener('play',  () => { if(playIcon) playIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; });
+                vid.addEventListener('pause', () => { if(playIcon) playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>'; });
+                vid.addEventListener('ended', () => {
+                    if(playIcon) playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+                    if(cpbStartMark !== null) { vid.currentTime = (vid.duration || 0) * cpbStartMark; vid.play().catch(()=>{}); }
+                });
+
+                // Play/Pause button
+                if(playBtn) playBtn.addEventListener('click', () => vid.paused ? vid.play() : vid.pause());
+
+                // Video tap => play/pause (middle area only — not dots/bar)
+                vid.addEventListener('click', () => vid.paused ? vid.play() : vid.pause());
+
+                // Set start mark button
+                if(setBtn) setBtn.addEventListener('click', () => {
+                    if(!vid.duration) return;
+                    cpbStartMark = vid.currentTime / vid.duration;
+                    cpbSetDot2(cpbStartMark);
+                });
+
+                // Hover tooltip
+                if(wrap) wrap.addEventListener('mousemove', e => {
+                    if(!tooltip) return;
+                    const p = pctFromEv(e);
+                    const rect = track.getBoundingClientRect();
+                    const cx = e.clientX - rect.left;
+                    tooltip.style.left = Math.max(20, Math.min(rect.width - 20, cx)) + 'px';
+                    tooltip.textContent = fmt((vid.duration || 0) * p);
+                });
+
+                // Drag helpers
+                function nearestDot(p) {
+                    const d1 = Math.abs(p - (vid.duration ? vid.currentTime / vid.duration : 0));
+                    const d2 = cpbStartMark !== null ? Math.abs(p - cpbStartMark) : Infinity;
+                    return (d2 < d1 && d2 < 0.06) ? 'dot2' : 'dot1';
+                }
+
+                function startDrag(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const p = pctFromEv(e);
+                    cpbDragTarget = nearestDot(p);
+                    cpbDragging = true;
+                    applyDrag(e);
+                }
+
+                function applyDrag(e) {
+                    if(!cpbDragging) return;
+                    const p = pctFromEv(e);
+                    if(cpbDragTarget === 'dot1') {
+                        vid.currentTime = p * (vid.duration || 0);
+                        cpbUpdate();
+                    } else {
+                        cpbStartMark = p;
+                        cpbSetDot2(p);
+                    }
+                }
+
+                function endDrag() { cpbDragging = false; cpbDragTarget = null; }
+
+                wrap.addEventListener('mousedown',  startDrag);
+                window.addEventListener('mousemove', applyDrag);
+                window.addEventListener('mouseup',   endDrag);
+
+                wrap.addEventListener('touchstart', startDrag, { passive: false });
+                window.addEventListener('touchmove', applyDrag, { passive: false });
+                window.addEventListener('touchend',  endDrag);
+
+                // Click (not drag) on bar
+                wrap.addEventListener('click', e => {
+                    if(cpbDragging) return;
+                    const p = pctFromEv(e);
+                    const d2 = cpbStartMark !== null ? Math.abs(p - cpbStartMark) : Infinity;
+                    if(d2 < 0.05) {
+                        cpbStartMark = p;
+                        cpbSetDot2(p);
+                    } else {
+                        vid.currentTime = p * (vid.duration || 0);
+                        cpbUpdate();
+                    }
+                });
+
+                // Init dot2 hidden
+                cpbSetDot2(null);
+            }
+
+            // Wait for DOM ready
+            if(document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initCpb);
+            } else {
+                initCpb();
+            }
+        })();
+        // ===== END CUSTOM PROGRESS BAR JS =====
         let seekFbTimer = null;
         function seekVideo(secs) {
             const v = document.getElementById('mainVideo');
@@ -7002,158 +7293,4 @@
                     document.querySelectorAll('iframe').forEach(fr => {
                         fr.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation');
                         // Iframe kontentini saqlashni qiyinlashtirish
-                        const fakeEl = document.createElement('div');
-                        fakeEl.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none;background:transparent;';
-                        fakeEl.id = '_iframeBlocker_' + Math.random().toString(36).slice(2);
-                        fr.parentNode?.appendChild(fakeEl);
-                    });
-                } catch(e) {}
-
-            } else {
-                cpStyle.textContent = '';
-                overlay.style.display = 'none';
-                overlay.style.opacity = '0';
-                document.removeEventListener('visibilitychange', _onVisChange);
-                document.removeEventListener('contextmenu', _blockCtx, true);
-                document.removeEventListener('keydown', _blockKeys, true);
-                document.removeEventListener('dragstart', _blockCtx, true);
-                document.removeEventListener('selectstart', _blockCtx, true);
-                document.removeEventListener('copy', _blockCtx, true);
-                document.removeEventListener('cut', _blockCtx, true);
-                _protectVideos(false);
-                _stopScreenshotDetection();
-                _addIframeProtectionLayer(false);
-                // iframe blockerlarni tozalash
-                document.querySelectorAll('[id^="_iframeBlocker_"]').forEach(el => el.remove());
-            }
-        }
-
-        // Iframe ustiga shaffof himoya qatlami (Telegram kanal video saqlashni bloklaydi)
-        let _iframeProtLayer = null;
-        function _addIframeProtectionLayer(on) {
-            if(on) {
-                if(!_iframeProtLayer) {
-                    _iframeProtLayer = document.createElement('div');
-                    _iframeProtLayer.id = '_iframeProtLayer';
-                    _iframeProtLayer.style.cssText = `
-                        position:fixed;top:0;left:0;width:100%;height:100%;
-                        z-index:2999;pointer-events:none;
-                        background:transparent;
-                    `;
-                    document.body.appendChild(_iframeProtLayer);
-                }
-                _iframeProtLayer.style.display = 'block';
-            } else {
-                if(_iframeProtLayer) _iframeProtLayer.style.display = 'none';
-            }
-        }
-
-        let _ssDetectInterval = null;
-        let _lastW = window.innerWidth, _lastH = window.innerHeight;
-
-        function _startScreenshotDetection() {
-            _ssDetectInterval = setInterval(() => {
-                const w = window.innerWidth, h = window.innerHeight;
-                if(w !== _lastW || h !== _lastH) { _lastW = w; _lastH = h; _flashBlack(200); }
-            }, 150);
-            window.addEventListener('keyup', _onKeyUp);
-            // Android: screenshot paytida focus yo'qoladi
-            window.addEventListener('blur', _onWinBlur);
-        }
-
-        function _stopScreenshotDetection() {
-            clearInterval(_ssDetectInterval);
-            window.removeEventListener('keyup', _onKeyUp);
-            window.removeEventListener('blur', _onWinBlur);
-        }
-
-        let _blurTimer = null;
-        function _onWinBlur() {
-            if(!contentProtectEnabled) return;
-            // Focus yo'qoldi — screenshot yoki app switch
-            _flashBlack(600);
-        }
-
-        function _onKeyUp(e) {
-            if(e.key === 'PrintScreen' || e.keyCode === 44) _flashBlack(300);
-        }
-
-        function _onVisChange() {
-            if(!contentProtectEnabled) return;
-            if(document.hidden) {
-                _flashBlack(800);
-                const v = document.getElementById('mainVideo');
-                if(v && !v.paused) v.pause();
-            }
-        }
-
-        function _flashBlack(ms) {
-            const ov = document.getElementById('_cpOverlay');
-            if(!ov) return;
-            ov.style.opacity = '1';
-            ov.style.pointerEvents = 'all';
-            clearTimeout(_blurTimer);
-            _blurTimer = setTimeout(() => {
-                ov.style.opacity = '0';
-                ov.style.pointerEvents = 'none';
-            }, ms || 300);
-        }
-
-        function _protectVideos(on) {
-            document.querySelectorAll('video').forEach(v => {
-                if(on) {
-                    v.setAttribute('controlslist', 'nodownload noremoteplayback nofullscreen');
-                    v.setAttribute('disablepictureinpicture', '');
-                    v.setAttribute('disableremoteplayback', '');
-                    v.oncontextmenu = e => { e.preventDefault(); return false; };
-                } else {
-                    v.removeAttribute('controlslist');
-                    v.removeAttribute('disablepictureinpicture');
-                    v.removeAttribute('disableremoteplayback');
-                    v.oncontextmenu = null;
-                }
-            });
-        }
-
-        function _blockCtx(e) { e.preventDefault(); e.stopPropagation(); return false; }
-
-        function _blockKeys(e) {
-            if(e.key === 'PrintScreen' || e.keyCode === 44 ||
-               (e.ctrlKey && ['s','u','p','a','c','x'].includes(e.key.toLowerCase())) ||
-               e.key === 'F12') {
-                e.preventDefault(); e.stopPropagation();
-                _flashBlack(400);
-                return false;
-            }
-        }
-
-        // Rasmlarni saqlashdan himoya (CSS pointer-events o'rniga JS)
-        document.addEventListener('contextmenu', function(e) {
-            if(e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO') {
-                e.preventDefault(); return false;
-            }
-        });
-        document.addEventListener('dragstart', function(e) {
-            if(e.target.tagName === 'IMG') { e.preventDefault(); return false; }
-        });
-        // iOS long-press saqlash dialogini bloklash faqat rasm va videolarda
-        document.addEventListener('touchstart', function(e) {
-            if(e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO') {
-                // Long press timer
-                e.target._lpTimer = setTimeout(() => { /* bloklangan */ }, 500);
-            }
-        }, {passive: true});
-
-        // Video pozitsiyasini har 5 sekundda avtomatik saqlash
-        setInterval(() => {
-            const v = document.getElementById('mainVideo');
-            if(!v || v.paused || !v.src || !currentMovieId) return;
-            if(v.currentTime > 3 && !v.ended) {
-                vpSave(currentMovieId, _currentPartIdx, v.currentTime);
-            }
-        }, 5000);
-
-        init();
-    </script>
-</body>
-</html>
+                        const fakeEl = document.createElemen
