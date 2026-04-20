@@ -3493,48 +3493,82 @@
             if(info.type === 'youtube') {
                 v.style.display = 'none'; v.src = '';
                 iframe.style.display = 'none'; iframe.src = '';
-                hideVideoLoading();
 
-                // YouTube Telegram WebApp ichida BARCHA embed turlarini bloklaydi (xato 153).
-                // Yagona ishlaydigan yechim: to'g'ridan Telegram ichki brauzerida ochish.
                 let ytViewer = document.getElementById('ytViewer');
                 if(!ytViewer) {
                     ytViewer = document.createElement('div');
                     ytViewer.id = 'ytViewer';
-                    ytViewer.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000;z-index:10;';
+                    ytViewer.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:#000;z-index:10;';
                     document.getElementById('player').appendChild(ytViewer);
                 }
-                const ytUrl = `https://www.youtube.com/watch?v=${info.id}`;
-                ytViewer.style.display = 'flex';
-                ytViewer.innerHTML = `
-                    <div style="text-align:center;padding:30px 24px;width:100%;box-sizing:border-box;">
-                        <div style="width:72px;height:72px;background:linear-gradient(135deg,#ff0000,#cc0000);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;box-shadow:0 0 30px rgba(255,0,0,0.4);">
-                            <svg width="30" height="30" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
-                        </div>
-                        <div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:10px;">YouTube Video</div>
-                        <div style="font-size:13px;color:#888;margin-bottom:32px;line-height:1.7;">
-                            YouTube videolarini ilova ichida<br>to'g'ridan tomosha qilish uchun<br>quyidagi tugmani bosing.
-                        </div>
-                        <button id="ytOpenBtn"
-                            style="background:linear-gradient(135deg,#ff0000,#cc0000);
-                                   color:#fff;border:none;padding:18px 0;border-radius:18px;
-                                   font-size:17px;font-weight:900;width:100%;max-width:300px;
-                                   display:flex;align-items:center;justify-content:center;gap:12px;
-                                   margin:0 auto 14px;box-shadow:0 4px 20px rgba(255,0,0,0.35);
-                                   touch-action:manipulation;-webkit-tap-highlight-color:transparent;">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
-                            Videoni Ko'rish
-                        </button>
-                        <div style="margin-top:10px;font-size:11px;color:#444;line-height:1.6;">Telegram ichki brauzeri orqali ochiladi</div>
-                    </div>`;
+                ytViewer.style.display = 'block';
 
-                document.getElementById('ytOpenBtn').onclick = () => {
-                    if(window.Telegram?.WebApp?.openLink) {
-                        Telegram.WebApp.openLink(ytUrl);
-                    } else {
-                        window.open(ytUrl, '_blank');
+                // Proxy orqali YouTube embed — Telegram blokini chetlab o'tadi
+                // piped.video, invidious, yewtu.eu — bular YouTube proxylari
+                const proxies = [
+                    `https://piped.video/embed/${info.id}?autoplay=1&quality=auto`,
+                    `https://invidious.io.lol/embed/${info.id}?autoplay=1`,
+                    `https://yewtu.be/embed/${info.id}?autoplay=1`,
+                    `https://inv.nadeko.net/embed/${info.id}?autoplay=1`
+                ];
+                let proxyIndex = 0;
+
+                function tryNextProxy() {
+                    if(proxyIndex >= proxies.length) {
+                        // Hamma proxy ishlamadi — oxirgi chora: to'g'ridan ochish
+                        ytViewer.innerHTML = `
+                            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding:30px 24px;box-sizing:border-box;">
+                                <div style="width:68px;height:68px;background:linear-gradient(135deg,#ff0000,#cc0000);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;box-shadow:0 0 30px rgba(255,0,0,0.4);">
+                                    <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
+                                </div>
+                                <div style="font-size:20px;font-weight:900;color:#fff;margin-bottom:8px;">YouTube Video</div>
+                                <div style="font-size:13px;color:#888;margin-bottom:28px;line-height:1.7;">
+                                    Videoni to'g'ridan tomosha qilish uchun<br>quyidagi tugmani bosing.
+                                </div>
+                                <button id="ytOpenBtn2"
+                                    style="background:linear-gradient(135deg,#ff0000,#cc0000);color:#fff;border:none;padding:16px 0;border-radius:16px;font-size:16px;font-weight:900;width:100%;max-width:280px;display:flex;align-items:center;justify-content:center;gap:10px;margin:0 auto;box-shadow:0 4px 20px rgba(255,0,0,0.3);touch-action:manipulation;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
+                                    Videoni Ko'rish
+                                </button>
+                                <div style="margin-top:12px;font-size:11px;color:#444;">Telegram ichki brauzeri orqali ochiladi</div>
+                            </div>`;
+                        const ob = document.getElementById('ytOpenBtn2');
+                        if(ob) ob.onclick = () => {
+                            const ytUrl = \`https://www.youtube.com/watch?v=\${info.id}\`;
+                            if(window.Telegram?.WebApp?.openLink) Telegram.WebApp.openLink(ytUrl);
+                            else window.open(ytUrl, '_blank');
+                        };
+                        return;
                     }
-                };
+
+                    showVideoLoading('Video yuklanmoqda...');
+                    ytViewer.innerHTML = `
+                        <iframe
+                            id="ytProxyFrame"
+                            src="${proxies[proxyIndex]}"
+                            style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;background:#000;"
+                            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                            allowfullscreen
+                        ></iframe>`;
+
+                    const frm = document.getElementById('ytProxyFrame');
+                    let loaded = false;
+
+                    frm.onload = () => {
+                        loaded = true;
+                        hideVideoLoading();
+                    };
+
+                    // 6 soniya ichida yuklanmasa keyingi proxy
+                    setTimeout(() => {
+                        if(!loaded) {
+                            proxyIndex++;
+                            tryNextProxy();
+                        }
+                    }, 6000);
+                }
+
+                tryNextProxy();
 
             } else if(info.type === 'vk_embed') {
                 v.style.display = 'none'; v.src = '';
