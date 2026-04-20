@@ -3495,8 +3495,8 @@
                 iframe.style.display = 'none'; iframe.src = '';
                 hideVideoLoading();
 
-                // YouTube Telegram WebApp ichida embed bloklanadi.
-                // Shuning uchun ilovaning ichki brauzerida ochish yechimi ishlatiladi.
+                // YouTube Telegram WebApp ichida BARCHA embed turlarini bloklaydi (xato 153).
+                // Yagona ishlaydigan yechim: to'g'ridan Telegram ichki brauzerida ochish.
                 let ytViewer = document.getElementById('ytViewer');
                 if(!ytViewer) {
                     ytViewer = document.createElement('div');
@@ -3505,47 +3505,36 @@
                     document.getElementById('player').appendChild(ytViewer);
                 }
                 const ytUrl = `https://www.youtube.com/watch?v=${info.id}`;
-                const ytEmbedUrl = `https://www.youtube-nocookie.com/embed/${info.id}?autoplay=1&rel=0&playsinline=1`;
                 ytViewer.style.display = 'flex';
                 ytViewer.innerHTML = `
-                    <div style="width:100%;height:100%;position:relative;background:#000;">
-                        <iframe
-                            src="${ytEmbedUrl}"
-                            style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"
-                            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-                            allowfullscreen
-                            referrerpolicy="no-referrer"
-                        ></iframe>
-                        <div id="ytFallback" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:#000;flex-direction:column;align-items:center;justify-content:center;">
-                            <div style="text-align:center;padding:30px 24px;">
-                                <div style="font-size:52px;margin-bottom:16px;">▶️</div>
-                                <div style="font-size:20px;font-weight:900;color:#fff;margin-bottom:8px;">YouTube Video</div>
-                                <div style="font-size:13px;color:#888;margin-bottom:28px;line-height:1.6;">
-                                    Video ichki oynada yuklanmadi.<br>Quyida YouTube ilovasida oching.
-                                </div>
-                                <button onclick="if(window.Telegram?.WebApp?.openLink){Telegram.WebApp.openLink('${ytUrl}')}else{window.open('${ytUrl}','_blank')}"
-                                    style="background:linear-gradient(135deg,#ff0000,#cc0000);
-                                           color:#fff;border:none;padding:16px 32px;border-radius:16px;
-                                           font-size:16px;font-weight:900;width:100%;max-width:280px;
-                                           display:flex;align-items:center;justify-content:center;gap:10px;margin:0 auto 12px;">
-                                    ▶ YouTube da Ko'rish
-                                </button>
-                                <div style="margin-top:8px;font-size:11px;color:#444;">Telegram ichki brauzeri orqali ochiladi</div>
-                            </div>
+                    <div style="text-align:center;padding:30px 24px;width:100%;box-sizing:border-box;">
+                        <div style="width:72px;height:72px;background:linear-gradient(135deg,#ff0000,#cc0000);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;box-shadow:0 0 30px rgba(255,0,0,0.4);">
+                            <svg width="30" height="30" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
                         </div>
+                        <div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:10px;">YouTube Video</div>
+                        <div style="font-size:13px;color:#888;margin-bottom:32px;line-height:1.7;">
+                            YouTube videolarini ilova ichida<br>to'g'ridan tomosha qilish uchun<br>quyidagi tugmani bosing.
+                        </div>
+                        <button id="ytOpenBtn"
+                            style="background:linear-gradient(135deg,#ff0000,#cc0000);
+                                   color:#fff;border:none;padding:18px 0;border-radius:18px;
+                                   font-size:17px;font-weight:900;width:100%;max-width:300px;
+                                   display:flex;align-items:center;justify-content:center;gap:12px;
+                                   margin:0 auto 14px;box-shadow:0 4px 20px rgba(255,0,0,0.35);
+                                   touch-action:manipulation;-webkit-tap-highlight-color:transparent;">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
+                            Videoni Ko'rish
+                        </button>
+                        <div style="margin-top:10px;font-size:11px;color:#444;line-height:1.6;">Telegram ichki brauzeri orqali ochiladi</div>
                     </div>`;
 
-                // Agar nocookie iframe ham ishlamasa, 5 soniyadan keyin fallback ko'rsat
-                const ytIframe = ytViewer.querySelector('iframe');
-                const ytFallback = ytViewer.querySelector('#ytFallback');
-                let ytLoaded = false;
-                ytIframe.onload = () => { ytLoaded = true; };
-                setTimeout(() => {
-                    if(!ytLoaded && ytFallback) {
-                        ytFallback.style.display = 'flex';
-                        ytIframe.style.display = 'none';
+                document.getElementById('ytOpenBtn').onclick = () => {
+                    if(window.Telegram?.WebApp?.openLink) {
+                        Telegram.WebApp.openLink(ytUrl);
+                    } else {
+                        window.open(ytUrl, '_blank');
                     }
-                }, 5000);
+                };
 
             } else if(info.type === 'vk_embed') {
                 v.style.display = 'none'; v.src = '';
