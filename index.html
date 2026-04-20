@@ -3488,73 +3488,14 @@
 
             if(info.type === 'youtube') {
                 v.style.display = 'none'; v.src = '';
-                iframe.style.display = 'none'; iframe.src = '';
-                showVideoLoading('YouTube video yuklanmoqda...');
-
-                (async function() {
-                    try {
-                        // cobalt.tools API - bepul, CORS yo'q, YouTube stream URL beradi
-                        const resp = await fetch('https://api.cobalt.tools/', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                url: `https://www.youtube.com/watch?v=${info.id}`,
-                                videoQuality: '720',
-                                filenameStyle: 'basic',
-                                downloadMode: 'auto'
-                            })
-                        });
-                        const data = await resp.json();
-
-                        if(data.status === 'stream' || data.status === 'redirect') {
-                            const streamUrl = data.url;
-                            hideVideoLoading();
-                            v.style.display = 'block';
-                            v.src = streamUrl;
-                            v.controls = true;
-                            v.autoplay = true;
-                            v.setAttribute('controlslist', 'nodownload noremoteplayback');
-                            v.setAttribute('disablepictureinpicture', '');
-                            v.onerror = () => showVideoError('Video yuklanmadi. Qayta urining.');
-                            v.play().catch(() => {});
-                        } else if(data.status === 'picker') {
-                            // Bir nechta format - birinchisini ol
-                            const streamUrl = data.picker[0]?.url;
-                            if(streamUrl) {
-                                hideVideoLoading();
-                                v.style.display = 'block';
-                                v.src = streamUrl;
-                                v.controls = true;
-                                v.autoplay = true;
-                                v.setAttribute('controlslist', 'nodownload noremoteplayback');
-                                v.setAttribute('disablepictureinpicture', '');
-                                v.onerror = () => showVideoError('Video yuklanmadi. Qayta urining.');
-                                v.play().catch(() => {});
-                            } else {
-                                throw new Error('URL topilmadi');
-                            }
-                        } else {
-                            throw new Error(data.error?.code || 'Noma'lum xato');
-                        }
-                    } catch(e) {
-                        // Cobalt ishlamasa - oxirgi chora sifatida embed
-                        try {
-                            iframe.removeAttribute('sandbox');
-                            iframe.setAttribute('allow', 'autoplay; fullscreen; encrypted-media; picture-in-picture');
-                            iframe.setAttribute('allowfullscreen', '');
-                            iframe.style.display = 'block';
-                            showVideoLoading('Yuklanmoqda...');
-                            iframe.onload = () => { hideVideoLoading(); };
-                            iframe.src = `https://www.youtube-nocookie.com/embed/${info.id}?autoplay=1&rel=0&playsinline=1`;
-                        } catch(e2) {
-                            hideVideoLoading();
-                            showVideoError('YouTube video yuklanmadi.');
-                        }
-                    }
-                })();
+                iframe.removeAttribute('sandbox');
+                iframe.setAttribute('allow', 'autoplay; fullscreen; encrypted-media; picture-in-picture; accelerometer; gyroscope');
+                iframe.setAttribute('allowfullscreen', '');
+                iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+                iframe.style.display = 'block';
+                showVideoLoading('YouTube yuklanmoqda...');
+                iframe.onload = () => { setTimeout(hideVideoLoading, 1000); };
+                iframe.src = `https://www.youtube-nocookie.com/embed/${info.id}?autoplay=1&rel=0&playsinline=1&modestbranding=1&fs=1&color=white`;
 
             } else if(info.type === 'vk_embed') {
                 v.style.display = 'none'; v.src = '';
