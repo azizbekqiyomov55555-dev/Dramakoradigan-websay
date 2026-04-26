@@ -729,7 +729,7 @@
                     <span style="width:7px;height:7px;background:var(--accent);border-radius:50%;animation:blink 1.5s infinite;display:inline-block;"></span>
                     <span style="color:var(--accent); font-size:12px; font-weight:700;">Onlayn</span>
                 </div>
-                <div id="userIdDisplay" style="font-size:11px;color:#444;font-weight:700;margin-top:5px;letter-spacing:1px;"></div>
+                <div id="userIdDisplay" style="font-size:12px;color:#888;font-weight:700;margin-top:6px;letter-spacing:1px;cursor:pointer;" title="Bosib nusxalash"></div>
                 <div id="premTimer" style="font-size:12px; color:var(--accent); font-weight:900; margin-top:4px;"></div>
             </div>
         </div>
@@ -1330,10 +1330,10 @@
     <div id="loginRegModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:9999;overflow-y:auto;">
         <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 20px;box-sizing:border-box;">
             <!-- Logo -->
-            <div style="text-align:center;margin-bottom:32px;">
-                <div style="font-size:52px;margin-bottom:12px;">🎬</div>
-                <div style="font-size:26px;font-weight:900;color:#fff;letter-spacing:2px;">KINO DRAMA</div>
-                <div style="font-size:12px;color:#555;margin-top:4px;letter-spacing:3px;">PREMIUM</div>
+            <div style="text-align:center;margin-bottom:32px;animation:fadeIn 0.6s ease;">
+                <div style="width:80px;height:80px;background:linear-gradient(135deg,#00ff73,#00cc5c);border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 16px;box-shadow:0 8px 32px rgba(0,255,115,0.4);animation:pulse-btn 2s infinite;">🎬</div>
+                <div style="font-size:28px;font-weight:900;color:#fff;letter-spacing:3px;">KINO DRAMA</div>
+                <div style="font-size:12px;color:var(--accent);margin-top:4px;letter-spacing:4px;font-weight:700;">PREMIUM</div>
             </div>
 
             <!-- Tab tanlash -->
@@ -1482,9 +1482,12 @@
 
             <!-- Avatar tanlash -->
             <div style="text-align:center;margin-bottom:22px;">
-                <div style="position:relative;display:inline-block;" onclick="document.getElementById('avatarFileInput').click()">
-                    <img id="profileEditAvatar" src="" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:2.5px solid var(--accent);box-shadow:0 0 18px rgba(0,255,115,0.3);">
-                    <div style="position:absolute;bottom:2px;right:2px;width:28px;height:28px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;">📷</div>
+                <div style="position:relative;display:inline-block;cursor:pointer;" onclick="document.getElementById('avatarFileInput').click()">
+                    <img id="profileEditAvatar" src="" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:2.5px solid var(--accent);box-shadow:0 0 18px rgba(0,255,115,0.3);pointer-events:none;">
+                    <div style="position:absolute;inset:0;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);opacity:0;transition:opacity 0.2s;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0'">
+                        <div style="width:28px;height:28px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;">📷</div>
+                    </div>
+                    <div style="position:absolute;bottom:2px;right:2px;width:28px;height:28px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;">📷</div>
                 </div>
                 <input type="file" id="avatarFileInput" accept="image/*" style="display:none;" onchange="previewAvatarChange(this)">
                 <div style="font-size:12px;color:#555;margin-top:8px;">Suratni bosib o'zgartiring</div>
@@ -1500,8 +1503,8 @@
                 <button onclick="logoutUser()" style="flex:1;padding:14px;background:#1a0000;color:#ff453a;border:1.5px solid #500;border-radius:14px;font-size:13px;font-weight:700;">🚪 Chiqish</button>
             </div>
 
-            <button onclick="saveProfileEdit()" style="width:100%;padding:18px;background:linear-gradient(90deg,#00ff73,#00cc5c);color:#000;border:none;border-radius:14px;font-size:17px;font-weight:900;">💾 SAQLASH</button>
-            <button onclick="closeProfileEdit()" style="width:100%;padding:14px;background:none;color:#555;border:1.5px solid #222;border-radius:14px;font-size:15px;font-weight:700;margin-top:10px;">Bekor qilish</button>
+            <button onclick="saveProfileEdit()" style="width:100%;padding:18px;background:linear-gradient(90deg,#00ff73,#00cc5c);color:#000;border:none;border-radius:14px;font-size:17px;font-weight:900;pointer-events:auto;cursor:pointer;">💾 SAQLASH</button>
+            <button onclick="closeProfileEdit()" style="width:100%;padding:14px;background:none;color:#555;border:1.5px solid #222;border-radius:14px;font-size:15px;font-weight:700;margin-top:10px;pointer-events:auto;cursor:pointer;">Bekor qilish</button>
         </div>
     </div>
 
@@ -2289,7 +2292,13 @@ self.addEventListener('fetch', (event) => {
                 if(idEl && userId) {
                     // 9 xonali raqamli ID
                     const numId = String(Math.abs(userId)).padStart(9,'0').slice(0,9);
-                    idEl.innerHTML = '🆔 <span style="color:#555;letter-spacing:2px;">' + numId + '</span>';
+                    idEl.innerHTML = '🆔 <span style="color:var(--accent);letter-spacing:2px;font-weight:900;font-size:13px;background:rgba(0,255,115,0.1);padding:3px 8px;border-radius:8px;border:1px solid rgba(0,255,115,0.2);">' + numId + '</span>';
+                    idEl.style.marginTop = '6px';
+                    // Copy on tap
+                    idEl.style.cursor = 'pointer';
+                    idEl.onclick = function() {
+                        navigator.clipboard?.writeText(numId).then(() => showToast('🆔 ID nusxalandi: ' + numId, 'success')).catch(()=>{});
+                    };
                 }
             }
             if(bal) document.getElementById('userBalance').innerText = (bal.value || 0).toLocaleString() + " so'm";
@@ -3384,7 +3393,22 @@ self.addEventListener('fetch', (event) => {
                     </div>`).join('');
             }
 
-            const ms = await moviesGet();
+            // Retry mexanizmi — internet sekin bo'lsa qayta uradi
+            let ms = [];
+            for(let attempt = 0; attempt < 3; attempt++) {
+                try {
+                    ms = await Promise.race([
+                        moviesGet(attempt > 0),
+                        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 12000))
+                    ]);
+                    if(ms && ms.length > 0) break;
+                    if(attempt < 2) await new Promise(r => setTimeout(r, 1500));
+                } catch(e) {
+                    if(attempt < 2) await new Promise(r => setTimeout(r, 2000));
+                }
+            }
+
+            if(!ms) ms = cachedMovies || [];
 
             stackMovies = ms.map(m => ({
                 id: m.id, title: m.title, price: m.price || 0, imgUrl: getPosterUrl(m)
@@ -5475,7 +5499,9 @@ self.addEventListener('fetch', (event) => {
             const name = info?.value?.name || '';
             const img  = info?.value?.img  || '';
             document.getElementById('profileEditName').value = name;
-            document.getElementById('profileEditAvatar').src = img;
+            // Agar surat bo'lmasa — avtomatik initials avatar
+            const avatarSrc = img || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(name ? name[0] : '?') + '&background=00ff73&color=000&size=256&bold=true');
+            document.getElementById('profileEditAvatar').src = avatarSrc;
             _newAvatarDataUrl = null;
             const modal = document.getElementById('profileEditModal');
             modal.style.display = 'flex';
@@ -5515,28 +5541,38 @@ self.addEventListener('fetch', (event) => {
         async function saveProfileEdit() {
             const newName = document.getElementById('profileEditName').value.trim();
             if(!newName) return showToast('⚠️ Ismingizni kiriting!', 'error');
-            const info = await db.profile.get('user_info');
-            const current = info?.value || {};
-            let newImg = current.img || '';
-            if(_newAvatarDataUrl) {
-                newImg = await resizeImageDataUrl(_newAvatarDataUrl, 256);
-            }
-            const updated = { ...current, name: newName, img: newImg };
-            await db.profile.put({ key: 'user_info', value: updated });
-            // localStorage yangilash
+            
+            // Loading state
+            const btn = document.querySelector('#profileEditSheet button[onclick="saveProfileEdit()"]');
+            if(btn) { btn.disabled = true; btn.innerHTML = '⏳ Saqlanmoqda...'; btn.style.opacity = '0.8'; }
+            
             try {
-                const savedUser = JSON.parse(localStorage.getItem('kd_user') || '{}');
-                savedUser.name = newName;
-                if(_newAvatarDataUrl) savedUser.img = newImg;
-                localStorage.setItem('kd_user', JSON.stringify(savedUser));
-            } catch(e) {}
-            // Cloud ga sinxronlash — surat va isim bilan
-            const bal = await db.profile.get('balance');
-            const exp = await db.profile.get('expiry');
-            syncUserToCloud(current.id, newName, bal?.value || 0, exp?.value || 0, newImg);
-            loadUI();
-            closeProfileEdit();
-            showToast('✅ Profil yangilandi!', 'success');
+                const info = await db.profile.get('user_info');
+                const current = info?.value || {};
+                let newImg = current.img || '';
+                if(_newAvatarDataUrl) {
+                    newImg = await resizeImageDataUrl(_newAvatarDataUrl, 256);
+                }
+                const updated = { ...current, name: newName, img: newImg };
+                await db.profile.put({ key: 'user_info', value: updated });
+                // localStorage yangilash
+                try {
+                    const savedUser = JSON.parse(localStorage.getItem('kd_user') || '{}');
+                    savedUser.name = newName;
+                    if(_newAvatarDataUrl) savedUser.img = newImg;
+                    localStorage.setItem('kd_user', JSON.stringify(savedUser));
+                } catch(e) {}
+                // Cloud ga sinxronlash — surat va isim bilan
+                const bal = await db.profile.get('balance');
+                const exp = await db.profile.get('expiry');
+                syncUserToCloud(current.id, newName, bal?.value || 0, exp?.value || 0, newImg);
+                loadUI();
+                closeProfileEdit();
+                showToast('✅ Profil yangilandi!', 'success');
+            } catch(e) {
+                showToast('❌ Xatolik: ' + e.message, 'error');
+                if(btn) { btn.disabled = false; btn.innerHTML = '💾 SAQLASH'; btn.style.opacity = '1'; }
+            }
         }
 
         function resizeImageDataUrl(dataUrl, maxSize) {
@@ -7011,638 +7047,4 @@ self.addEventListener('fetch', (event) => {
                                 movies[idx].poster = newUrl;
                                 await moviesSet(movies);
                             }
-                        } catch(e) {}
-                    }
-                }
-            } catch(e) {}
-        }
-
-        // ===== NAKRUTKA API KALITLAR BOSHQARUVI =====
-        let nkApiRowCount = 0;
-
-        function addNkApiRow(url = '', key = '', label = '') {
-            nkApiRowCount++;
-            const n = nkApiRowCount;
-            const c = document.getElementById('nkApiListAdmin');
-            if(!c) return;
-            const d = document.createElement('div');
-            d.id = `nkApiRow${n}`;
-            d.dataset.rowNum = n;
-            d.style.cssText = 'background:#1a1a1a;border:1.5px solid #2a2a2a;border-radius:14px;padding:14px;margin-bottom:10px;';
-            d.innerHTML = `
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                    <span style="font-size:13px;font-weight:900;color:var(--accent);">API #${n}</span>
-                    <button onclick="deleteNkApiRow(${n})" style="background:#2a0000;color:#ff453a;border:1px solid #500;padding:6px 14px;border-radius:9px;font-weight:900;font-size:13px;">🗑️ O'chir</button>
-                </div>
-                <div style="font-size:11px;color:#666;margin-bottom:4px;">API URL (masalan: https://super-sim.uz/api/v2)</div>
-                <input type="url" id="nkApiUrl${n}" placeholder="https://super-sim.uz/api/v2" value="${url}" style="margin-bottom:8px;">
-                <div style="font-size:11px;color:#666;margin-bottom:4px;">API Key</div>
-                <input type="text" id="nkApiKey${n}" placeholder="API Key ni kiriting" value="${key}">
-                <button onclick="testNkApi(${n})" style="background:#0d2a1a;color:var(--accent);border:1.5px solid var(--accent);width:100%;padding:12px;border-radius:10px;font-weight:900;margin-top:10px;font-size:14px;">🧪 API ni sinash</button>
-                <div id="nkApiTest${n}" style="font-size:12px;color:#888;margin-top:8px;min-height:18px;word-break:break-all;"></div>`;
-            c.appendChild(d);
-        }
-
-        // API ni clouddan ham o'chirish
-        async function deleteNkApiRow(n) {
-            const row = document.getElementById(`nkApiRow${n}`);
-            if(!row) return;
-            // Avval UI dan o'chirish
-            row.remove();
-            // Keyin clouddan ham saqlaymiz (qolganlarini)
-            try {
-                const apis = getNkApisFromUI();
-                const data = await binGet();
-                data.nk_apis = apis;
-                await binSet(data);
-                showToast('🗑️ API o\'chirildi va saqlandi!', '');
-                // Balanslarni yangilaymiz
-                if(apis.length) await showNkApiBotBalances(apis);
-                else {
-                    const balEl = document.getElementById('nkApiBotBalances');
-                    if(balEl) balEl.style.display = 'none';
-                }
-            } catch(e) {
-                showToast('⚠️ UI dan o\'childi, cloud xato: ' + e.message, 'error');
-            }
-        }
-
-        // UI dagi barcha API qatorlarini o'qish
-        function getNkApisFromUI() {
-            const apis = [];
-            document.querySelectorAll('[id^="nkApiRow"]').forEach((row) => {
-                const n = row.dataset.rowNum;
-                if(!n) return;
-                const url = document.getElementById(`nkApiUrl${n}`)?.value?.trim() || '';
-                const key = document.getElementById(`nkApiKey${n}`)?.value?.trim() || '';
-                if(url && key) apis.push({url, key, label: `API #${apis.length+1}`});
-            });
-            return apis;
-        }
-
-        async function testNkApi(n) {
-            let url = document.getElementById(`nkApiUrl${n}`)?.value?.trim();
-            const key = document.getElementById(`nkApiKey${n}`)?.value?.trim();
-            const msgEl = document.getElementById(`nkApiTest${n}`);
-            if(!url || !key) { msgEl.style.color='#ff453a'; msgEl.textContent='⚠️ URL va Key kiriting!'; return; }
-
-            // URL normalizatsiya
-            if(!url.startsWith('http')) url = 'https://' + url;
-            url = url.replace(/\/$/, '');
-            if(!url.includes('/api')) url += '/api/v2';
-            const urlInput = document.getElementById(`nkApiUrl${n}`);
-            if(urlInput) urlInput.value = url;
-
-            msgEl.style.color = '#888'; msgEl.textContent = '⏳ Tekshirilmoqda...';
-
-            const getApiUrl = `${url}?key=${encodeURIComponent(key)}&action=balance`;
-
-            let d = null;
-
-            // 1-usul: to'g'ridan POST
-            try {
-                const fd = new FormData();
-                fd.append('key', key); fd.append('action', 'balance');
-                const r = await fetch(url, {method:'POST', body:fd, signal: AbortSignal.timeout(5000)});
-                const txt = await r.text();
-                d = JSON.parse(txt);
-            } catch(e) {}
-
-            // 2-usul: allorigins proxy
-            if(!d) {
-                try {
-                    const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(getApiUrl)}`, {signal: AbortSignal.timeout(8000)});
-                    const txt = await r.text();
-                    d = JSON.parse(txt);
-                } catch(e) {}
-            }
-
-            // 3-usul: jsonp.su proxy
-            if(!d) {
-                try {
-                    const r = await fetch(`https://jsonp.su/?url=${encodeURIComponent(getApiUrl)}`, {signal: AbortSignal.timeout(8000)});
-                    const txt = await r.text();
-                    d = JSON.parse(txt);
-                } catch(e) {}
-            }
-
-            // 4-usul: thingproxy
-            if(!d) {
-                try {
-                    const r = await fetch(`https://thingproxy.freeboard.io/fetch/${getApiUrl}`, {signal: AbortSignal.timeout(8000)});
-                    const txt = await r.text();
-                    d = JSON.parse(txt);
-                } catch(e) {}
-            }
-
-            if(d && d.balance !== undefined) {
-                msgEl.style.color = 'var(--accent)';
-                msgEl.textContent = `✅ Ulandi! Balans: ${parseFloat(d.balance).toFixed(4)} ${d.currency||'USD'}`;
-            } else if(d && d.error) {
-                msgEl.style.color = '#ff453a';
-                msgEl.textContent = '❌ API xato: ' + d.error;
-            } else {
-                msgEl.style.color = '#ff453a';
-                const hostname = (() => { try { return new URL(url).hostname; } catch(e) { return url; } })();
-                msgEl.textContent = `❌ Ulanmadi — ${hostname} saytiga to'g'ridan ulanib bo'lmaydi (CORS). Proxy orqali ham ishlamadi.`;
-            }
-        }
-
-        async function saveNkApis() {
-            const apis = getNkApisFromUI();
-            try {
-                const data = await binGet();
-                data.nk_apis = apis;
-                await binSet(data);
-                const msgEl = document.getElementById('nkApiSaveMsg');
-                if(msgEl) { msgEl.style.color='var(--accent)'; msgEl.textContent=`✅ ${apis.length} ta API kaliti saqlandi!`; }
-                showToast(`✅ ${apis.length} ta API saqlandi!`, 'success');
-                updateNkApiSelect(apis.length);
-                // Saqlangandan keyin darhol bot balanslarini ko'rsatish
-                await showNkApiBotBalances(apis);
-            } catch(e) {
-                showToast('❌ Saqlashda xatolik: ' + e.message, 'error');
-            }
-        }
-
-        // Bot hisoblarini ko'rsatish funksiyasi — parallel so'rovlar
-        async function showNkApiBotBalances(apis) {
-            const balEl = document.getElementById('nkApiBotBalances');
-            if(!balEl) return;
-            if(!apis || !apis.length) { balEl.style.display='none'; return; }
-            balEl.style.display = 'block';
-
-            // Avval skeletonni ko'rsatamiz
-            const skeletons = apis.map((a, i) => {
-                const host = (() => { try { return new URL(a.url).hostname; } catch(e) { return 'API #'+(i+1); } })();
-                return `<div id="nkBal_${i}" style="display:flex;justify-content:space-between;align-items:center;background:#111;border:1px solid #222;border-radius:10px;padding:10px 12px;margin-bottom:6px;">
-                    <div>
-                        <div style="font-size:12px;font-weight:900;color:var(--accent);">API #${i+1}</div>
-                        <div style="font-size:11px;color:#555;margin-top:1px;">${host}</div>
-                    </div>
-                    <div style="font-size:12px;color:#888;animation:pulse 1s infinite;">⏳ Yuklanmoqda...</div>
-                </div>`;
-            }).join('');
-            balEl.innerHTML = `<div style="font-size:10px;color:#555;font-weight:700;letter-spacing:1px;margin-bottom:8px;">🤖 BOT HISOBLARI</div>${skeletons}`;
-
-            // Hamma API larga PARALLEL so'rov (ketma-ket emas!)
-            async function fetchBalance(api) {
-                const getUrl = `${api.url}?key=${encodeURIComponent(api.key)}&action=balance`;
-                // 1: to'g'ri POST
-                try {
-                    const fd = new FormData();
-                    fd.append('key', api.key); fd.append('action', 'balance');
-                    const r = await fetch(api.url, {method:'POST', body:fd, signal: AbortSignal.timeout(7000)});
-                    const d = JSON.parse(await r.text());
-                    if(d && d.balance !== undefined) return d;
-                } catch(e) {}
-                // 2: allorigins
-                try {
-                    const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(getUrl)}`, {signal: AbortSignal.timeout(10000)});
-                    const d = JSON.parse(await r.text());
-                    if(d && d.balance !== undefined) return d;
-                } catch(e) {}
-                // 3: thingproxy
-                try {
-                    const r = await fetch(`https://thingproxy.freeboard.io/fetch/${getUrl}`, {signal: AbortSignal.timeout(10000)});
-                    const d = JSON.parse(await r.text());
-                    if(d && d.balance !== undefined) return d;
-                } catch(e) {}
-                return null;
-            }
-
-            // Parallel yuborish — natijalar kelganda darhol yangilaymiz
-            apis.forEach(async (api, i) => {
-                const host = (() => { try { return new URL(api.url).hostname; } catch(e) { return 'API #'+(i+1); } })();
-                const el = document.getElementById(`nkBal_${i}`);
-                if(!el) return;
-                const bal = await fetchBalance(api);
-                if(bal && bal.balance !== undefined) {
-                    el.style.background = '#0d1a0d';
-                    el.style.borderColor = '#1a3a1a';
-                    el.innerHTML = `
-                        <div>
-                            <div style="font-size:12px;font-weight:900;color:var(--accent);">API #${i+1}</div>
-                            <div style="font-size:11px;color:#555;margin-top:1px;">${host}</div>
-                        </div>
-                        <div style="font-size:16px;font-weight:900;color:#00ff73;">💰 ${parseFloat(bal.balance).toFixed(4)} <span style="font-size:11px;">${bal.currency||'USD'}</span></div>`;
-                } else {
-                    el.style.background = '#1a0d0d';
-                    el.style.borderColor = '#3a1a1a';
-                    el.innerHTML = `
-                        <div>
-                            <div style="font-size:12px;font-weight:900;color:#ff6b6b;">API #${i+1}</div>
-                            <div style="font-size:11px;color:#555;margin-top:1px;">${host}</div>
-                        </div>
-                        <div style="font-size:13px;color:#ff453a;">❌ ulanmadi (CORS)</div>`;
-                }
-            });
-        }
-
-        function updateNkApiSelect(count) {
-            const sel = document.getElementById('nkAdmApiIndex');
-            if(!sel) return;
-            sel.innerHTML = '';
-            for(let i=0; i<Math.max(count,3); i++) {
-                const o = document.createElement('option');
-                o.value = i; o.textContent = `API #${i+1}`;
-                sel.appendChild(o);
-            }
-        }
-
-        async function loadNkApis() {
-            const c = document.getElementById('nkApiListAdmin');
-            if(!c) return;
-            c.innerHTML = '';
-            nkApiRowCount = 0;
-            try {
-                const data = await binGet();
-                const apis = data.nk_apis || [];
-                if(apis.length) {
-                    apis.forEach(a => addNkApiRow(a.url||'', a.key||'', a.label||''));
-                    updateNkApiSelect(apis.length);
-                    // Balanslarni ham darhol ko'rsatamiz
-                    await showNkApiBotBalances(apis);
-                } else {
-                    addNkApiRow(); // Bo'sh bitta ko'rsatamiz
-                }
-            } catch(e) { addNkApiRow(); }
-        }
-
-        async function refreshNkBotBalances() {
-            try {
-                const data = await binGet();
-                const apis = data.nk_apis || [];
-                if(!apis.length) { showToast('⚠️ Avval API kalitlarni saqlang!', 'error'); return; }
-                showToast('⏳ Balanslar tekshirilmoqda...', '');
-                await showNkApiBotBalances(apis);
-                showToast('✅ Balanslar yangilandi!', 'success');
-            } catch(e) {
-                showToast('❌ Xatolik: ' + e.message, 'error');
-            }
-        }
-
-        // SMM API dan xizmatlarni avtomatik yuklash + foiz qo'shish
-        async function loadServicesFromApi() {
-            const apiIdx = parseInt(document.getElementById('nkAdmApiIndex')?.value) || 0;
-            const markup = parseFloat(document.getElementById('nkAdmMarkup')?.value) || 0;
-            const platform = document.getElementById('nkAdmPlatform')?.value || 'telegram';
-            try {
-                const data = await binGet();
-                const apis = data.nk_apis || [];
-                const api = apis[apiIdx];
-                if(!api || !api.url || !api.key) return showToast('⚠️ Avval API ni saqlang!', 'error');
-                showToast('⏳ API dan yuklanmoqda...', '');
-                
-                let list = null;
-                const svcUrl = `${api.url}?key=${encodeURIComponent(api.key)}&action=services`;
-                // 1-usul: to'g'ridan
-                try {
-                    const fd = new FormData();
-                    fd.append('key', api.key); fd.append('action', 'services');
-                    const r = await fetch(api.url, {method:'POST', body:fd, signal: AbortSignal.timeout(6000)});
-                    list = await r.json();
-                } catch(e) {}
-                // 2-usul: allorigins
-                if(!list) try {
-                    const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(svcUrl)}`, {signal: AbortSignal.timeout(9000)});
-                    list = JSON.parse(await r.text());
-                } catch(e) {}
-                // 3-usul: thingproxy
-                if(!list) try {
-                    const r = await fetch(`https://thingproxy.freeboard.io/fetch/${svcUrl}`, {signal: AbortSignal.timeout(9000)});
-                    list = JSON.parse(await r.text());
-                } catch(e) {}
-                
-                if(!Array.isArray(list)) return showToast('❌ API dan noto\'g\'ri javob', 'error');
-
-                // Ro'yxatni ko'rsatamiz — admin tanlaydi
-                const el = document.getElementById('nkApiServicesList');
-                if(el) {
-                    el.innerHTML = `<div style="font-size:12px;color:#888;margin-bottom:8px;">API dan ${list.length} ta xizmat topildi. Keraklisini qo'shing:</div>` +
-                        list.slice(0, 50).map((s, i) => {
-                            const basePrice = parseFloat(s.rate) || 0;
-                            const markedPrice = Math.ceil(basePrice * (1 + markup/100));
-                            return `
-                            <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
-                                <div style="flex:1;">
-                                    <div style="font-size:13px;font-weight:900;color:#fff;">${s.name||'Xizmat '+s.service}</div>
-                                    <div style="font-size:11px;color:#888;">ID:${s.service} • ${markedPrice.toLocaleString()} so'm (API: ${basePrice})</div>
-                                </div>
-                                <button onclick="quickAddService('${s.name?.replace(/'/g,"\\'")||"Xizmat"}', ${s.service}, ${markedPrice}, '${platform}', ${apiIdx})" style="background:#0d1f14;color:var(--accent);border:1.5px solid var(--accent);padding:7px 12px;border-radius:9px;font-weight:900;font-size:12px;flex-shrink:0;">+ Qo'sh</button>
-                            </div>`;
-                        }).join('');
-                    el.style.display = 'block';
-                }
-                showToast(`✅ ${list.length} ta xizmat topildi!`, 'success');
-            } catch(e) { showToast('❌ API xatosi: ' + e.message, 'error'); }
-        }
-
-        async function quickAddService(name, serviceId, price, platform, apiIdx) {
-            if(!price || price < 1) return showToast('⚠️ Narx noto\'g\'ri!', 'error');
-            const services = await getNakrutkaServices();
-            services.push({id: Date.now(), platform, name, price, serviceId: String(serviceId), apiIndex: apiIdx});
-            await setNakrutkaServices(services);
-            showToast(`✅ "${name}" qo'shildi!`, 'success');
-            loadNakrutkaAdminList();
-        }
-
-        // closeModal already defined above
-        function enterFullscreenLandscape() {
-            const player = document.getElementById('player');
-            const iframe = document.getElementById('tgEmbedFrame');
-
-            // 1. Telefonni yotiq holga o'tkazish
-            if(screen.orientation && screen.orientation.lock) {
-                screen.orientation.lock('landscape').catch(() => {});
-            } else if(window.screen && window.screen.lockOrientation) {
-                window.screen.lockOrientation('landscape');
-            } else if(window.screen && window.screen.mozLockOrientation) {
-                window.screen.mozLockOrientation('landscape');
-            }
-
-            // 2. Player div ni fullscreen qilish
-            const el = player;
-            const requestFS = el.requestFullscreen
-                || el.webkitRequestFullscreen
-                || el.mozRequestFullScreen
-                || el.msRequestFullscreen;
-            if(requestFS) {
-                requestFS.call(el).catch(() => {});
-            }
-
-            // 3. YouTube iframe ga ham fullscreen so'rov yuborish
-            if(iframe && iframe.style.display !== 'none' && iframe.src.includes('youtube')) {
-                try { iframe.contentWindow.postMessage('{"event":"command","func":"requestFullscreen","args":""}', '*'); } catch(e) {}
-            }
-        }
-
-        function handleOrientation() {
-            const player = document.getElementById('player');
-            const iframe = document.getElementById('tgEmbedFrame');
-            const v = document.getElementById('mainVideo');
-            const isLandscape = window.innerWidth > window.innerHeight;
-            if(player.style.display !== 'none') {
-                player.style.position = 'fixed';
-                player.style.top = '0';
-                player.style.left = '0';
-                player.style.width = '100vw';
-                player.style.height = '100vh';
-                player.style.zIndex = '3000';
-
-                if(iframe && iframe.style.display !== 'none') {
-                    if(isLandscape) {
-                        player.style.zIndex = '9999';
-                        if(player.requestFullscreen) player.requestFullscreen().catch(()=>{});
-                        else if(player.webkitRequestFullscreen) player.webkitRequestFullscreen();
-                    }
-                } else {
-                    if(isLandscape) {
-                        v.style.objectFit = 'contain';
-                        if(v.requestFullscreen) v.requestFullscreen().catch(()=>{});
-                        else if(v.webkitEnterFullscreen) v.webkitEnterFullscreen();
-                    } else {
-                        if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
-                        v.style.objectFit = 'cover';
-                    }
-                }
-            }
-        }
-        window.addEventListener('resize', handleOrientation);
-        screen.orientation && screen.orientation.addEventListener('change', handleOrientation);
-
-        // ===== KONTENTNI HIMOYALASH =====
-        let contentProtectEnabled = false;
-
-        async function loadContentProtectState() {
-            try {
-                const data = await binGet();
-                contentProtectEnabled = !!data.content_protect;
-            } catch(e) { contentProtectEnabled = false; }
-            applyContentProtect(contentProtectEnabled);
-            updateContentProtectUI(contentProtectEnabled);
-            const el = document.getElementById('contentProtectStatus');
-            if(el) el.textContent = contentProtectEnabled ? '🔒 Himoya yoqilgan' : '🔓 Himoya o\'chirilgan';
-        }
-
-        async function toggleContentProtect() {
-            contentProtectEnabled = !contentProtectEnabled;
-            applyContentProtect(contentProtectEnabled);
-            updateContentProtectUI(contentProtectEnabled);
-            const el = document.getElementById('contentProtectStatus');
-            if(el) el.textContent = '⏳ Saqlanmoqda...';
-            try {
-                const data = await binGet();
-                data.content_protect = contentProtectEnabled;
-                await binSet(data);
-                if(el) el.textContent = contentProtectEnabled ? '🔒 Himoya yoqilgan' : '🔓 Himoya o\'chirilgan';
-                showToast(contentProtectEnabled ? '🔒 Himoya yoqildi!' : '🔓 Himoya o\'chirildi!', 'success');
-            } catch(e) {
-                if(el) el.textContent = '❌ Xatolik!';
-            }
-        }
-
-        function updateContentProtectUI(on) {
-            const toggle = document.getElementById('contentProtectToggle');
-            const thumb  = document.getElementById('contentProtectThumb');
-            if(!toggle || !thumb) return;
-            toggle.style.background = on ? 'var(--accent)' : '#333';
-            thumb.style.left   = on ? '24px' : '3px';
-            thumb.style.background = on ? '#000' : '#888';
-        }
-
-        function applyContentProtect(on) {
-            let cpStyle = document.getElementById('_cpStyle');
-            if(!cpStyle) {
-                cpStyle = document.createElement('style');
-                cpStyle.id = '_cpStyle';
-                document.head.appendChild(cpStyle);
-            }
-            let overlay = document.getElementById('_cpOverlay');
-            if(!overlay) {
-                overlay = document.createElement('div');
-                overlay.id = '_cpOverlay';
-                overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:2147483647;display:none;background:#000;opacity:0;transition:opacity 0.05s;';
-                document.body.appendChild(overlay);
-            }
-
-            if(on) {
-                // 1. CSS himoya — user-select + video controls + iframe ustidan shaffof qatlam
-                cpStyle.textContent = `
-                    * { -webkit-user-select:none!important; user-select:none!important; -webkit-touch-callout:none!important; }
-                    video { pointer-events:none!important; }
-                    video::-webkit-media-controls, video::-webkit-media-controls-enclosure, video::-webkit-media-controls-panel { display:none!important; }
-                    img { -webkit-user-drag:none!important; user-drag:none!important; pointer-events:none!important; }
-                    iframe { -webkit-user-select:none!important; }
-                `;
-
-                // 2. Overlay ko'rinadi
-                overlay.style.display = 'block';
-
-                // 3. Visibility change — app background'ga o'tganda
-                document.addEventListener('visibilitychange', _onVisChange);
-
-                // 4. Barcha event bloklash
-                document.addEventListener('contextmenu', _blockCtx, true);
-                document.addEventListener('keydown', _blockKeys, true);
-                document.addEventListener('dragstart', _blockCtx, true);
-                document.addEventListener('selectstart', _blockCtx, true);
-                document.addEventListener('copy', _blockCtx, true);
-                document.addEventListener('cut', _blockCtx, true);
-
-                // 5. Video himoya
-                _protectVideos(true);
-
-                // 6. Screenshot detection
-                _startScreenshotDetection();
-
-                // 7. Telegram Kanalga saqlashni bloklash
-                try {
-                    if(false) {
-                        Telegram.WebApp.enableClosingConfirmation?.();
-                        // Telegram WebApp ichida forward/save ni cheklash
-                        Telegram.WebApp.disableVerticalSwipes?.();
-                        // Telegram media download ni o'chirish
-                        if(Telegram.WebApp.isVersionAtLeast?.('6.9')) {
-                            Telegram.WebApp.lockOrientation?.();
-                        }
-                    }
-                } catch(e){}
-
-                // 8. Iframe ustiga himoya qatlami (Telegram kanal vidyosi ustida)
-                _addIframeProtectionLayer(true);
-
-                // 9. Saqlash tugmasini o'chirish (Telegram WebApp)
-                try {
-                    document.querySelectorAll('iframe').forEach(fr => {
-                        fr.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation');
-                        // Iframe kontentini saqlashni qiyinlashtirish
-                        const fakeEl = document.createElement('div');
-                        fakeEl.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none;background:transparent;';
-                        fakeEl.id = '_iframeBlocker_' + Math.random().toString(36).slice(2);
-                        fr.parentNode?.appendChild(fakeEl);
-                    });
-                } catch(e) {}
-
-            } else {
-                cpStyle.textContent = '';
-                overlay.style.display = 'none';
-                overlay.style.opacity = '0';
-                document.removeEventListener('visibilitychange', _onVisChange);
-                document.removeEventListener('contextmenu', _blockCtx, true);
-                document.removeEventListener('keydown', _blockKeys, true);
-                document.removeEventListener('dragstart', _blockCtx, true);
-                document.removeEventListener('selectstart', _blockCtx, true);
-                document.removeEventListener('copy', _blockCtx, true);
-                document.removeEventListener('cut', _blockCtx, true);
-                _protectVideos(false);
-                _stopScreenshotDetection();
-                _addIframeProtectionLayer(false);
-                // iframe blockerlarni tozalash
-                document.querySelectorAll('[id^="_iframeBlocker_"]').forEach(el => el.remove());
-            }
-        }
-
-        // Iframe ustiga shaffof himoya qatlami (Telegram kanal video saqlashni bloklaydi)
-        let _iframeProtLayer = null;
-        function _addIframeProtectionLayer(on) {
-            if(on) {
-                if(!_iframeProtLayer) {
-                    _iframeProtLayer = document.createElement('div');
-                    _iframeProtLayer.id = '_iframeProtLayer';
-                    _iframeProtLayer.style.cssText = `
-                        position:fixed;top:0;left:0;width:100%;height:100%;
-                        z-index:2999;pointer-events:none;
-                        background:transparent;
-                    `;
-                    document.body.appendChild(_iframeProtLayer);
-                }
-                _iframeProtLayer.style.display = 'block';
-            } else {
-                if(_iframeProtLayer) _iframeProtLayer.style.display = 'none';
-            }
-        }
-
-        let _ssDetectInterval = null;
-        let _lastW = window.innerWidth, _lastH = window.innerHeight;
-
-        function _startScreenshotDetection() {
-            _ssDetectInterval = setInterval(() => {
-                const w = window.innerWidth, h = window.innerHeight;
-                if(w !== _lastW || h !== _lastH) { _lastW = w; _lastH = h; _flashBlack(200); }
-            }, 150);
-            window.addEventListener('keyup', _onKeyUp);
-            // Android: screenshot paytida focus yo'qoladi
-            window.addEventListener('blur', _onWinBlur);
-        }
-
-        function _stopScreenshotDetection() {
-            clearInterval(_ssDetectInterval);
-            window.removeEventListener('keyup', _onKeyUp);
-            window.removeEventListener('blur', _onWinBlur);
-        }
-
-        let _blurTimer = null;
-        function _onWinBlur() {
-            if(!contentProtectEnabled) return;
-            // Focus yo'qoldi — screenshot yoki app switch
-            _flashBlack(600);
-        }
-
-        function _onKeyUp(e) {
-            if(e.key === 'PrintScreen' || e.keyCode === 44) _flashBlack(300);
-        }
-
-        function _onVisChange() {
-            if(!contentProtectEnabled) return;
-            if(document.hidden) {
-                _flashBlack(800);
-                const v = document.getElementById('mainVideo');
-                if(v && !v.paused) v.pause();
-            }
-        }
-
-        function _flashBlack(ms) {
-            const ov = document.getElementById('_cpOverlay');
-            if(!ov) return;
-            ov.style.opacity = '1';
-            ov.style.pointerEvents = 'all';
-            clearTimeout(_blurTimer);
-            _blurTimer = setTimeout(() => {
-                ov.style.opacity = '0';
-                ov.style.pointerEvents = 'none';
-            }, ms || 300);
-        }
-
-        function _protectVideos(on) {
-            document.querySelectorAll('video').forEach(v => {
-                if(on) {
-                    v.setAttribute('controlslist', 'nodownload noremoteplayback nofullscreen');
-                    v.setAttribute('disablepictureinpicture', '');
-                    v.setAttribute('disableremoteplayback', '');
-                    v.oncontextmenu = e => { e.preventDefault(); return false; };
-                } else {
-                    v.removeAttribute('controlslist');
-                    v.removeAttribute('disablepictureinpicture');
-                    v.removeAttribute('disableremoteplayback');
-                    v.oncontextmenu = null;
-                }
-            });
-        }
-
-        function _blockCtx(e) { e.preventDefault(); e.stopPropagation(); return false; }
-
-        function _blockKeys(e) {
-            if(e.key === 'PrintScreen' || e.keyCode === 44 ||
-               (e.ctrlKey && ['s','u','p','a','c','x'].includes(e.key.toLowerCase())) ||
-               e.key === 'F12') {
-                e.preventDefault(); e.stopPropagation();
-                _flashBlack(400);
-                return false;
-            }
-        }
-
-        init();
-    </script>
-</body>
-</html>
+                    
