@@ -2,34 +2,15 @@
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="robots" content="noindex, nofollow">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>KINO DRAMA PREMIUM</title>
     
-    <!-- PWA -->
-    <link rel="manifest" href="data:application/manifest+json,%7B%0A%20%20%22name%22%3A%20%22KINO%20DRAMA%20PREMIUM%22%2C%0A%20%20%22short_name%22%3A%20%22KINO%20DRAMA%22%2C%0A%20%20%22description%22%3A%20%22Uzbek%20Drama%20va%20Kino%20streaming%20ilovasi%22%2C%0A%20%20%22start_url%22%3A%20%22./index.html%22%2C%0A%20%20%22display%22%3A%20%22standalone%22%2C%0A%20%20%22background_color%22%3A%20%22%23000000%22%2C%0A%20%20%22theme_color%22%3A%20%22%23000000%22%2C%0A%20%20%22orientation%22%3A%20%22portrait%22%2C%0A%20%20%22icons%22%3A%20%5B%0A%20%20%20%20%7B%0A%20%20%20%20%20%20%22src%22%3A%20%22icon-192.png%22%2C%0A%20%20%20%20%20%20%22sizes%22%3A%20%22192x192%22%2C%0A%20%20%20%20%20%20%22type%22%3A%20%22image/png%22%2C%0A%20%20%20%20%20%20%22purpose%22%3A%20%22any%20maskable%22%0A%20%20%20%20%7D%2C%0A%20%20%20%20%7B%0A%20%20%20%20%20%20%22src%22%3A%20%22icon-512.png%22%2C%0A%20%20%20%20%20%20%22sizes%22%3A%20%22512x512%22%2C%0A%20%20%20%20%20%20%22type%22%3A%20%22image/png%22%2C%0A%20%20%20%20%20%20%22purpose%22%3A%20%22any%20maskable%22%0A%20%20%20%20%7D%0A%20%20%5D%2C%0A%20%20%22categories%22%3A%20%5B%22entertainment%22%5D%2C%0A%20%20%22lang%22%3A%20%22uz%22%0A%7D">
-    <meta name="theme-color" content="#000000">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="KINO DRAMA">
-    <link rel="apple-touch-icon" href="icon-192.png">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
-    <script>
-        // Nav tugmalar uchun xavfsiz wrapper — asosiy script yuklanishidan oldin chaqirilsa ham ishlaydi
-        function showPage(id, el) {
-            if(window._showPage) return window._showPage(id, el);
-            // Script hali yuklanmagan — DOMContentLoaded dan keyin bajarish
-            document.addEventListener('DOMContentLoaded', function() {
-                if(window._showPage) window._showPage(id, el);
-            });
-        }
-        function adminKinolarTap() {
-            if(window._adminKinolarTap) window._adminKinolarTap();
-        }
-        function openProfileEdit() {
-            if(window._openProfileEdit) window._openProfileEdit();
-        }
-    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 
@@ -50,7 +31,10 @@
         body { 
             background: var(--bg); color: white; 
             font-family: -apple-system, system-ui, sans-serif; 
-            margin: 0; padding-bottom: 90px; overflow-x: hidden;
+            margin: 0; 
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+            overflow-x: hidden;
         }
 
         .tap-active { transition: transform 0.1s ease; cursor: pointer; }
@@ -77,21 +61,12 @@
         .page.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-
-        @keyframes cardFadeIn {
-            from { opacity: 0; transform: translateY(20px) scale(0.95); }
-            to   { opacity: 1; transform: translateY(0)   scale(1);    }
-        }
-        .movie-card-anim {
-            animation: cardFadeIn 0.4s ease both;
-        }
-
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
 
         /* MOVIE CARDS */
         .movie-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
         .movie-card { width: 100%; position: relative; }
-        .movie-card img { width: 100%; height: 160px; border-radius: 20px; object-fit: cover; border: 1px solid var(--border); }
+        .movie-card img { width: 100%; height: 160px; border-radius: 20px; object-fit: cover; border: 1px solid var(--border); background: linear-gradient(135deg, #111 0%, #1e1e1e 100%); }
         .price-badge { 
             position: absolute; top: 10px; right: 10px; 
             background: var(--accent); color: #000; 
@@ -160,7 +135,7 @@
         }
 
         /* PLAYER */
-        #player { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; overflow: hidden; }
+        #player { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; overflow: visible; }
         
         /* MODALS */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2500; overflow-y: auto; }
@@ -630,7 +605,7 @@
             <div class="stack-viewport" id="stackViewport"></div>
             <div class="stack-dots" id="stackDots"></div>
         </div>
-        <div onclick="adminKinolarTap()" style="font-weight: 900; font-size: 20px; border-left: 5px solid var(--accent); padding-left: 15px; margin-bottom: 15px; cursor:pointer; user-select:none;">Kinolar</div>
+        <div style="font-weight: 900; font-size: 20px; border-left: 5px solid var(--accent); padding-left: 15px; margin-bottom: 15px;">Kinolar</div>
         <div class="movie-grid" id="normalList"></div>
     </div>
 
@@ -690,18 +665,24 @@
 
     <!-- YouTube video ichki player -->
     <div id="ytPlayerPage" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:3000;flex-direction:column;">
-        <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:#111;">
-            <button onclick="closeYtPlayer()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;">←</button>
-            <div id="ytPlayerTitle" style="font-size:14px;font-weight:700;color:#fff;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;"></div>
+        <!-- Orqaga tugmasi — yuqori markazda -->
+        <div style="position:absolute;top:58px;left:50%;transform:translateX(-50%);z-index:3100;pointer-events:auto;">
+            <button onclick="closeYtPlayer()" style="
+                display:flex;align-items:center;gap:7px;
+                background:rgba(30,30,30,0.92);
+                border:1.5px solid rgba(255,255,255,0.3);
+                color:#fff;font-size:14px;font-weight:700;
+                cursor:pointer;padding:10px 24px;
+                border-radius:10px;
+            ">← Orqaga</button>
         </div>
         <iframe id="ytPlayerFrame"
             style="width:100%;flex:1;border:none;background:#000;"
             allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
             allowfullscreen>
         </iframe>
-        <div id="ytPlayerInfo" style="padding:14px 16px;background:#111;max-height:140px;overflow-y:auto;">
-            <div id="ytPlayerDesc" style="font-size:12px;color:#aaa;line-height:1.5;"></div>
-        </div>
+        <div id="ytPlayerTitle" style="display:none;"></div>
+        <div id="ytPlayerDesc" style="display:none;"></div>
     </div>
 
     <!-- MENING PAGE -->
@@ -716,20 +697,18 @@
     <div id="siz" class="page">
         <!-- PROFIL HEADER -->
         <div style="display:flex; align-items:center; gap:18px; padding:24px 0 20px;">
-            <div style="position:relative; flex-shrink:0;" onclick="openProfileEdit()">
-                <img src="" id="mainAvatar" style="width:82px; height:82px; border-radius:50%; object-fit:cover; border:2.5px solid var(--accent); box-shadow:0 0 18px rgba(0,255,115,0.35); cursor:pointer; background:#111;">
-                <div id="avatarEditBtn" style="position:absolute;bottom:0;right:0;width:26px;height:26px;background:var(--accent);border-radius:50%;border:2px solid #000;display:flex;align-items:center;justify-content:center;font-size:13px;opacity:0;transition:opacity 0.2s;pointer-events:none;">✏️</div>
-                <div style="position:absolute; bottom:2px; left:2px; width:14px; height:14px; background:var(--accent); border-radius:50%; border:2px solid #000; animation:blink 1.5s infinite;"></div>
+            <div style="position:relative; flex-shrink:0;" onclick="showAdminLogin()">
+                <img src="" id="mainAvatar" style="width:82px; height:82px; border-radius:50%; object-fit:cover; border:2.5px solid var(--accent); box-shadow:0 0 18px rgba(0,255,115,0.35); cursor:pointer;">
+                <div style="position:absolute; bottom:2px; right:2px; width:14px; height:14px; background:var(--accent); border-radius:50%; border:2px solid #000; animation:blink 1.5s infinite;"></div>
             </div>
             <div style="flex:1;">
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <h2 id="tgName" style="margin:0; font-size:22px; font-weight:900;"></h2>
+                    <h2 id="tgName" style="margin:0; font-size:22px; font-weight:900;">Yuklanmoqda...</h2>
                 </div>
                 <div style="display:flex; align-items:center; gap:6px; margin-top:3px;">
                     <span style="width:7px;height:7px;background:var(--accent);border-radius:50%;animation:blink 1.5s infinite;display:inline-block;"></span>
                     <span style="color:var(--accent); font-size:12px; font-weight:700;">Onlayn</span>
                 </div>
-                <div id="userIdDisplay" style="font-size:11px;color:#444;font-weight:700;margin-top:5px;letter-spacing:1px;"></div>
                 <div id="premTimer" style="font-size:12px; color:var(--accent); font-weight:900; margin-top:4px;"></div>
             </div>
         </div>
@@ -813,30 +792,6 @@
     <div id="adminPanel" class="modal">
         <div style="padding:20px;">
             <h2 style="display:flex; justify-content:space-between;">Admin Panel <span onclick="closeModal('adminPanel')">&times;</span></h2>
-
-            <!-- STATISTIKA -->
-            <div class="modal-content">
-                <h3>📊 Foydalanuvchilar statistikasi</h3>
-                <div id="statsLoading" style="text-align:center;color:#888;padding:16px;font-size:13px;">⏳ Yuklanmoqda...</div>
-                <div id="statsSummary" style="display:none;background:#0d1f14;border:1.5px solid rgba(0,255,115,0.2);border-radius:14px;padding:14px;margin-bottom:14px;">
-                    <div style="display:flex;gap:20px;flex-wrap:wrap;">
-                        <div style="text-align:center;">
-                            <div style="font-size:28px;font-weight:900;color:var(--accent);" id="statsTotalCount">0</div>
-                            <div style="font-size:11px;color:#888;font-weight:700;">Jami foydalanuvchi</div>
-                        </div>
-                        <div style="text-align:center;">
-                            <div style="font-size:28px;font-weight:900;color:#ffd700;" id="statsPremCount">0</div>
-                            <div style="font-size:11px;color:#888;font-weight:700;">Premium</div>
-                        </div>
-                        <div style="text-align:center;">
-                            <div style="font-size:28px;font-weight:900;color:#29b6f6;" id="statsActiveCount">0</div>
-                            <div style="font-size:11px;color:#888;font-weight:700;">Bugun aktiv</div>
-                        </div>
-                    </div>
-                </div>
-                <div id="statsUserList" style="display:none;max-height:400px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;"></div>
-                <button onclick="loadAdminStats()" style="background:#1a1a1a;color:var(--accent);border:1.5px solid #333;width:100%;padding:12px;border-radius:12px;font-weight:900;font-size:13px;margin-top:10px;">🔄 Yangilash</button>
-            </div>
             
             <div class="modal-content">
                 <h3>Bot va Karta</h3>
@@ -917,14 +872,6 @@
                 <button class="btn-adm" style="background:#1a1a1a;color:var(--accent);border:1.5px dashed #333;margin-bottom:14px;" onclick="addVField()">＋ Qism qo'shish</button>
 
                 <button id="saveKinoBtn" class="btn-adm" onclick="saveKino()" style="font-size:16px;padding:18px;">🎬 KINONI SAYTGA JOYLASH</button>
-            </div>
-
-            
-            <div class="modal-content">
-                <h3>📩 Yordam so'rovlari</h3>
-                <div style="font-size:12px;color:#888;margin-bottom:10px;">Foydalanuvchilardan kelgan xabarlar</div>
-                <button class="btn-adm" onclick="loadSupportTickets()" style="margin-bottom:12px;">🔄 Yangilash</button>
-                <div id="supportTicketList"><div style="color:#555;font-size:13px;">Yuklanmadi</div></div>
             </div>
 
             <div class="modal-content">
@@ -1325,265 +1272,6 @@
     </div>
 
     <!-- YORDAM MARKAZI MODAL (pastdan chiquvchi sheet) -->
-
-    <!-- ===== LOGIN / REGISTER MODAL ===== -->
-    <div id="loginRegModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:9999;overflow-y:auto;">
-        <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 20px;box-sizing:border-box;background:radial-gradient(ellipse at 50% 0%, rgba(0,255,115,0.07) 0%, #000 60%);">
-
-            <!-- Animated background particles -->
-            <div style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden;z-index:0;">
-                <div style="position:absolute;width:2px;height:2px;background:var(--accent);border-radius:50%;top:15%;left:20%;animation:float1 6s ease-in-out infinite;box-shadow:0 0 6px var(--accent);opacity:0.6;"></div>
-                <div style="position:absolute;width:3px;height:3px;background:var(--accent);border-radius:50%;top:60%;left:80%;animation:float2 8s ease-in-out infinite;box-shadow:0 0 8px var(--accent);opacity:0.4;"></div>
-                <div style="position:absolute;width:2px;height:2px;background:var(--accent);border-radius:50%;top:80%;left:30%;animation:float1 7s ease-in-out infinite 2s;box-shadow:0 0 6px var(--accent);opacity:0.5;"></div>
-                <div style="position:absolute;width:1px;height:80px;background:linear-gradient(to bottom,transparent,rgba(0,255,115,0.15),transparent);top:10%;left:50%;animation:fall 4s linear infinite;"></div>
-                <div style="position:absolute;width:1px;height:60px;background:linear-gradient(to bottom,transparent,rgba(0,255,115,0.1),transparent);top:30%;left:70%;animation:fall 5s linear infinite 2s;"></div>
-            </div>
-
-            <style>
-                @keyframes float1 { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-20px) scale(1.3)} }
-                @keyframes float2 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(15px)} }
-                @keyframes fall { 0%{transform:translateY(-80px);opacity:0} 50%{opacity:1} 100%{transform:translateY(100vh);opacity:0} }
-                @keyframes logoGlow { 0%,100%{box-shadow:0 0 30px rgba(0,255,115,0.3),0 0 60px rgba(0,255,115,0.1)} 50%{box-shadow:0 0 50px rgba(0,255,115,0.5),0 0 100px rgba(0,255,115,0.2)} }
-                @keyframes slideUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
-                .auth-input-wrap { position:relative; margin-bottom:14px; }
-                .auth-label { font-size:11px;color:#555;font-weight:800;margin-bottom:7px;letter-spacing:2px;display:flex;align-items:center;gap:7px; }
-                .auth-label-line { flex:1;height:1px;background:linear-gradient(to right,#222,transparent); }
-                .auth-input-field {
-                    width:100%;padding:16px 16px 16px 48px;
-                    background:#0a0a0a;
-                    border:1.5px solid #1a1a1a;
-                    color:#fff;border-radius:16px;
-                    font-size:15px;box-sizing:border-box;outline:none;
-                    transition:border-color 0.2s, background 0.2s, box-shadow 0.2s;
-                    font-family:inherit;
-                }
-                .auth-input-field:focus {
-                    border-color:var(--accent);
-                    background:#050f08;
-                    box-shadow:0 0 0 3px rgba(0,255,115,0.08), inset 0 0 20px rgba(0,255,115,0.03);
-                }
-                .auth-icon {
-                    position:absolute;left:15px;bottom:16px;
-                    width:20px;height:20px;display:flex;align-items:center;justify-content:center;
-                }
-                /* CSS icon - email */
-                .icon-email::before {
-                    content:'';display:block;width:18px;height:13px;
-                    border:1.5px solid #444;border-radius:3px;position:relative;
-                }
-                .icon-email::after {
-                    content:'';position:absolute;top:2px;left:2px;
-                    border-left:8px solid transparent;border-right:8px solid transparent;
-                    border-top:6px solid #444;
-                }
-                /* CSS icon - lock */
-                .icon-lock { flex-direction:column;gap:0; }
-                .icon-lock::before {
-                    content:'';width:10px;height:6px;
-                    border:1.5px solid #444;border-bottom:none;border-radius:5px 5px 0 0;
-                    position:absolute;top:-4px;left:50%;transform:translateX(-50%);
-                }
-                .icon-lock::after {
-                    content:'';width:14px;height:10px;
-                    background:#444;border-radius:2px;
-                }
-                /* CSS icon - user */
-                .icon-user::before {
-                    content:'';width:8px;height:8px;
-                    border:1.5px solid #444;border-radius:50%;
-                    position:absolute;top:0;left:50%;transform:translateX(-50%);
-                }
-                .icon-user::after {
-                    content:'';width:14px;height:7px;
-                    border:1.5px solid #444;border-radius:8px 8px 0 0;border-bottom:none;
-                    position:absolute;bottom:0;left:50%;transform:translateX(-50%);
-                }
-            </style>
-
-            <!-- Logo -->
-            <div style="text-align:center;margin-bottom:40px;position:relative;z-index:1;animation:slideUp 0.6s ease both;">
-                <!-- Clapper board SVG -->
-                <div style="width:80px;height:80px;background:linear-gradient(135deg,#0a0a0a,#111);border-radius:22px;border:1.5px solid #1e1e1e;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;animation:logoGlow 3s ease-in-out infinite;">
-                    <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
-                        <rect x="4" y="14" width="36" height="26" rx="3" fill="#1a1a1a" stroke="#333" stroke-width="1.5"/>
-                        <rect x="4" y="8" width="36" height="8" rx="2" fill="#222" stroke="#333" stroke-width="1.5"/>
-                        <line x1="12" y1="8" x2="9" y2="16" stroke="#00ff73" stroke-width="2" stroke-linecap="round"/>
-                        <line x1="19" y1="8" x2="16" y2="16" stroke="#555" stroke-width="2" stroke-linecap="round"/>
-                        <line x1="26" y1="8" x2="23" y2="16" stroke="#00ff73" stroke-width="2" stroke-linecap="round"/>
-                        <line x1="33" y1="8" x2="30" y2="16" stroke="#555" stroke-width="2" stroke-linecap="round"/>
-                        <circle cx="22" cy="28" r="5" fill="none" stroke="#00ff73" stroke-width="1.5"/>
-                        <polygon points="20,26 20,30 25,28" fill="#00ff73"/>
-                    </svg>
-                </div>
-                <div style="font-size:24px;font-weight:900;color:#fff;letter-spacing:3px;text-transform:uppercase;">KINO DRAMA</div>
-                <div style="font-size:10px;color:#333;margin-top:5px;letter-spacing:4px;font-weight:700;">PREMIUM PLATFORMA</div>
-                <!-- Yashil chiziq -->
-                <div style="width:40px;height:2px;background:linear-gradient(to right,transparent,var(--accent),transparent);margin:12px auto 0;border-radius:2px;"></div>
-            </div>
-
-            <!-- Card -->
-            <div style="width:100%;max-width:360px;background:#080808;border:1px solid #161616;border-radius:28px;padding:28px 24px 24px;box-sizing:border-box;position:relative;z-index:1;animation:slideUp 0.7s ease 0.1s both;box-shadow:0 40px 80px rgba(0,0,0,0.8);">
-
-                <!-- Yuqori yashil chiziq -->
-                <div style="position:absolute;top:0;left:24px;right:24px;height:1px;background:linear-gradient(to right,transparent,rgba(0,255,115,0.3),transparent);border-radius:1px;"></div>
-
-                <!-- Tab -->
-                <div style="display:flex;background:#0d0d0d;border-radius:14px;padding:3px;margin-bottom:26px;border:1px solid #1a1a1a;">
-                    <button id="tabLoginBtn" onclick="switchAuthTab('login')"
-                        style="flex:1;padding:11px;border-radius:11px;border:none;font-weight:900;font-size:14px;background:linear-gradient(135deg,#00ff73,#00cc5c);color:#000;transition:all 0.25s;letter-spacing:0.5px;">
-                        KIRISH
-                    </button>
-                    <button id="tabRegBtn" onclick="switchAuthTab('reg')"
-                        style="flex:1;padding:11px;border-radius:11px;border:none;font-weight:900;font-size:14px;background:transparent;color:#333;transition:all 0.25s;letter-spacing:0.5px;">
-                        RO'YXAT
-                    </button>
-                </div>
-
-                <!-- Login forma -->
-                <div id="loginForm" style="width:100%;">
-                    <div class="auth-input-wrap">
-                        <div class="auth-label">
-                            <svg width="12" height="9" viewBox="0 0 12 9" fill="none"><rect x="0.5" y="0.5" width="11" height="8" rx="1.5" stroke="#444"/><path d="M1 1L6 5L11 1" stroke="#444" stroke-linecap="round"/></svg>
-                            EMAIL
-                            <div class="auth-label-line"></div>
-                        </div>
-                        <input id="loginEmail" type="email" placeholder="email@gmail.com" class="auth-input-field"
-                            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#1a1a1a'">
-                    </div>
-                    <div class="auth-input-wrap">
-                        <div class="auth-label">
-                            <svg width="11" height="13" viewBox="0 0 11 13" fill="none"><rect x="0.5" y="5.5" width="10" height="7" rx="1.5" stroke="#444"/><path d="M3 5V3.5C3 2.12 4.12 1 5.5 1S8 2.12 8 3.5V5" stroke="#444" stroke-linecap="round"/><circle cx="5.5" cy="9" r="1" fill="#444"/></svg>
-                            PAROL
-                            <div class="auth-label-line"></div>
-                        </div>
-                        <div style="position:relative;">
-                            <input id="loginPass" type="password" placeholder="••••••••" class="auth-input-field"
-                                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#1a1a1a'"
-                                onkeydown="if(event.key==='Enter')doLogin()">
-                            <span onclick="toggleAuthPass('loginPass')" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);cursor:pointer;">
-                                <svg width="20" height="16" viewBox="0 0 20 16" fill="none"><path d="M1 8C1 8 4 2 10 2C16 2 19 8 19 8C19 8 16 14 10 14C4 14 1 8 1 8Z" stroke="#333" stroke-width="1.5"/><circle cx="10" cy="8" r="3" stroke="#333" stroke-width="1.5"/></svg>
-                            </span>
-                        </div>
-                    </div>
-                    <div id="loginErr" style="color:#ff453a;font-size:12px;font-weight:700;text-align:center;min-height:16px;margin-bottom:12px;"></div>
-                    <button onclick="doLogin()"
-                        style="width:100%;padding:17px;background:linear-gradient(135deg,#00ff73,#00cc5c);color:#000;border:none;border-radius:14px;font-size:16px;font-weight:900;letter-spacing:1px;position:relative;overflow:hidden;transition:transform 0.1s,box-shadow 0.2s;box-shadow:0 8px 25px rgba(0,255,115,0.25);"
-                        onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform='scale(1)'">
-                        KIRISH
-                    </button>
-                    <div style="text-align:center;margin-top:16px;color:#333;font-size:13px;">
-                        Hisobingiz yo'qmi?
-                        <span onclick="switchAuthTab('reg')" style="color:var(--accent);font-weight:800;cursor:pointer;margin-left:4px;">Ro'yxatdan o'ting</span>
-                    </div>
-                </div>
-
-                <!-- Register forma -->
-                <div id="regForm" style="display:none;width:100%;">
-                    <div class="auth-input-wrap">
-                        <div class="auth-label">
-                            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="4" r="3" stroke="#444"/><path d="M1 12C1 9.79 3.46 8 6.5 8C9.54 8 12 9.79 12 12" stroke="#444" stroke-linecap="round"/></svg>
-                            ISMINGIZ
-                            <div class="auth-label-line"></div>
-                        </div>
-                        <input id="regName" type="text" placeholder="To'liq ismingiz" class="auth-input-field"
-                            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#1a1a1a'">
-                    </div>
-                    <div class="auth-input-wrap">
-                        <div class="auth-label">
-                            <svg width="12" height="9" viewBox="0 0 12 9" fill="none"><rect x="0.5" y="0.5" width="11" height="8" rx="1.5" stroke="#444"/><path d="M1 1L6 5L11 1" stroke="#444" stroke-linecap="round"/></svg>
-                            EMAIL
-                            <div class="auth-label-line"></div>
-                        </div>
-                        <input id="regEmail" type="email" placeholder="email@gmail.com" class="auth-input-field"
-                            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#1a1a1a'">
-                    </div>
-                    <div class="auth-input-wrap">
-                        <div class="auth-label">
-                            <svg width="11" height="13" viewBox="0 0 11 13" fill="none"><rect x="0.5" y="5.5" width="10" height="7" rx="1.5" stroke="#444"/><path d="M3 5V3.5C3 2.12 4.12 1 5.5 1S8 2.12 8 3.5V5" stroke="#444" stroke-linecap="round"/><circle cx="5.5" cy="9" r="1" fill="#444"/></svg>
-                            PAROL
-                            <div class="auth-label-line"></div>
-                        </div>
-                        <div style="position:relative;">
-                            <input id="regPass" type="password" placeholder="Kamida 6 ta belgi" class="auth-input-field"
-                                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#1a1a1a'">
-                            <span onclick="toggleAuthPass('regPass')" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);cursor:pointer;">
-                                <svg width="20" height="16" viewBox="0 0 20 16" fill="none"><path d="M1 8C1 8 4 2 10 2C16 2 19 8 19 8C19 8 16 14 10 14C4 14 1 8 1 8Z" stroke="#333" stroke-width="1.5"/><circle cx="10" cy="8" r="3" stroke="#333" stroke-width="1.5"/></svg>
-                            </span>
-                        </div>
-                    </div>
-                    <div id="regErr" style="color:#ff453a;font-size:12px;font-weight:700;text-align:center;min-height:16px;margin-bottom:12px;"></div>
-                    <button onclick="doRegister()"
-                        style="width:100%;padding:17px;background:linear-gradient(135deg,#00ff73,#00cc5c);color:#000;border:none;border-radius:14px;font-size:16px;font-weight:900;letter-spacing:1px;box-shadow:0 8px 25px rgba(0,255,115,0.25);"
-                        onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform='scale(1)'">
-                        RO'YXATDAN O'TISH
-                    </button>
-                    <div style="text-align:center;margin-top:16px;color:#333;font-size:13px;">
-                        Hisobingiz bormi?
-                        <span onclick="switchAuthTab('login')" style="color:var(--accent);font-weight:800;cursor:pointer;margin-left:4px;">Kiring</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Footer -->
-            <div style="margin-top:28px;text-align:center;z-index:1;animation:slideUp 0.8s ease 0.2s both;">
-                <div style="display:flex;align-items:center;gap:6px;justify-content:center;">
-                    <div style="width:6px;height:6px;background:var(--accent);border-radius:50%;box-shadow:0 0 8px var(--accent);animation:blink 1.5s infinite;"></div>
-                    <span style="font-size:11px;color:#2a2a2a;font-weight:700;letter-spacing:1px;">XAVFSIZ ULANISH</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ===== SUPPORT CHAT MODAL ===== -->
-    <div id="supportModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:3500;flex-direction:column;">
-        <!-- Header -->
-        <div style="background:#111;padding:16px 20px;display:flex;align-items:center;gap:14px;border-bottom:1px solid #222;flex-shrink:0;">
-            <button onclick="closeSupportModal()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px;">←</button>
-            <div style="width:42px;height:42px;background:linear-gradient(135deg,#00ff73,#00cc5c);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">🤖</div>
-            <div style="flex:1;">
-                <div style="font-size:16px;font-weight:900;">Yordam markazi</div>
-                <div style="font-size:11px;color:#00ff73;animation:blink 1.5s infinite;">● Onlayn</div>
-            </div>
-            <button onclick="openAdminContact()" style="background:#0d1f14;color:var(--accent);border:1.5px solid rgba(0,255,115,0.3);padding:8px 14px;border-radius:12px;font-weight:900;font-size:13px;">👤 Admin</button>
-        </div>
-
-        <!-- Chat xabarlar -->
-        <div id="supportChatBody" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;">
-            <!-- xabarlar JS da qo'shiladi -->
-        </div>
-
-        <!-- Input -->
-        <div style="background:#111;padding:12px 16px;border-top:1px solid #222;display:flex;gap:10px;align-items:flex-end;flex-shrink:0;">
-            <textarea id="supportInput" placeholder="Savolingizni yozing..." rows="1"
-                style="flex:1;background:#1a1a1a;border:1.5px solid #222;color:#fff;border-radius:14px;padding:12px 14px;font-size:15px;resize:none;outline:none;max-height:100px;font-family:inherit;"
-                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#222'"
-                oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
-                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendSupportMsg();}"></textarea>
-            <button onclick="sendSupportMsg()" id="supportSendBtn"
-                style="width:46px;height:46px;background:linear-gradient(135deg,#00ff73,#00cc5c);border:none;border-radius:50%;font-size:20px;flex-shrink:0;cursor:pointer;">➤</button>
-        </div>
-    </div>
-
-    <!-- Admin bilan bog'lanish sheet -->
-    <div id="adminContactModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:3600;justify-content:flex-end;flex-direction:column;">
-        <div id="adminContactSheet" style="background:#111;border-radius:30px 30px 0 0;padding:24px 20px 50px;box-sizing:border-box;border-top:1px solid #222;transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);">
-            <div style="width:40px;height:4px;background:#333;border-radius:4px;margin:0 auto 20px;"></div>
-            <h2 style="margin:0 0 6px;font-size:22px;font-weight:900;">👤 Admin bilan bog'lanish</h2>
-            <div style="color:#888;font-size:13px;margin-bottom:20px;">Muammoyingizni batafsil yozing</div>
-            <textarea id="adminContactMsg" placeholder="Muammo yoki savolingizni batafsil yozing..." rows="4"
-                style="width:100%;background:#1a1a1a;border:1.5px solid #222;color:#fff;border-radius:14px;padding:14px;font-size:15px;resize:none;outline:none;box-sizing:border-box;font-family:inherit;"
-                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#222'"></textarea>
-            <button onclick="sendAdminContact()"
-                style="width:100%;padding:18px;background:linear-gradient(90deg,#00ff73,#00cc5c);color:#000;border:none;border-radius:14px;font-size:17px;font-weight:900;margin-top:14px;">
-                📤 YUBORISH
-            </button>
-            <button onclick="closeAdminContact()"
-                style="width:100%;padding:14px;background:none;color:#555;border:1.5px solid #222;border-radius:14px;font-size:15px;font-weight:700;margin-top:10px;">
-                Bekor qilish
-            </button>
-        </div>
-    </div>
-
     <div id="helpCenterModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:2500; justify-content:flex-end; flex-direction:column;">
         <div id="helpCenterSheet" style="background:#111; border-radius:30px 30px 0 0; width:100%; max-height:85vh; overflow-y:auto; padding:20px 20px 40px; box-sizing:border-box; border-top:1px solid #222; transform:translateY(100%); transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);">
             <div style="width:40px; height:4px; background:#333; border-radius:4px; margin:0 auto 20px;"></div>
@@ -1599,40 +1287,9 @@
         </div>
     </div>
 
-    <!-- PROFIL TAHRIRLASH MODAL -->
-    <div id="profileEditModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.88);z-index:3700;justify-content:flex-end;flex-direction:column;">
-        <div id="profileEditSheet" style="background:#111;border-radius:30px 30px 0 0;padding:28px 22px 50px;box-sizing:border-box;border-top:1.5px solid var(--accent);transform:translateY(100%);transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);">
-            <div style="width:40px;height:4px;background:#333;border-radius:4px;margin:0 auto 24px;"></div>
-            <h2 style="margin:0 0 22px;font-size:22px;font-weight:900;">✏️ Profilni tahrirlash</h2>
-
-            <!-- Avatar tanlash -->
-            <div style="text-align:center;margin-bottom:22px;">
-                <div style="position:relative;display:inline-block;" onclick="document.getElementById('avatarFileInput').click()">
-                    <img id="profileEditAvatar" src="" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:2.5px solid var(--accent);box-shadow:0 0 18px rgba(0,255,115,0.3);">
-                    <div style="position:absolute;bottom:2px;right:2px;width:28px;height:28px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;">📷</div>
-                </div>
-                <input type="file" id="avatarFileInput" accept="image/*" style="display:none;" onchange="previewAvatarChange(this)">
-                <div style="font-size:12px;color:#555;margin-top:8px;">Suratni bosib o'zgartiring</div>
-            </div>
-
-            <!-- Isim o'zgartirish -->
-            <div style="font-size:12px;color:#888;font-weight:700;margin-bottom:8px;letter-spacing:1px;">ISMINGIZ</div>
-            <input id="profileEditName" type="text" placeholder="Ismingizni kiriting..." style="width:100%;height:52px;padding:0 18px;border-radius:14px;background:#1a1a1a;border:1.5px solid #222;color:#fff;font-size:16px;outline:none;box-sizing:border-box;margin-bottom:6px;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#222'">
-
-            <!-- Kesh tozalash -->
-            <div style="display:flex;gap:10px;margin-top:14px;margin-bottom:16px;">
-                <button onclick="clearAppCache()" style="flex:1;padding:14px;background:#1a1a1a;color:#888;border:1.5px solid #333;border-radius:14px;font-size:13px;font-weight:700;">🗑️ Keshni tozalash</button>
-                <button onclick="logoutUser()" style="flex:1;padding:14px;background:#1a0000;color:#ff453a;border:1.5px solid #500;border-radius:14px;font-size:13px;font-weight:700;">🚪 Chiqish</button>
-            </div>
-
-            <button onclick="saveProfileEdit()" style="width:100%;padding:18px;background:linear-gradient(90deg,#00ff73,#00cc5c);color:#000;border:none;border-radius:14px;font-size:17px;font-weight:900;">💾 SAQLASH</button>
-            <button onclick="closeProfileEdit()" style="width:100%;padding:14px;background:none;color:#555;border:1.5px solid #222;border-radius:14px;font-size:15px;font-weight:700;margin-top:10px;">Bekor qilish</button>
-        </div>
-    </div>
-
     <div id="detailPage" class="detail-page">
         <div style="position:sticky; top:0; left:0; width:100%; z-index:2100; pointer-events:none; height:0;">
-            <div onclick="closeDetail()" style="pointer-events:auto; position:absolute; top:16px; left:16px; width:40px; height:40px; background:rgba(0,0,0,0.65); border-radius:50%; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.12); cursor:pointer;">
+            <div onclick="closeDetail()" style="pointer-events:auto; position:absolute; top:130px; left:16px; width:44px; height:44px; background:rgba(0,0,0,0.85); border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid rgba(255,255,255,0.35); cursor:pointer; box-shadow:0 2px 12px rgba(0,0,0,0.7);">
                 <i class="fa fa-arrow-left" style="font-size:17px; color:#fff;"></i>
             </div>
         </div>
@@ -1647,14 +1304,10 @@
         <div id="igMaskBot" style="display:none;position:absolute;bottom:0;left:0;width:100%;background:#000;z-index:3025;pointer-events:none;"></div>
 
         <!-- Fullscreen holat: orqaga tugma — DOIM ustida -->
-        <div id="playerTopBar" style="position:absolute;top:0;left:0;width:100%;display:flex;justify-content:space-between;align-items:center;padding:20px 20px 10px;box-sizing:border-box;z-index:3030;background:transparent;pointer-events:auto;">
-            <div onclick="closePlayer()" style="width:40px;height:40px;background:rgba(0,0,0,0.6);border-radius:50%;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.15);cursor:pointer;">
-                <i class="fa fa-arrow-left" style="font-size:18px;color:#fff;"></i>
-            </div>
-            <div style="display:flex;gap:12px;align-items:center;">
-                <div id="miniBtn" onclick="miniPlayer()" style="display:none;width:40px;height:40px;background:rgba(0,0,0,0.6);border-radius:50%;align-items:center;justify-content:center;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.15);cursor:pointer;">
-                    <i class="fa fa-compress-alt" style="font-size:16px;color:#fff;"></i>
-                </div>
+        <div id="playerTopBar" style="position:fixed;top:58px;left:50%;transform:translateX(-50%);z-index:3030;pointer-events:auto;">
+            <div onclick="closePlayer()" style="display:flex;align-items:center;gap:7px;background:rgba(30,30,30,0.92);border:1.5px solid rgba(255,255,255,0.3);border-radius:10px;padding:10px 24px;cursor:pointer;">
+                <i class="fa fa-arrow-left" style="font-size:15px;color:#fff;"></i>
+                <span style="color:#fff;font-size:14px;font-weight:700;">Orqaga</span>
             </div>
         </div>
 
@@ -1806,7 +1459,7 @@
             </div>
 
             <!-- Platform tugmalari -->
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:22px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
                 <div id="nkTgBtn" onclick="selectNakrutkaPlatform('telegram')" style="background:linear-gradient(135deg,#0a1929,#0d2137); border:1.5px solid #0d5e8c; border-radius:20px; padding:20px 14px; text-align:center; cursor:pointer; transition:all 0.2s; position:relative; overflow:hidden;">
                     <div style="font-size:36px; margin-bottom:8px;">✈️</div>
                     <div style="font-size:15px; font-weight:900; color:#29b6f6;">Telegram</div>
@@ -1817,6 +1470,15 @@
                     <div style="font-size:15px; font-weight:900; color:#e91e8c;">Instagram</div>
                     <div style="font-size:11px; color:#555; margin-top:3px;">Like, obunachi...</div>
                 </div>
+            </div>
+            <!-- Nakrutka botiga o'tish tugmasi -->
+            <div onclick="if(window.Telegram?.WebApp?.openLink){Telegram.WebApp.openLink('https://t.me/SaleSeenubot')}else{window.open('https://t.me/SaleSeenubot','_blank')}" style="background:linear-gradient(135deg,#0d2137,#0a2a1a);border:1.5px solid #00ff73;border-radius:20px;padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;margin-bottom:18px;">
+                <div style="font-size:30px;">🤖</div>
+                <div>
+                    <div style="font-size:15px;font-weight:900;color:#00ff73;">Nakrutka botiga o'tish</div>
+                    <div style="font-size:12px;color:#555;margin-top:2px;">@SaleSeenubot</div>
+                </div>
+                <div style="margin-left:auto;color:#00ff73;font-size:20px;">→</div>
             </div>
 
             <!-- Xizmatlar ro'yxati -->
@@ -1876,10 +1538,10 @@
 
     <!-- NAV BAR -->
     <div class="bottom-nav">
-        <div class="nav-item active tap-active" onclick="showPage('home', this)"><i class="fa fa-home"></i><br>Asosiy</div>
-        <div class="nav-item tap-active" onclick="showPage('search', this)"><i class="fa fa-search"></i><br>Qidiruv</div>
-        <div class="nav-item tap-active" onclick="showPage('mening', this)"><i class="fa fa-bookmark"></i><br>Mening</div>
-        <div class="nav-item tap-active" onclick="showPage('siz', this)"><div class="siz-btn-oval"><img src="" id="navAvatar" class="nav-avatar-img"><b>Siz</b></div></div>
+        <div class="nav-item active tap-active" onclick="playClickSound('nav');showPage('home', this)"><i class="fa fa-home"></i><br>Asosiy</div>
+        <div class="nav-item tap-active" onclick="playClickSound('nav');showPage('search', this)"><i class="fa fa-search"></i><br>Qidiruv</div>
+        <div class="nav-item tap-active" onclick="playClickSound('nav');showPage('mening', this)"><i class="fa fa-bookmark"></i><br>Mening</div>
+        <div class="nav-item tap-active" onclick="playClickSound('nav');showPage('siz', this)"><div class="siz-btn-oval"><img src="" id="navAvatar" class="nav-avatar-img"><b>Siz</b></div></div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
@@ -1929,77 +1591,9 @@
             purchased_episodes: "++id, movieId, partIdx, date"
         });
 
-        // ===== PWA: Telegram yo'q — local user =====
-        const tg = { initDataUnsafe: {}, expand: ()=>{}, BackButton: { show:()=>{}, hide:()=>{}, onClick:()=>{} }, showPopup: null, openLink: null };
+        const tg = window.Telegram?.WebApp || { initDataUnsafe: {}, expand: ()=>{} };
         let activePart = 0;
         let currentUserId = 0;
-
-        // Service Worker (inline blob - bitta fayl uchun)
-        if('serviceWorker' in navigator) {
-            const _swCode = `// KINO DRAMA PREMIUM — Service Worker
-const CACHE_NAME = 'kino-drama-v1';
-const STATIC_ASSETS = [
-  './',
-  './index.html',
-  './manifest.json'
-];
-
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
-    })
-  );
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
-      );
-    })
-  );
-  self.clients.claim();
-});
-
-self.addEventListener('fetch', (event) => {
-  // Faqat GET so'rovlarni keshlaymiz
-  if (event.request.method !== 'GET') return;
-
-  // API so'rovlarini keshlamaymiz
-  const url = event.request.url;
-  if (url.includes('api.jsonbin.io') ||
-      url.includes('api.telegram.org') ||
-      url.includes('youtube.com') ||
-      url.includes('t.me')) {
-    return;
-  }
-
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).then((response) => {
-        if (response && response.status === 200) {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
-        }
-        return response;
-      }).catch(() => {
-        // Offline bo'lsa index.html qaytaramiz
-        return caches.match('./index.html');
-      });
-    })
-  );
-});
-`;
-            const _swBlob = new Blob([_swCode], {type: 'application/javascript'});
-            const _swUrl = URL.createObjectURL(_swBlob);
-            navigator.serviceWorker.register(_swUrl).catch(()=>{});
-        }
 
         // ===== MARKAZIY USERS BAZASI (JSONBin) =====
         // Yangi JSONBin yaratib ID ni qo'ying: https://jsonbin.io
@@ -2051,14 +1645,13 @@ self.addEventListener('fetch', (event) => {
         }
 
         // Joriy foydalanuvchini bulutga saqlash
-        async function syncUserToCloud(userId, name, balance, expiry, img) {
+        async function syncUserToCloud(userId, name, balance, expiry) {
             try {
                 const all = await usersGet();
                 const key = String(userId);
                 all[key] = {
                     id: userId,
                     name: name,
-                    img: img || all[key]?.img || '',
                     balance: balance,
                     expiry: expiry || 0,
                     lastSeen: Date.now()
@@ -2089,92 +1682,43 @@ self.addEventListener('fetch', (event) => {
             } catch(e) {}
         }
 
-        // ===== AUTH HELPERS =====
-        function hashStr(str) {
-            let h = 0;
-            for(let i=0;i<str.length;i++){h=Math.imul(31,h)+str.charCodeAt(i)|0;}
-            return Math.abs(h);
-        }
-        function toggleAuthPass(id) {
-            const el = document.getElementById(id);
-            el.type = el.type === 'password' ? 'text' : 'password';
-        }
-        function switchAuthTab(tab) {
-            const isLogin = tab === 'login';
-            document.getElementById('loginForm').style.display = isLogin ? 'block' : 'none';
-            document.getElementById('regForm').style.display = isLogin ? 'none' : 'block';
-            document.getElementById('tabLoginBtn').style.background = isLogin ? 'var(--accent)' : 'transparent';
-            document.getElementById('tabLoginBtn').style.color = isLogin ? '#000' : '#555';
-            document.getElementById('tabRegBtn').style.background = isLogin ? 'transparent' : 'var(--accent)';
-            document.getElementById('tabRegBtn').style.color = isLogin ? '#555' : '#000';
-        }
-        function getUsers() {
-            try { return JSON.parse(localStorage.getItem('kd_users') || '{}'); } catch(e) { return {}; }
-        }
-        function saveUsers(users) {
-            localStorage.setItem('kd_users', JSON.stringify(users));
-        }
-        function doLogin() {
-            const email = document.getElementById('loginEmail').value.trim().toLowerCase();
-            const pass = document.getElementById('loginPass').value;
-            const errEl = document.getElementById('loginErr');
-            if(!email || !pass) { errEl.textContent = '⚠️ Email va parolni kiriting!'; return; }
-            const users = getUsers();
-            const user = users[email];
-            if(!user) { errEl.textContent = '❌ Bunday email topilmadi!'; return; }
-            if(user.passHash !== hashStr(pass + email)) { errEl.textContent = '❌ Parol noto\'g\'ri!'; return; }
-            localStorage.setItem('kd_user', JSON.stringify(user));
-            document.getElementById('loginRegModal').style.display = 'none';
-            startApp(user);
-        }
-        function doRegister() {
-            const name = document.getElementById('regName').value.trim();
-            const email = document.getElementById('regEmail').value.trim().toLowerCase();
-            const pass = document.getElementById('regPass').value;
-            const errEl = document.getElementById('regErr');
-            if(!name) { errEl.textContent = '⚠️ Ismingizni kiriting!'; return; }
-            if(!email || !email.includes('@')) { errEl.textContent = '⚠️ To\'g\'ri email kiriting!'; return; }
-            if(pass.length < 6) { errEl.textContent = '⚠️ Parol kamida 6 ta belgi!'; return; }
-            const users = getUsers();
-            if(users[email]) { errEl.textContent = '❌ Bu email allaqachon ro\'yxatdan o\'tgan!'; return; }
-            const userId = 100000000 + Math.floor(Math.random() * 900000000); // 9 xonali raqamli ID
-            const user = {
-                id: userId,
-                name: name,
-                email: email,
-                passHash: hashStr(pass + email),
-                img: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=00ff73&color=000&size=128&bold=true',
-                created: Date.now()
-            };
-            users[email] = user;
-            saveUsers(users);
-            localStorage.setItem('kd_user', JSON.stringify(user));
-            document.getElementById('loginRegModal').style.display = 'none';
-            startApp(user);
-        }
-        // Kinolar bosganda admin kirish (5 marta tez bosish)
-        let _kinolarTapCount = 0, _kinolarTapTimer = null;
-        function adminKinolarTap() {
-            _kinolarTapCount++;
-            clearTimeout(_kinolarTapTimer);
-            _kinolarTapTimer = setTimeout(() => { _kinolarTapCount = 0; }, 1500);
-            if(_kinolarTapCount >= 5) { _kinolarTapCount = 0; showAdminLogin(); }
-        }
-        window._adminKinolarTap = adminKinolarTap;
-
-        async function startApp(savedUser) {
-            currentUserId = savedUser.id;
-            await db.profile.put({ key: 'user_info', value: { name: savedUser.name, img: savedUser.img, id: savedUser.id } });
+        async function init() {
+            if (tg.initDataUnsafe.user) {
+                const u = tg.initDataUnsafe.user;
+                currentUserId = u.id;
+                await db.profile.put({ key: 'user_info', value: { name: u.first_name, img: u.photo_url || "https://ui-avatars.com/api/?name="+u.first_name, id: u.id } });
+            }
             if(!(await db.profile.get('balance'))) await db.profile.put({key:'balance', value: 0});
             if(!(await db.profile.get('expiry'))) await db.profile.put({key:'expiry', value: 0});
+
+            // UI ni darhol ko'rsatamiz
             loadUI();
             loadContentProtectState();
+
             tg.expand();
+            // To'liq ekran - yangi Telegram API (Bot API 8.0+)
+            if (window.Telegram?.WebApp?.requestFullscreen) {
+                try { Telegram.WebApp.requestFullscreen(); } catch(e) {}
+            }
+            // Vertikal swipe bilan yopilishni o'chirish
+            if (window.Telegram?.WebApp?.disableVerticalSwipes) {
+                Telegram.WebApp.disableVerticalSwipes();
+            }
             initStackSwipe();
             setInterval(updateCountdown, 1000);
-            // BackButton handler (PWA: browser back button orqali)
+
+            // BackButton handler
+            if(window.Telegram?.WebApp?.BackButton) {
+                Telegram.WebApp.BackButton.onClick(() => {
+                    const ytPage = document.getElementById('ytPlayerPage');
+                    if(ytPage && ytPage.style.display === 'flex') closeYtPlayer();
+                });
+            }
+
+            // Cloud so'rovlarini BIRGALIKDA parallel yuboramiz (500ms keyin)
             setTimeout(async () => {
                 try {
+                    // Bitta so'rovda ikkalasini ham yuklaymiz
                     const [binData, usersData] = await Promise.all([
                         binGet(),
                         (async () => {
@@ -2183,145 +1727,6 @@ self.addEventListener('fetch', (event) => {
                             return { userInfo, all: await usersGet() };
                         })()
                     ]);
-                    if(binData.settings) {
-                        const s = binData.settings;
-                        if(s.token    && !(await db.settings.get('token'))?.value)    await db.settings.put({key:'token',    value: s.token});
-                        if(s.admin_id && !(await db.settings.get('admin_id'))?.value) await db.settings.put({key:'admin_id', value: s.admin_id});
-                        if(s.card     && !(await db.settings.get('card'))?.value)     await db.settings.put({key:'card',     value: s.card});
-                    }
-                    if(usersData) {
-                        const { userInfo, all } = usersData;
-                        const key = String(userInfo.value.id);
-                        if(all[key]) {
-                            const cloudBal = all[key].balance || 0;
-                            await db.profile.put({key:'balance', value: cloudBal});
-                            const cloudExp = all[key].expiry || 0;
-                            if(cloudExp > Date.now()) await db.profile.put({key:'expiry', value: cloudExp});
-                            loadUI();
-                        }
-                        syncUserToCloud(userInfo.value.id, userInfo.value.name, (await db.profile.get('balance'))?.value||0, (await db.profile.get('expiry'))?.value||0, userInfo.value.img||'');
-                    }
-                } catch(e) {}
-            }, 800);
-            loadContent();
-        }
-
-
-        async function loadAdminStats() {
-            const loadEl = document.getElementById('statsLoading');
-            const summaryEl = document.getElementById('statsSummary');
-            const listEl = document.getElementById('statsUserList');
-            if(!loadEl) return;
-            loadEl.style.display = 'block';
-            if(summaryEl) summaryEl.style.display = 'none';
-            if(listEl) { listEl.style.display = 'none'; listEl.innerHTML = ''; }
-            try {
-                const all = await usersGet(true);
-                const users = Object.values(all);
-                const now = Date.now();
-                const todayStart = now - 86400000;
-                const premCount = users.filter(u => u.expiry && u.expiry > now).length;
-                const activeCount = users.filter(u => u.lastSeen && u.lastSeen > todayStart).length;
-                // Summary
-                document.getElementById('statsTotalCount').textContent = users.length;
-                document.getElementById('statsPremCount').textContent = premCount;
-                document.getElementById('statsActiveCount').textContent = activeCount;
-                if(summaryEl) summaryEl.style.display = 'block';
-                loadEl.style.display = 'none';
-                // User list
-                if(listEl) {
-                    listEl.style.display = 'flex';
-                    const sorted = users.sort((a, b) => (b.lastSeen||0) - (a.lastSeen||0));
-                    listEl.innerHTML = sorted.map(u => {
-                        const numId = String(Math.abs(u.id||0)).padStart(9,'0').slice(0,9);
-                        const isPrem = u.expiry && u.expiry > now;
-                        const lastSeen = u.lastSeen ? new Date(u.lastSeen).toLocaleString('uz-UZ') : '—';
-                        const avatarSrc = u.img || ('https://ui-avatars.com/api/?name=' + encodeURIComponent((u.name||'?')[0]) + '&background=1a1a1a&color=888&size=64&bold=true');
-                        return `<div style="background:#111;border:1.5px solid ${isPrem?'rgba(255,215,0,0.3)':'#222'};border-radius:14px;padding:12px;display:flex;align-items:center;gap:12px;">
-                            <img src="${avatarSrc}" style="width:46px;height:46px;border-radius:50%;object-fit:cover;border:2px solid ${isPrem?'#ffd700':'#333'};flex-shrink:0;">
-                            <div style="flex:1;min-width:0;">
-                                <div style="font-weight:900;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.name||'—'}</div>
-                                <div style="font-size:11px;color:#555;letter-spacing:1px;margin-top:2px;">🆔 ${numId}</div>
-                                <div style="font-size:10px;color:#444;margin-top:2px;">${lastSeen}</div>
-                            </div>
-                            <div style="text-align:right;flex-shrink:0;">
-                                <div style="font-size:13px;font-weight:900;color:var(--accent);">${(u.balance||0).toLocaleString()} so'm</div>
-                                ${isPrem ? '<div style="font-size:10px;color:#ffd700;font-weight:700;margin-top:3px;">⚡ PREMIUM</div>' : ''}
-                            </div>
-                        </div>`;
-                    }).join('');
-                }
-            } catch(e) {
-                if(loadEl) loadEl.innerHTML = '❌ Xatolik: ' + e.message;
-            }
-        }
-
-        async function loadSupportTickets() {
-            const el = document.getElementById('supportTicketList');
-            if(!el) return;
-            el.innerHTML = '<div style="color:#888;font-size:13px;padding:8px;">⏳ Yuklanmoqda...</div>';
-            try {
-                const data = await binGet();
-                const tickets = (data.support_tickets || []).reverse().slice(0, 30);
-                if(!tickets.length) { el.innerHTML = '<div style="color:#555;font-size:13px;">Hali so\'rov yo\'q</div>'; return; }
-                el.innerHTML = tickets.map(t => `
-                    <div style="background:#1a1a1a;border:1.5px solid ${t.reply?'#1a3a1a':'#2a2a2a'};border-radius:14px;padding:14px;margin-bottom:10px;">
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                            <span style="font-size:13px;font-weight:900;color:#fff;">${t.userName}</span>
-                            <span style="font-size:10px;color:#555;">${t.time}</span>
-                        </div>
-                        <div style="font-size:13px;color:#aaa;margin-bottom:10px;">${t.msg}</div>
-                        ${t.reply ? '<div style="font-size:12px;color:var(--accent);padding:8px;background:#0d1f14;border-radius:8px;">✅ Javob: ' + t.reply + '</div>' : `
-                        <div style="display:flex;gap:8px;">
-                            <input type="text" id="reply_${t.id}" placeholder="Javob yozing..." style="flex:1;padding:10px 12px;background:#111;border:1px solid #333;color:#fff;border-radius:10px;font-size:13px;margin-bottom:0;">
-                            <button onclick="replyTicket(${t.id},'${t.userId}')" style="background:var(--accent);color:#000;border:none;padding:10px 14px;border-radius:10px;font-weight:900;font-size:13px;white-space:nowrap;">Yuborish</button>
-                        </div>`}
-                    </div>`).join('');
-            } catch(e) {
-                el.innerHTML = '<div style="color:#ff453a;font-size:13px;">❌ Xatolik: ' + e.message + '</div>';
-            }
-        }
-
-        async function replyTicket(ticketId, userId) {
-            const replyEl = document.getElementById('reply_' + ticketId);
-            const reply = replyEl ? replyEl.value.trim() : '';
-            if(!reply) return showToast('⚠️ Javob yozing!', 'error');
-            try {
-                const data = await binGet();
-                const idx = (data.support_tickets || []).findIndex(t => t.id === ticketId);
-                if(idx !== -1) {
-                    data.support_tickets[idx].reply = reply;
-                    data.support_tickets[idx].status = 'replied';
-                    await binSet(data);
-                }
-                // Bot orqali foydalanuvchiga xabar
-                const {token, adminId} = await getCloudSettings();
-                if(token) {
-                    const allUsers = await usersGet();
-                    const uName = allUsers[userId]?.name || 'Foydalanuvchi';
-                    await fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
-                        method:'POST', headers:{'Content-Type':'application/json'},
-                        body: JSON.stringify({chat_id: adminId, text: '✅ Javob yuborildi: ' + uName + ' → ' + reply})
-                    }).catch(()=>{});
-                }
-                showToast('✅ Javob saqlandi!', 'success');
-                loadSupportTickets();
-            } catch(e) {
-                showToast('❌ Xatolik: ' + e.message, 'error');
-            }
-        }
-
-        async function init() {
-            // ===== EMAIL/PAROL LOGIN =====
-            let savedUser = null;
-            try { savedUser = JSON.parse(localStorage.getItem('kd_user') || 'null'); } catch(e) {}
-            if(!savedUser) {
-                document.getElementById('loginRegModal').style.display = 'block';
-                return; // startApp login dan keyin chaqiriladi
-            }
-            startApp(savedUser);
-            // (startApp ichida bajariladi)
-            /*REMOVED_DUP_START
 
                     // Settings yangilash
                     if(binData.settings) {
@@ -2393,29 +1798,12 @@ self.addEventListener('fetch', (event) => {
         async function loadUI() {
             const info = await db.profile.get('user_info');
             const bal = await db.profile.get('balance');
-            if(info && info.value) {
-                const img = info.value.img || '';
-                const name = info.value.name || '';
-                const userId = info.value.id || '';
-                // Avatar
-                if(img) {
-                    document.getElementById('mainAvatar').src = img;
-                    document.getElementById('navAvatar').src = img;
-                } else {
-                    // Ism harfidan avatar
-                    const initials = name ? name[0].toUpperCase() : '?';
-                    const avatarUrl = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(initials) + '&background=00ff73&color=000&size=128&bold=true';
-                    document.getElementById('mainAvatar').src = avatarUrl;
-                    document.getElementById('navAvatar').src = avatarUrl;
-                }
-                document.getElementById('tgName').innerText = name;
-                // ID ko'rsatish
-                const idEl = document.getElementById('userIdDisplay');
-                if(idEl && userId) {
-                    idEl.innerHTML = '<span style="color:#2a2a2a;font-size:10px;font-weight:700;letter-spacing:2px;">ID: </span><span style="color:#444;font-size:11px;font-weight:800;letter-spacing:1.5px;">' + userId + '</span>';
-                }
+            if(info) {
+                document.getElementById('mainAvatar').src = info.value.img;
+                document.getElementById('navAvatar').src = info.value.img;
+                document.getElementById('tgName').innerText = info.value.name;
             }
-            if(bal) document.getElementById('userBalance').innerText = (bal.value || 0).toLocaleString() + " so'm";
+            document.getElementById('userBalance').innerText = (bal.value || 0).toLocaleString() + " so'm";
         }
 
         // --- ADMIN FUNKSIYALARI ---
@@ -2496,7 +1884,7 @@ self.addEventListener('fetch', (event) => {
                 loadPlanAdmin();
                 showToast("🗑️ Tarif o\'chirildi!", '');
             };
-            if(false) {
+            if(window.Telegram?.WebApp?.showPopup) {
                 window.Telegram.WebApp.showPopup({
                     title:"O\'chirish", message:"Bu tarifni o\'chirmoqchimisiz?",
                     buttons:[{id:'yes',type:'destructive',text:"Ha, o\'chir"},{id:'no',type:'cancel',text:'Bekor'}]
@@ -2511,74 +1899,40 @@ self.addEventListener('fetch', (event) => {
         const MOVIE_BIN_ID   = "69c7c8176860e0745bfb5550";
         const MOVIE_BIN_URL  = `https://api.jsonbin.io/v3/b/${MOVIE_BIN_ID}`;
 
-        // Agar JSONBin da kino bo'lmasa — namuna kinolar (admin o'zgartirishi mumkin)
-        const DEMO_MOVIES = [
-            {
-                id: 'demo1',
-                title: 'NAMUNA KINO 1',
-                genre: 'Drama',
-                price: 0,
-                poster: 'https://placehold.co/300x200/1a1a1a/00ff73?text=KINO+1',
-                videos: ['https://www.w3schools.com/html/mov_bbb.mp4'],
-                episodePrices: {}
-            },
-            {
-                id: 'demo2',
-                title: 'NAMUNA KINO 2',
-                genre: 'Melodrama',
-                price: 0,
-                poster: 'https://placehold.co/300x200/1a1a1a/00ff73?text=KINO+2',
-                videos: ['https://www.w3schools.com/html/mov_bbb.mp4'],
-                episodePrices: {}
-            }
-        ];
-
         let cachedMovies = [];
         let moviesCacheTime = 0;
-        const MOVIES_CACHE_TTL = 60000;
+        const MOVIES_CACHE_TTL = 60000; // 60 soniya kesh (avval 30 edi)
         let _moviesPromise = null;
-        let _moviesRawCache = null; // barcha bin data saqlanadi
 
         async function moviesGet(forceRefresh = false) {
             const now = Date.now();
             if(!forceRefresh && cachedMovies.length > 0 && (now - moviesCacheTime) < MOVIES_CACHE_TTL) {
                 return cachedMovies;
             }
+            // Parallel so'rovlarni birlashtirish
             if(!forceRefresh && _moviesPromise) return _moviesPromise;
             _moviesPromise = (async () => {
                 try {
-                    const r = await fetch(MOVIE_BIN_URL + "/latest", {
-                        headers: { "X-Master-Key": MOVIE_BIN_KEY }
-                    });
-                    if(!r.ok) {
-                        // JSONBin ishlamasa — demo kinolar
-                        if(!cachedMovies.length) cachedMovies = DEMO_MOVIES;
+                    // Avval binCache dan ko'ramiz (agar yangi bo'lsa)
+                    if(!forceRefresh && _binCache && _binCache.movies && (now - _binCacheTime) < BIN_CACHE_TTL) {
+                        cachedMovies = _binCache.movies || [];
+                        moviesCacheTime = Date.now();
                         return cachedMovies;
                     }
+                    const r = await fetch(MOVIE_BIN_URL + "/latest", {
+                        headers: { "X-Master-Key": MOVIE_BIN_KEY, "X-Bin-Meta": "false" }
+                    });
                     const d = await r.json();
-                    const record = (d && d.record) ? d.record : (d && typeof d === 'object' ? d : {});
-                    _moviesRawCache = record;
-                    // movies massivini turli formatlardan olish
-                    if(Array.isArray(record.movies) && record.movies.length > 0) {
-                        cachedMovies = record.movies;
-                    } else if(Array.isArray(record) && record.length > 0) {
-                        cachedMovies = record;
-                    } else {
-                        // JSONBin bo'sh — demo ko'rsat
-                        cachedMovies = DEMO_MOVIES;
-                    }
+                    const record = d.record || d || {};
+                    cachedMovies = record.movies || [];
                     moviesCacheTime = Date.now();
-                    // binCache ga ham sync qilamiz agar tayyor bo'lsa
-                    if(typeof _binCache !== 'undefined') {
+                    // binCache ga ham saqlaymiz (agar bir xil bin bo'lsa)
+                    if(MOVIE_BIN_ID === BIN_ID) {
                         _binCache = record;
                         _binCacheTime = Date.now();
                     }
                     return cachedMovies;
-                } catch(e) {
-                    // Internet xatosi — demo kinolar
-                    if(!cachedMovies.length) cachedMovies = DEMO_MOVIES;
-                    return cachedMovies;
-                }
+                } catch(e) { return cachedMovies; }
                 finally { _moviesPromise = null; }
             })();
             return _moviesPromise;
@@ -2587,24 +1941,16 @@ self.addEventListener('fetch', (event) => {
         async function moviesSet(movies) {
             cachedMovies = movies;
             moviesCacheTime = Date.now();
+            // Mavjud bin ma'lumotlarini KESHDAN olamiz — ortiqcha GET yo'q
             let existingData = {};
             try {
-                existingData = _moviesRawCache ? JSON.parse(JSON.stringify(_moviesRawCache)) : {};
+                // Avval keshdan, bo'lmasa binGet(false) — u o'zi keshni ishlatadi
+                existingData = _binCache ? JSON.parse(JSON.stringify(_binCache)) : await binGet();
+                if(typeof existingData !== 'object') existingData = {};
             } catch(e) { existingData = {}; }
             existingData.movies = movies;
-            _moviesRawCache = existingData;
-            // binCache ga ham sync
-            if(typeof _binCache !== 'undefined') {
-                _binCache = existingData;
-                _binCacheTime = Date.now();
-            }
-            try {
-                await fetch(MOVIE_BIN_URL, {
-                    method: 'PUT',
-                    headers: { "Content-Type": "application/json", "X-Master-Key": MOVIE_BIN_KEY },
-                    body: JSON.stringify(existingData)
-                });
-            } catch(e) {}
+            // binSet keshni ham yangilaydi
+            await binSet(existingData);
         }
 
         function genMovieId() {
@@ -2705,7 +2051,7 @@ self.addEventListener('fetch', (event) => {
                 showToast("🗑️ Kino o'chirildi", '');
             };
             // Telegram WebApp popup
-            if(false) {
+            if(window.Telegram?.WebApp?.showPopup) {
                 window.Telegram.WebApp.showPopup({
                     title: "O'chirish",
                     message: "Bu kinoni o'chirmoqchimisiz?",
@@ -3098,7 +2444,7 @@ self.addEventListener('fetch', (event) => {
             frame.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
             if(tit) tit.textContent = title;
             page.style.display = 'flex';
-            if(false) {
+            if(window.Telegram?.WebApp) {
                 Telegram.WebApp.BackButton.show();
                 Telegram.WebApp.BackButton.onClick(() => closeYtPlayer());
             }
@@ -3109,7 +2455,7 @@ self.addEventListener('fetch', (event) => {
             const frame = document.getElementById('ytPlayerFrame');
             frame.src = '';
             page.style.display = 'none';
-            // BackButton.hide() — PWA da kerak emas
+            if(window.Telegram?.WebApp) Telegram.WebApp.BackButton.hide();
         }
 
         // Token/AdminId/Card ni — avval local, topilmasa cloud dan oladi
@@ -3198,7 +2544,7 @@ self.addEventListener('fetch', (event) => {
                 loadPendingList();
                 showToast("❌ To'lov bekor qilindi.", 'error');
             };
-            if(false) {
+            if(window.Telegram?.WebApp?.showPopup) {
                 window.Telegram.WebApp.showPopup({
                     title: "Bekor qilish",
                     message: "Bu to'lovni bekor qilasizmi?",
@@ -3313,7 +2659,7 @@ self.addEventListener('fetch', (event) => {
                 loadPromoList();
                 showToast("🗑️ Promokod o\'chirildi.", '');
             };
-            if(false) {
+            if(window.Telegram?.WebApp?.showPopup) {
                 window.Telegram.WebApp.showPopup({
                     title:"O\'chirish", message:"Bu promokodni o\'chirmoqchimisiz?",
                     buttons:[{id:'yes',type:'destructive',text:"Ha, o\'chir"},{id:'no',type:'cancel',text:'Bekor'}]
@@ -3558,39 +2904,13 @@ self.addEventListener('fetch', (event) => {
             buildStackHero();
             startStackAuto();
 
-            let aHtml = '';
-            const nL2 = document.getElementById('normalList');
-            // Skeleton ko'rsat — chiroyli animatsiya
-            const skeletonCount = Math.max(ms.length, 4);
-            nL2.innerHTML = Array(skeletonCount).fill(0).map((_, ki) => `
-                <div class="movie-card kd-skeleton" style="background:#111;border-radius:20px;overflow:hidden;">
-                    <div style="width:100%;height:160px;background:linear-gradient(90deg,#111 0%,#1e1e1e 40%,#222 60%,#111 100%);background-size:300% 100%;animation:shimmer 1.5s ease-in-out ${ki*0.1}s infinite;border-radius:20px;position:relative;">
-                        <div style="position:absolute;top:8px;right:8px;width:38px;height:18px;background:#1a1a1a;border-radius:6px;"></div>
-                    </div>
-                    <div style="height:13px;background:linear-gradient(90deg,#1a1a1a,#222,#1a1a1a);background-size:200%;animation:shimmer 1.5s ease-in-out ${ki*0.1}s infinite;border-radius:6px;margin:10px 6px 5px;"></div>
-                    <div style="height:10px;background:#161616;border-radius:5px;margin:0 20px 8px;"></div>
-                </div>`).join('');
-            // Real kartalar bir-bir skeleton o'rniga
-            let idx = 0;
-            for(const m of ms) {
+            let nHtml = '', aHtml = '';
+            ms.forEach(m => {
                 const img = getPosterUrl(m);
                 const badge = m.price > 0
                     ? `<div class="price-badge">${m.price.toLocaleString()} so'm</div>`
                     : `<div class="free-badge">BEPUL</div>`;
-                const delay = idx * 80;
-                const card = document.createElement('div');
-                card.className = 'movie-card tap-active movie-card-anim';
-                card.style.animationDelay = delay + 'ms';
-                card.onclick = () => { if(typeof playClickSound==='function') playClickSound('open'); openMovie(m.id); };
-                card.innerHTML = badge + `<img src="${img}" data-poster-id="${m.id}" onerror="reloadPoster(this,'${m.posterId||''}','${m.id}')" loading="lazy"><div style="font-weight:900;margin-top:8px;">${m.title}</div>`;
-                ((i, el) => {
-                    setTimeout(() => {
-                        const skels = nL2.querySelectorAll('.kd-skeleton');
-                        if(skels[i]) skels[i].replaceWith(el);
-                        else nL2.appendChild(el);
-                    }, delay);
-                })(idx, card);
-                idx++;
+                nHtml += `<div class="movie-card tap-active" onclick="openMovie('${m.id}')">${badge}<img src="${img}" data-poster-id="${m.id}" onerror="reloadPoster(this,'${m.posterId||''}','${m.id}')" loading="lazy"><div style="font-weight:900;margin-top:8px;">${m.title}</div></div>`;
                 aHtml += `<div class="del-item">
                     <div style="display:flex;align-items:center;gap:10px;">
                         <img src="${img}" style="width:44px;height:44px;border-radius:10px;object-fit:cover;border:1.5px solid #333;flex-shrink:0;" onerror="this.style.background='#222';this.src='';">
@@ -3608,8 +2928,8 @@ self.addEventListener('fetch', (event) => {
                         <button onclick="deleteMovie('${m.id}')" style="background:#8b0000;color:white;border:none;padding:6px 10px;border-radius:8px;font-size:13px;">🗑️</button>
                     </div>
                 </div>`;
-            }
-            if(!ms.length) nL2.innerHTML = '<div style="text-align:center;color:#444;padding:40px;font-size:14px;">⏳ Kinolar yuklanmoqda...<br><br><button onclick="loadContent()" style="background:#1a1a1a;color:var(--accent);border:1.5px solid var(--accent);padding:12px 24px;border-radius:12px;font-weight:900;font-size:14px;margin-top:10px;">🔄 Yangilash</button></div>';
+            });
+            nL.innerHTML = nHtml || '<div style="text-align:center;color:#444;padding:40px;font-size:14px;">Hali kino qo\'shilmagan</div>';
             aL.innerHTML = aHtml;
         }
 
@@ -3816,7 +3136,7 @@ self.addEventListener('fetch', (event) => {
                 db.history.add({mId: movieId, time: Date.now()});
             };
 
-            if(false) {
+            if(window.Telegram?.WebApp?.showPopup) {
                 window.Telegram.WebApp.showPopup({
                     title: `🔒 ${partIdx+1}-qism`,
                     message: `Narxi: ${epPrice.toLocaleString()} so'm\nHisobingiz: ${currentBal.toLocaleString()} so'm\n\nSotib olasizmi?`,
@@ -4035,7 +3355,7 @@ self.addEventListener('fetch', (event) => {
                         <div style="font-size:13px;color:#888;margin-bottom:28px;line-height:1.6;">
                             VK videolarni to'g'ridan ijro qilish uchun<br>quyidagi tugmani bosing.
                         </div>
-                        <button onclick="window.open('${vkOrigUrl}','_blank')"
+                        <button onclick="if(window.Telegram?.WebApp?.openLink){Telegram.WebApp.openLink('${vkOrigUrl}')}else{window.open('${vkOrigUrl}','_blank')}"
                             style="background:linear-gradient(135deg,#0077ff,#005bcc);
                                    color:#fff;border:none;padding:16px 32px;border-radius:16px;
                                    font-size:16px;font-weight:900;width:100%;max-width:280px;
@@ -4337,7 +3657,7 @@ self.addEventListener('fetch', (event) => {
                     } else showToast("❌ Mablag' yetarli emas!", "error");
                 };
 
-                if(false) {
+                if(window.Telegram?.WebApp?.showPopup) {
                     window.Telegram.WebApp.showPopup({
                         title: "Pullik qism",
                         message: `Bu qism narxi: ${epPrice.toLocaleString()} so'm. Sotib olasizmi?`,
@@ -4430,7 +3750,6 @@ self.addEventListener('fetch', (event) => {
                 setTimeout(() => loadAllMoviesGrid(), 100);
             }
         }
-        window._showPage = showPage;
         function closeModal(id) {
             document.getElementById(id).style.display = 'none';
             if(id === 'adminPanel') {
@@ -4469,7 +3788,7 @@ self.addEventListener('fetch', (event) => {
                 closeModal('loginModal');
                 document.getElementById('adminPassInput').value = '';
                 document.getElementById('adminPanel').style.display = 'block';
-                loadPromoList(); loadPendingList(); loadRefAdminInfo(); loadFaqAdmin(); loadPlanAdmin(); loadNakrutkaAdminList(); loadNkApis(); loadAdminLinks(); loadAdminStats();
+                loadPromoList(); loadPendingList(); loadRefAdminInfo(); loadFaqAdmin(); loadPlanAdmin(); loadNakrutkaAdminList(); loadNkApis(); loadAdminLinks();
                 initVFields();
             } else {
                 const err = document.getElementById('adminPassErr');
@@ -4988,8 +4307,8 @@ self.addEventListener('fetch', (event) => {
         }
         function openInstagramVideo(url) {
             // Telegram WebApp ichki brauzeri orqali ochish
-            if(false) {
-                window.open(url, '_blank');
+            if(window.Telegram?.WebApp?.openLink) {
+                window.Telegram.WebApp.openLink(url, {try_instant_view: false});
             } else {
                 window.open(url, '_blank');
             }
@@ -5421,7 +4740,7 @@ self.addEventListener('fetch', (event) => {
                 showToast(added > 0 ? `🏆 Top-${myRank}: +${added.toLocaleString()} so'm berildi!` : "✅ Mukofot berildi, siz top o'rinda emassiz.", added > 0 ? 'success' : '');
             };
 
-            if(false) {
+            if(window.Telegram?.WebApp?.showPopup) {
                 window.Telegram.WebApp.showPopup({
                     title: "Haftalik mukofot",
                     message: "Top o'rinlarga haftalik mukofot berilsinmi?",
@@ -5461,331 +4780,13 @@ self.addEventListener('fetch', (event) => {
         }
 
         // --- YORDAM MARKAZI (FAQ) ---
-
-        // ===== SUPPORT CHAT =====
-        let supportMessages = [];
-        let supportLoading = false;
-
-        function openSupportChat() {
-            const modal = document.getElementById('supportModal');
-            modal.style.display = 'flex';
-            if(!supportMessages.length) {
-                addSupportMsg('bot', '👋 Salom! Men KINO DRAMA yordamchi botiman. Savolingizni yozing, darhol javob beraman!\n\n💡 Masalan:\n• Premium narxi qancha?\n• Kino yuklanmayapti\n• To\'lov qanday qilinadi?');
-            }
-            loadSupportHistory();
-        }
-
-        function closeSupportModal() {
-            document.getElementById('supportModal').style.display = 'none';
-        }
-
-        function addSupportMsg(role, text) {
-            const body = document.getElementById('supportChatBody');
-            const isBot = role === 'bot';
-            const div = document.createElement('div');
-            div.style.cssText = 'display:flex;' + (isBot ? 'justify-content:flex-start;' : 'justify-content:flex-end;') + 'animation:fadeIn 0.3s ease;';
-            div.innerHTML = `
-                <div style="max-width:80%;padding:12px 16px;border-radius:${isBot?'6px 18px 18px 18px':'18px 6px 18px 18px'};
-                    background:${isBot?'#1a1a1a':'linear-gradient(135deg,#00ff73,#00cc5c)'};
-                    color:${isBot?'#fff':'#000'};font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word;">
-                    ${text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-                </div>`;
-            body.appendChild(div);
-            body.scrollTop = body.scrollHeight;
-            supportMessages.push({role, text, time: Date.now()});
-        }
-
-        function addTypingIndicator() {
-            const body = document.getElementById('supportChatBody');
-            const div = document.createElement('div');
-            div.id = 'typingIndicator';
-            div.style.cssText = 'display:flex;justify-content:flex-start;';
-            div.innerHTML = `<div style="background:#1a1a1a;padding:12px 18px;border-radius:6px 18px 18px 18px;display:flex;gap:4px;align-items:center;">
-                <span style="width:8px;height:8px;background:#555;border-radius:50%;animation:pulse 0.8s infinite 0s;display:inline-block;"></span>
-                <span style="width:8px;height:8px;background:#555;border-radius:50%;animation:pulse 0.8s infinite 0.2s;display:inline-block;"></span>
-                <span style="width:8px;height:8px;background:#555;border-radius:50%;animation:pulse 0.8s infinite 0.4s;display:inline-block;"></span>
-            </div>`;
-            body.appendChild(div);
-            body.scrollTop = body.scrollHeight;
-        }
-
-        function removeTypingIndicator() {
-            const el = document.getElementById('typingIndicator');
-            if(el) el.remove();
-        }
-
-        // ===== MAHALLIY FAQ JAVOB TIZIMI =====
-        function getBotAnswer(text) {
-            const q = text.toLowerCase();
-            // Premium / narx
-            if(q.includes('narx') || q.includes('qancha') || q.includes('premium') || q.includes('pul') || q.includes('pullik')) {
-                return '💎 Premium narxlari admin tomonidan belgilanadi. "Siz" sahifasiga o\'ting → "Premium sotib olish" tugmasini bosing — u yerda barcha narxlarni ko\'rasiz.';
-            }
-            // To'lov
-            if(q.includes('to\'lov') || q.includes('to\'la') || q.includes('karta') || q.includes('pul to\'la')) {
-                return '💳 To\'lov jarayoni:\n1. "Siz" sahifasiga o\'ting\n2. "Hisobni to\'ldirish" tugmasini bosing\n3. Summa kiriting va yuborishni tasdiqlang\n4. Karta raqamiga pul o\'tkazing\n5. Admin tasdiqlashini kuting ⏳';
-            }
-            // Kino yuklanmayapti / ko'rsatmayapti
-            if(q.includes('yuklanm') || q.includes('ishlamay') || q.includes('ko\'rinm') || q.includes('chiqmay') || q.includes('xato')) {
-                return '🔄 Kino yuklanmasa:\n• Internetingizni tekshiring\n• Sahifani yangilang (pastga tortib chiqaring)\n• Keshni tozalang: "Siz" → profil rasm → "Keshni tozalash"\n• Boshqa kino sinab ko\'ring\n\nMuammo davom etsa — adminga murojat qiling 👆';
-            }
-            // Parol / kirish
-            if(q.includes('parol') || q.includes('login') || q.includes('kira olm') || q.includes('unutd')) {
-                return '🔑 Parolni unutsangiz:\nAfsuski, hozircha parolni tiklash imkoni yo\'q. Yangi hisob yarating yoki adminga murojat qiling.';
-            }
-            // Balans
-            if(q.includes('balans') || q.includes('hisobim') || q.includes('pul qo\'sh')) {
-                return '💰 Balansingizni ko\'rish:\n"Siz" sahifasiga o\'ting — u yerda joriy balans ko\'rinadi.\n\nBalans to\'ldirish uchun "Hisobni to\'ldirish" tugmasini bosing.';
-            }
-            // Qism / episode
-            if(q.includes('qism') || q.includes('epizod') || q.includes('davom')) {
-                return '📺 Qismlar haqida:\n• Bepul qismlarni to\'g\'ridan to\'g\'ri tomosha qilish mumkin\n• Pullik qismlar uchun hisobingizda yetarli mablag\' bo\'lishi kerak\n• Premium obuna bilan barcha qismlar ochiladi 🔓';
-            }
-            // Referal
-            if(q.includes('referal') || q.includes('do\'st') || q.includes('taklif') || q.includes('kod')) {
-                return '🎟️ Referal tizimi:\n"Siz" sahifasida "Do\'stlarni taklif qilish" tugmasini bosing → shaxsiy kodingizni oling → do\'stlaringizga yuboring. Do\'st ro\'yxatdan o\'tganda ikkalingizga bonus yoziladi! 🎁';
-            }
-            // Salom / xayrli
-            if(q.includes('salom') || q.includes('assalom') || q.includes('hey') || q.includes('hi')) {
-                return '👋 Salom! Men KINO DRAMA yordamchi botiman. Qanday yordam bera olaman?\n\n💡 So\'rashingiz mumkin:\n• Premium narxi qancha?\n• To\'lov qanday qilinadi?\n• Kino yuklanmayapti\n• Balansim qancha?';
-            }
-            // Rahmat
-            if(q.includes('rahmat') || q.includes('tashakkur') || q.includes('ok') || q.includes('tushunarli')) {
-                return '😊 Marhamat! Yana savollaringiz bo\'lsa — yozing. Muammo hal bo\'lmasa, "Admin" tugmasi orqali murojat qiling 👆';
-            }
-            // Default
-            return '🤔 Savolingizni tushundim, lekin aniq javob bera olmadim.\n\nQuyidagilarni so\'rashingiz mumkin:\n• Premium narxi / sotib olish\n• To\'lov usuli\n• Kino yuklanmayapti\n• Balans va referal\n\nYoki "Admin" tugmasi orqali to\'g\'ridan-to\'g\'ri murojat qiling 👆';
-        }
-
-        async function sendSupportMsg() {
-            if(supportLoading) return;
-            const input = document.getElementById('supportInput');
-            const text = input.value.trim();
-            if(!text) return;
-            input.value = '';
-            input.style.height = 'auto';
-            addSupportMsg('user', text);
-            supportLoading = true;
-            addTypingIndicator();
-
-            // Avval FAQdan javob qidiramiz
-            let botAnswer = null;
-            try {
-                const data = await binGet();
-                const faqs = data.faqs || {};
-                const faqArr = Array.isArray(faqs) ? faqs : Object.values(faqs);
-                const q = text.toLowerCase();
-                for(const faq of faqArr) {
-                    if(faq.question && q.includes(faq.question.toLowerCase().slice(0,10))) {
-                        botAnswer = faq.answer;
-                        break;
-                    }
-                }
-            } catch(e) {}
-
-            // FAQ topilmasa — mahalliy javob tizimi
-            if(!botAnswer) {
-                botAnswer = getBotAnswer(text);
-            }
-
-            // Kichik kechikish (tabiiy ko'rinishi uchun)
-            await new Promise(r => setTimeout(r, 700 + Math.random() * 600));
-            removeTypingIndicator();
-            addSupportMsg('bot', botAnswer);
-            supportLoading = false;
-
-            // Cloud ga saqlash (asinxron, kutmaymiz)
-            saveSupportTicket(text);
-
-            // Adminning eski javoblarini ham ko'rsatamiz
-            loadSupportHistory();
-        }
-
-        async function saveSupportTicket(msg) {
-            try {
-                const userInfo = await db.profile.get('user_info');
-                const name = userInfo?.value?.name || 'Foydalanuvchi';
-                const userId = userInfo?.value?.id || currentUserId;
-                const data = await binGet();
-                if(!data.support_tickets) data.support_tickets = [];
-                data.support_tickets.push({
-                    id: Date.now(),
-                    userId: String(userId),
-                    userName: name,
-                    msg: msg,
-                    time: new Date().toLocaleString(),
-                    status: 'new',
-                    reply: null
-                });
-                // Faqat so'nggi 100 ta
-                if(data.support_tickets.length > 100) data.support_tickets = data.support_tickets.slice(-100);
-                await binSet(data);
-            } catch(e) {}
-        }
-
-        async function loadSupportHistory() {
-            // Adminning javoblarini ko'rish
-            try {
-                const userInfo = await db.profile.get('user_info');
-                const userId = String(userInfo?.value?.id || currentUserId);
-                const data = await binGet();
-                const tickets = (data.support_tickets || []).filter(t => t.userId === userId && t.reply);
-                tickets.slice(-3).forEach(t => {
-                    // Avval foydalanuvchi xabari ko'rsatilgan bo'lsa ko'rsatmaymiz
-                    const exists = supportMessages.some(m => m.text === t.msg);
-                    if(!exists) addSupportMsg('user', t.msg);
-                    addSupportMsg('bot', '👤 Admin: ' + t.reply);
-                });
-            } catch(e) {}
-        }
-
-        // Admin contact sheet
-        function openAdminContact() {
-            const modal = document.getElementById('adminContactModal');
-            modal.style.display = 'flex';
-            setTimeout(() => { document.getElementById('adminContactSheet').style.transform = 'translateY(0)'; }, 10);
-            modal.onclick = e => { if(e.target === modal) closeAdminContact(); };
-        }
-        function closeAdminContact() {
-            document.getElementById('adminContactSheet').style.transform = 'translateY(100%)';
-            setTimeout(() => { document.getElementById('adminContactModal').style.display = 'none'; }, 350);
-        }
-
-        async function sendAdminContact() {
-            const msg = document.getElementById('adminContactMsg').value.trim();
-            if(!msg) return showToast('⚠️ Xabar yozing!', 'error');
-            try {
-                const userInfo = await db.profile.get('user_info');
-                const name = userInfo?.value?.name || 'Foydalanuvchi';
-                const userId = String(userInfo?.value?.id || currentUserId);
-                // Telegram botga yuborish
-                const {token, adminId} = await getCloudSettings();
-                if(token && adminId) {
-                    await fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
-                        method:'POST', headers:{'Content-Type':'application/json'},
-                        body: JSON.stringify({chat_id: adminId, text: '📩 YORDAM SO\'ROVI\n\n👤 ' + name + '\n🆔 ID: ' + userId + '\n\n💬 ' + msg + '\n\n📅 ' + new Date().toLocaleString()})
-                    });
-                }
-                // Cloud ga ham saqlash
-                const data = await binGet();
-                if(!data.support_tickets) data.support_tickets = [];
-                data.support_tickets.push({id:Date.now(), userId, userName:name, msg, time:new Date().toLocaleString(), status:'pending', reply:null, channel:'admin_contact'});
-                if(data.support_tickets.length > 100) data.support_tickets = data.support_tickets.slice(-100);
-                await binSet(data);
-                closeAdminContact();
-                addSupportMsg('bot', '✅ Xabaringiz adminga yuborildi! Tez orada javob beriladi.');
-                document.getElementById('adminContactMsg').value = '';
-                showToast('✅ Xabar yuborildi!', 'success');
-            } catch(e) {
-                showToast('❌ Xatolik: ' + e.message, 'error');
-            }
-        }
-
         async function openHelpCenter() {
-            openSupportChat();
-        }
-
-        // ===== PROFIL TAHRIRLASH =====
-        let _newAvatarDataUrl = null;
-
-        async function openProfileEdit() {
-            const info = await db.profile.get('user_info');
-            const name = info?.value?.name || '';
-            const img  = info?.value?.img  || '';
-            document.getElementById('profileEditName').value = name;
-            document.getElementById('profileEditAvatar').src = img;
-            _newAvatarDataUrl = null;
-            const modal = document.getElementById('profileEditModal');
+            const modal = document.getElementById('helpCenterModal');
             modal.style.display = 'flex';
-            setTimeout(() => { document.getElementById('profileEditSheet').style.transform = 'translateY(0)'; }, 10);
-            modal.onclick = e => { if(e.target === modal) closeProfileEdit(); };
-        }
-        window._openProfileEdit = openProfileEdit;
-
-        // Avatar ustiga bosilganda qalam ko'rinsin
-        document.addEventListener('DOMContentLoaded', function() {
-            const avatarWrap = document.querySelector('#siz [onclick="openProfileEdit()"]');
-            const editBtn = document.getElementById('avatarEditBtn');
-            if(avatarWrap && editBtn) {
-                avatarWrap.addEventListener('touchstart', () => { editBtn.style.opacity = '1'; }, {passive:true});
-                avatarWrap.addEventListener('touchend', () => { setTimeout(() => { editBtn.style.opacity = '0'; }, 400); }, {passive:true});
-                avatarWrap.addEventListener('mouseenter', () => { editBtn.style.opacity = '1'; });
-                avatarWrap.addEventListener('mouseleave', () => { editBtn.style.opacity = '0'; });
-            }
-        });
-
-        function closeProfileEdit() {
-            document.getElementById('profileEditSheet').style.transform = 'translateY(100%)';
-            setTimeout(() => { document.getElementById('profileEditModal').style.display = 'none'; }, 350);
-        }
-
-        function previewAvatarChange(input) {
-            const file = input.files[0];
-            if(!file) return;
-            const reader = new FileReader();
-            reader.onload = e => {
-                _newAvatarDataUrl = e.target.result;
-                document.getElementById('profileEditAvatar').src = _newAvatarDataUrl;
-            };
-            reader.readAsDataURL(file);
-        }
-
-        async function saveProfileEdit() {
-            const newName = document.getElementById('profileEditName').value.trim();
-            if(!newName) return showToast('⚠️ Ismingizni kiriting!', 'error');
-            const info = await db.profile.get('user_info');
-            const current = info?.value || {};
-            let newImg = current.img || '';
-            if(_newAvatarDataUrl) {
-                newImg = await resizeImageDataUrl(_newAvatarDataUrl, 256);
-            }
-            const updated = { ...current, name: newName, img: newImg };
-            await db.profile.put({ key: 'user_info', value: updated });
-            // localStorage yangilash
-            try {
-                const savedUser = JSON.parse(localStorage.getItem('kd_user') || '{}');
-                savedUser.name = newName;
-                if(_newAvatarDataUrl) savedUser.img = newImg;
-                localStorage.setItem('kd_user', JSON.stringify(savedUser));
-            } catch(e) {}
-            // Cloud ga sinxronlash — surat va isim bilan
-            const bal = await db.profile.get('balance');
-            const exp = await db.profile.get('expiry');
-            syncUserToCloud(current.id, newName, bal?.value || 0, exp?.value || 0, newImg);
-            loadUI();
-            closeProfileEdit();
-            showToast('✅ Profil yangilandi!', 'success');
-        }
-
-        function resizeImageDataUrl(dataUrl, maxSize) {
-            return new Promise(resolve => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let w = img.width, h = img.height;
-                    if(w > h) { if(w > maxSize) { h = Math.round(h * maxSize / w); w = maxSize; } }
-                    else { if(h > maxSize) { w = Math.round(w * maxSize / h); h = maxSize; } }
-                    canvas.width = w; canvas.height = h;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, w, h);
-                    resolve(canvas.toDataURL('image/jpeg', 0.82));
-                };
-                img.onerror = () => resolve(dataUrl);
-                img.src = dataUrl;
-            });
-        }
-
-        function clearAppCache() {
-            if(!confirm("Keshni tozalashni xohlaysizmi? Bu sahifani yangilaydi.")) return;
-            caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(()=>{});
-            showToast('🗑️ Kesh tozalandi!', 'success');
-            setTimeout(() => location.reload(), 800);
-        }
-
-        function logoutUser() {
-            if(!confirm("Chiqishni xohlaysizmi?")) return;
-            localStorage.removeItem('kd_user');
-            location.reload();
+            setTimeout(() => {
+                document.getElementById('helpCenterSheet').style.transform = 'translateY(0)';
+            }, 10);
+            await renderHelpFaq();
         }
 
         function closeHelpCenter() {
@@ -5956,7 +4957,7 @@ self.addEventListener('fetch', (event) => {
                 loadFaqAdmin();
                 showToast("🗑️ FAQ o'chirildi.", '');
             };
-            if(false) {
+            if(window.Telegram?.WebApp?.showPopup) {
                 window.Telegram.WebApp.showPopup({
                     title: "O'chirish",
                     message: "Bu FAQ ni o'chirmoqchimisiz?",
@@ -6192,7 +5193,7 @@ self.addEventListener('fetch', (event) => {
                 showToast(`${idx+1}-qism o'chirildi!`, '');
             };
 
-            if(false) {
+            if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.showPopup) {
                 window.Telegram.WebApp.showPopup({
                     title: "Qismni o'chirish",
                     message: (idx+1) + "-qismni o'chirmoqchimisiz?",
@@ -7002,4 +6003,869 @@ self.addEventListener('fetch', (event) => {
             const currentBal = bal ? bal.value : 0;
 
             if(currentBal < total) {
-                document.getElementById('nkOrderTotalLine').textContent = `❌ ${(total - currentBal).toLocaleSt
+                document.getElementById('nkOrderTotalLine').textContent = `❌ ${(total - currentBal).toLocaleString()} so'm yetishmayapti!`;
+                document.getElementById('nkOrderTotalLine').style.color = '#ff453a';
+                showToast('❌ Balans yetarli emas!', 'error');
+                return;
+            }
+
+            // Tugmani loading holatiga o'tkazish
+            const sendBtn = document.getElementById('nkSendBtn');
+            if(sendBtn) {
+                sendBtn.disabled = true;
+                sendBtn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:10px;"><span style="display:inline-block;width:18px;height:18px;border:3px solid rgba(0,0,0,0.3);border-top-color:#000;border-radius:50%;animation:spin 0.7s linear infinite;"></span> Yuborilmoqda...</span>';
+            }
+
+            // Balansdan yechish
+            await db.profile.put({key:'balance', value: currentBal - total});
+            const userInfo2 = await db.profile.get('user_info');
+            if(userInfo2?.value?.id) syncBalanceToCloud(userInfo2.value.id, currentBal - total);
+
+            const { token, adminId } = await getCloudSettings();
+            const user     = (await db.profile.get('user_info'))?.value;
+            const userName = user ? user.name : 'Foydalanuvchi';
+            const userId   = user ? user.id   : currentUserId;
+            const dateStr  = new Date().toLocaleString();
+
+            // Cloud dan API ma'lumotlarini olamiz
+            let apiUrl = '';
+            let apiKey = '';
+            try {
+                const data = await binGet();
+                const apis = data.nk_apis || [];
+                const apiIdx = svc.apiIndex || 0;
+                const api = apis[apiIdx];
+                if(api) { apiUrl = api.url || ''; apiKey = api.key || ''; }
+            } catch(e) {}
+
+            // =====================================================
+            // BOT ORQALI BUYURTMA — maxsus format bilan xabar yuboramiz
+            // Bot bu xabarni o'qib SMM API ga to'g'ridan so'rov yuboradi
+            // Format: #SMM_ORDER JSON (bot webhook da parse qiladi)
+            // =====================================================
+            const orderPayload = {
+                action:     'smm_order',
+                api_url:    apiUrl,
+                api_key:    apiKey,
+                service_id: svc.serviceId,
+                link:       link,
+                quantity:   qty,
+                user_name:  userName,
+                user_id:    userId,
+                svc_name:   svc.name,
+                platform:   svc.platform,
+                price_sum:  svc.price,
+                total_sum:  total,
+                date:       dateStr
+            };
+
+            // Bot ga maxsus format xabar — bot webhook da "#SMM_ORDER" ni ko'rsa API ga yuboradi
+            const botMsg = `#SMM_ORDER\n${JSON.stringify(orderPayload)}`;
+
+            let botSent = false;
+            if(token && adminId) {
+                try {
+                    const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                        method: 'POST',
+                        headers: {'Content-Type':'application/json'},
+                        body: JSON.stringify({chat_id: adminId, text: botMsg})
+                    });
+                    const d = await r.json();
+                    botSent = !!d.ok;
+                } catch(e) {}
+            }
+
+            // Adminga chiroyli xabar ham yuboramiz (o'qish uchun)
+            const readableText = `🚀 YANGI NAKRUTKA BUYURTMA\n\n👤 Foydalanuvchi: ${userName}\n🆔 ID: ${userId}\n\n📦 Xizmat: ${svc.name}\n🔢 Miqdor: ${qty.toLocaleString()} dona\n💰 Jami: ${total.toLocaleString()} so'm\n🔗 Link: ${link}\n📡 SMM API: ${apiUrl ? apiUrl : '—'}\n🆔 Service ID: ${svc.serviceId || '—'}\n📅 Sana: ${dateStr}\n\n${botSent ? '✅ Bot API ga avtomatik yuboradi' : '⚠️ Bot ulanmadi — qo\'lda bajaring'}`;
+
+            if(token && adminId) {
+                try {
+                    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                        method: 'POST',
+                        headers: {'Content-Type':'application/json'},
+                        body: JSON.stringify({chat_id: adminId, text: readableText})
+                    });
+                } catch(e) {}
+            }
+
+            await db.trxs.add({type:`🚀 Nakrutka: ${svc.name} (${qty} dona)`, amount: -total, date: dateStr});
+            loadUI(); loadMening();
+
+            // Natijani ekranda ko'rsatish
+            const formEl   = document.getElementById('nkOrderForm');
+            const resultEl = document.getElementById('nkOrderResult');
+            if(formEl)   formEl.style.display = 'none';
+            if(resultEl) {
+                resultEl.style.display = 'block';
+                if(botSent) {
+                    resultEl.style.background = 'linear-gradient(135deg,#0d2a1a,#0a1f14)';
+                    resultEl.style.border = '1.5px solid rgba(0,255,115,0.3)';
+                    resultEl.innerHTML = `
+                        <div style="font-size:52px;margin-bottom:12px;">✅</div>
+                        <div style="font-size:20px;font-weight:900;color:#00ff73;margin-bottom:8px;">Buyurtma yuborildi!</div>
+                        <div style="font-size:13px;color:#888;line-height:1.7;">
+                            Bot SMM API ga avtomatik yuboradi<br>
+                            <span style="color:#fff;font-weight:700;">${svc.name}</span><br>
+                            <span style="color:#00ff73;font-weight:900;">${qty.toLocaleString()} dona</span> → 
+                            <span style="color:#fff;">${link}</span><br><br>
+                            <span style="font-size:11px;color:#555;">${dateStr}</span>
+                        </div>`;
+                } else {
+                    resultEl.style.background = 'linear-gradient(135deg,#2a1a0d,#1f1005)';
+                    resultEl.style.border = '1.5px solid rgba(255,149,10,0.3)';
+                    resultEl.innerHTML = `
+                        <div style="font-size:52px;margin-bottom:12px;">⚠️</div>
+                        <div style="font-size:18px;font-weight:900;color:#ff9f0a;margin-bottom:8px;">Bot sozlanmagan!</div>
+                        <div style="font-size:13px;color:#888;line-height:1.7;">
+                            Bot Token yoki Admin ID kiritilmagan.<br>
+                            Admin paneldan Bot va Admin ID ni kiriting.<br><br>
+                            <span style="color:#555;font-size:11px;">Balans yechildi, admin qo'lda bajarishi kerak.</span>
+                        </div>`;
+                }
+            }
+
+            showToast(botSent ? '✅ Bot buyurtmani bajaradi!' : '⚠️ Bot sozlanmagan!', botSent ? 'success' : 'error');
+        }
+
+        // ===== NAKRUTKA XIZMATLAR (Cloud - JSONBin) =====
+        async function getNakrutkaServices() {
+            try {
+                const data = await binGet();
+                return data.nakrutka_services || [];
+            } catch(e) { return []; }
+        }
+
+        async function setNakrutkaServices(services) {
+            try {
+                const data = await binGet();
+                data.nakrutka_services = services;
+                await binSet(data);
+            } catch(e) {}
+        }
+
+        async function addNakrutkaService() {
+            const platform  = document.getElementById('nkAdmPlatform').value;
+            const name      = document.getElementById('nkAdmName').value.trim();
+            const serviceId = document.getElementById('nkAdmServiceId').value.trim();
+            const price     = parseInt(document.getElementById('nkAdmPrice').value);
+            const apiIndex  = parseInt(document.getElementById('nkAdmApiIndex').value) || 0;
+            if(!name || !price || price < 1) return showToast("⚠️ Barcha maydonlarni to'ldiring!", 'error');
+            showToast("⏳ Saqlanmoqda...", '');
+            const services = await getNakrutkaServices();
+            const newId = Date.now();
+            services.push({id: newId, platform, name, price, serviceId: serviceId || '', apiIndex});
+            await setNakrutkaServices(services);
+            document.getElementById('nkAdmName').value = '';
+            document.getElementById('nkAdmServiceId').value = '';
+            document.getElementById('nkAdmPrice').value = '';
+            showToast("✅ Xizmat qo'shildi!", 'success');
+            loadNakrutkaAdminList();
+        }
+
+        async function loadNakrutkaAdminList() {
+            const el = document.getElementById('nkAdmList');
+            if(!el) return;
+            el.innerHTML = '<div style="color:#888;font-size:13px;padding:5px 0;">⏳ Yuklanmoqda...</div>';
+            const services = await getNakrutkaServices();
+            if(!services.length) { el.innerHTML = '<div style="color:#555; font-size:13px; padding:5px 0;">Hali xizmat yo\'q</div>'; return; }
+            const platEmoji = {telegram:'✈️', instagram:'📸'};
+            el.innerHTML = services.map(s => `
+                <div style="background:#1a1a1a; border:1.5px solid #2a2a2a; border-radius:14px; padding:13px 14px; margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+                    <div style="font-size:22px;">${platEmoji[s.platform]||'🌐'}</div>
+                    <div style="flex:1;">
+                        <div style="font-weight:900; font-size:15px; color:#fff;">${s.name}</div>
+                        <div style="font-size:12px; color:#888; margin-top:2px;">${s.price.toLocaleString()} so'm / dona${s.serviceId ? ' • ID:'+s.serviceId : ''}${s.apiIndex !== undefined ? ' • API#'+(s.apiIndex+1) : ''}</div>
+                    </div>
+                    <button onclick="deleteNakrutkaService(${s.id})" style="background:#2a0000; color:#ff453a; border:1px solid #500; padding:9px 13px; border-radius:10px; font-weight:900; flex-shrink:0; font-size:14px;">✕</button>
+                </div>`).join('');
+        }
+
+        async function deleteNakrutkaService(id) {
+            const doDelete = async () => {
+                showToast("⏳ O'chirilmoqda...", '');
+                const services = await getNakrutkaServices();
+                const updated = services.filter(s => s.id !== id);
+                await setNakrutkaServices(updated);
+                // Local DB dan ham o'chiramiz
+                try { await db.nakrutka_services.delete(id); } catch(e){}
+                loadNakrutkaAdminList();
+                showToast("🗑️ Xizmat o'chirildi.", '');
+            };
+            if(window.Telegram?.WebApp?.showPopup) {
+                window.Telegram.WebApp.showPopup({
+                    title: "O'chirish",
+                    message: "Bu xizmatni o'chirmoqchimisiz?",
+                    buttons: [
+                        { id: 'yes', type: 'destructive', text: "Ha, o'chir" },
+                        { id: 'no', type: 'cancel', text: 'Bekor' }
+                    ]
+                }, async (btnId) => { if(btnId === 'yes') await doDelete(); });
+            } else {
+                if(confirm("Bu xizmatni o'chirmoqchimisiz?")) await doDelete();
+            }
+        }
+
+        // ===== POSTER AUTO-REFRESH (URL muddati tugaganda) =====
+        const POSTER_PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='160'%3E%3Crect width='200' height='160' fill='%231a1a1a' rx='20'/%3E%3Ctext x='50%25' y='44%25' dominant-baseline='middle' text-anchor='middle' font-size='38' fill='%23333'%3E%F0%9F%8E%AC%3C/text%3E%3Ctext x='50%25' y='72%25' dominant-baseline='middle' text-anchor='middle' font-size='13' fill='%23444' font-family='sans-serif'%3EYuklanmoqda...%3C/text%3E%3C/svg%3E";
+
+        async function reloadPoster(imgEl, fileId, movieId) {
+            imgEl.onerror = null; // Cheksiz loop bo'lmasin
+            imgEl.style.background = 'linear-gradient(135deg,#111,#1e1e1e)';
+            if(!fileId) {
+                imgEl.src = POSTER_PLACEHOLDER;
+                return;
+            }
+            try {
+                const token = (await db.settings.get('token'))?.value;
+                if(!token) { imgEl.src = POSTER_PLACEHOLDER; return; }
+                const r = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`);
+                const d = await r.json();
+                if(d.ok) {
+                    const newUrl = `https://api.telegram.org/file/bot${token}/${d.result.file_path}`;
+                    imgEl.src = newUrl;
+                    // Yangi URLni saqlaymiz
+                    if(movieId) {
+                        try {
+                            const movies = await moviesGet();
+                            const idx = movies.findIndex(mv => mv.id === movieId);
+                            if(idx !== -1) {
+                                movies[idx].poster = newUrl;
+                                await moviesSet(movies);
+                            }
+                        } catch(e) {}
+                    }
+                } else {
+                    imgEl.src = POSTER_PLACEHOLDER;
+                }
+            } catch(e) { imgEl.src = POSTER_PLACEHOLDER; }
+        }
+
+        // ===== NAKRUTKA API KALITLAR BOSHQARUVI =====
+        let nkApiRowCount = 0;
+
+        function addNkApiRow(url = '', key = '', label = '') {
+            nkApiRowCount++;
+            const n = nkApiRowCount;
+            const c = document.getElementById('nkApiListAdmin');
+            if(!c) return;
+            const d = document.createElement('div');
+            d.id = `nkApiRow${n}`;
+            d.dataset.rowNum = n;
+            d.style.cssText = 'background:#1a1a1a;border:1.5px solid #2a2a2a;border-radius:14px;padding:14px;margin-bottom:10px;';
+            d.innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                    <span style="font-size:13px;font-weight:900;color:var(--accent);">API #${n}</span>
+                    <button onclick="deleteNkApiRow(${n})" style="background:#2a0000;color:#ff453a;border:1px solid #500;padding:6px 14px;border-radius:9px;font-weight:900;font-size:13px;">🗑️ O'chir</button>
+                </div>
+                <div style="font-size:11px;color:#666;margin-bottom:4px;">API URL (masalan: https://super-sim.uz/api/v2)</div>
+                <input type="url" id="nkApiUrl${n}" placeholder="https://super-sim.uz/api/v2" value="${url}" style="margin-bottom:8px;">
+                <div style="font-size:11px;color:#666;margin-bottom:4px;">API Key</div>
+                <input type="text" id="nkApiKey${n}" placeholder="API Key ni kiriting" value="${key}">
+                <button onclick="testNkApi(${n})" style="background:#0d2a1a;color:var(--accent);border:1.5px solid var(--accent);width:100%;padding:12px;border-radius:10px;font-weight:900;margin-top:10px;font-size:14px;">🧪 API ni sinash</button>
+                <div id="nkApiTest${n}" style="font-size:12px;color:#888;margin-top:8px;min-height:18px;word-break:break-all;"></div>`;
+            c.appendChild(d);
+        }
+
+        // API ni clouddan ham o'chirish
+        async function deleteNkApiRow(n) {
+            const row = document.getElementById(`nkApiRow${n}`);
+            if(!row) return;
+            // Avval UI dan o'chirish
+            row.remove();
+            // Keyin clouddan ham saqlaymiz (qolganlarini)
+            try {
+                const apis = getNkApisFromUI();
+                const data = await binGet();
+                data.nk_apis = apis;
+                await binSet(data);
+                showToast('🗑️ API o\'chirildi va saqlandi!', '');
+                // Balanslarni yangilaymiz
+                if(apis.length) await showNkApiBotBalances(apis);
+                else {
+                    const balEl = document.getElementById('nkApiBotBalances');
+                    if(balEl) balEl.style.display = 'none';
+                }
+            } catch(e) {
+                showToast('⚠️ UI dan o\'childi, cloud xato: ' + e.message, 'error');
+            }
+        }
+
+        // UI dagi barcha API qatorlarini o'qish
+        function getNkApisFromUI() {
+            const apis = [];
+            document.querySelectorAll('[id^="nkApiRow"]').forEach((row) => {
+                const n = row.dataset.rowNum;
+                if(!n) return;
+                const url = document.getElementById(`nkApiUrl${n}`)?.value?.trim() || '';
+                const key = document.getElementById(`nkApiKey${n}`)?.value?.trim() || '';
+                if(url && key) apis.push({url, key, label: `API #${apis.length+1}`});
+            });
+            return apis;
+        }
+
+        async function testNkApi(n) {
+            let url = document.getElementById(`nkApiUrl${n}`)?.value?.trim();
+            const key = document.getElementById(`nkApiKey${n}`)?.value?.trim();
+            const msgEl = document.getElementById(`nkApiTest${n}`);
+            if(!url || !key) { msgEl.style.color='#ff453a'; msgEl.textContent='⚠️ URL va Key kiriting!'; return; }
+
+            // URL normalizatsiya
+            if(!url.startsWith('http')) url = 'https://' + url;
+            url = url.replace(/\/$/, '');
+            if(!url.includes('/api')) url += '/api/v2';
+            const urlInput = document.getElementById(`nkApiUrl${n}`);
+            if(urlInput) urlInput.value = url;
+
+            msgEl.style.color = '#888'; msgEl.textContent = '⏳ Tekshirilmoqda...';
+
+            const getApiUrl = `${url}?key=${encodeURIComponent(key)}&action=balance`;
+
+            let d = null;
+
+            // 1-usul: to'g'ridan POST
+            try {
+                const fd = new FormData();
+                fd.append('key', key); fd.append('action', 'balance');
+                const r = await fetch(url, {method:'POST', body:fd, signal: AbortSignal.timeout(5000)});
+                const txt = await r.text();
+                d = JSON.parse(txt);
+            } catch(e) {}
+
+            // 2-usul: allorigins proxy
+            if(!d) {
+                try {
+                    const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(getApiUrl)}`, {signal: AbortSignal.timeout(8000)});
+                    const txt = await r.text();
+                    d = JSON.parse(txt);
+                } catch(e) {}
+            }
+
+            // 3-usul: jsonp.su proxy
+            if(!d) {
+                try {
+                    const r = await fetch(`https://jsonp.su/?url=${encodeURIComponent(getApiUrl)}`, {signal: AbortSignal.timeout(8000)});
+                    const txt = await r.text();
+                    d = JSON.parse(txt);
+                } catch(e) {}
+            }
+
+            // 4-usul: thingproxy
+            if(!d) {
+                try {
+                    const r = await fetch(`https://thingproxy.freeboard.io/fetch/${getApiUrl}`, {signal: AbortSignal.timeout(8000)});
+                    const txt = await r.text();
+                    d = JSON.parse(txt);
+                } catch(e) {}
+            }
+
+            if(d && d.balance !== undefined) {
+                msgEl.style.color = 'var(--accent)';
+                msgEl.textContent = `✅ Ulandi! Balans: ${parseFloat(d.balance).toFixed(4)} ${d.currency||'USD'}`;
+            } else if(d && d.error) {
+                msgEl.style.color = '#ff453a';
+                msgEl.textContent = '❌ API xato: ' + d.error;
+            } else {
+                msgEl.style.color = '#ff453a';
+                const hostname = (() => { try { return new URL(url).hostname; } catch(e) { return url; } })();
+                msgEl.textContent = `❌ Ulanmadi — ${hostname} saytiga to'g'ridan ulanib bo'lmaydi (CORS). Proxy orqali ham ishlamadi.`;
+            }
+        }
+
+        async function saveNkApis() {
+            const apis = getNkApisFromUI();
+            try {
+                const data = await binGet();
+                data.nk_apis = apis;
+                await binSet(data);
+                const msgEl = document.getElementById('nkApiSaveMsg');
+                if(msgEl) { msgEl.style.color='var(--accent)'; msgEl.textContent=`✅ ${apis.length} ta API kaliti saqlandi!`; }
+                showToast(`✅ ${apis.length} ta API saqlandi!`, 'success');
+                updateNkApiSelect(apis.length);
+                // Saqlangandan keyin darhol bot balanslarini ko'rsatish
+                await showNkApiBotBalances(apis);
+            } catch(e) {
+                showToast('❌ Saqlashda xatolik: ' + e.message, 'error');
+            }
+        }
+
+        // Bot hisoblarini ko'rsatish funksiyasi — parallel so'rovlar
+        async function showNkApiBotBalances(apis) {
+            const balEl = document.getElementById('nkApiBotBalances');
+            if(!balEl) return;
+            if(!apis || !apis.length) { balEl.style.display='none'; return; }
+            balEl.style.display = 'block';
+
+            // Avval skeletonni ko'rsatamiz
+            const skeletons = apis.map((a, i) => {
+                const host = (() => { try { return new URL(a.url).hostname; } catch(e) { return 'API #'+(i+1); } })();
+                return `<div id="nkBal_${i}" style="display:flex;justify-content:space-between;align-items:center;background:#111;border:1px solid #222;border-radius:10px;padding:10px 12px;margin-bottom:6px;">
+                    <div>
+                        <div style="font-size:12px;font-weight:900;color:var(--accent);">API #${i+1}</div>
+                        <div style="font-size:11px;color:#555;margin-top:1px;">${host}</div>
+                    </div>
+                    <div style="font-size:12px;color:#888;animation:pulse 1s infinite;">⏳ Yuklanmoqda...</div>
+                </div>`;
+            }).join('');
+            balEl.innerHTML = `<div style="font-size:10px;color:#555;font-weight:700;letter-spacing:1px;margin-bottom:8px;">🤖 BOT HISOBLARI</div>${skeletons}`;
+
+            // Hamma API larga PARALLEL so'rov (ketma-ket emas!)
+            async function fetchBalance(api) {
+                const getUrl = `${api.url}?key=${encodeURIComponent(api.key)}&action=balance`;
+                // 1: to'g'ri POST
+                try {
+                    const fd = new FormData();
+                    fd.append('key', api.key); fd.append('action', 'balance');
+                    const r = await fetch(api.url, {method:'POST', body:fd, signal: AbortSignal.timeout(7000)});
+                    const d = JSON.parse(await r.text());
+                    if(d && d.balance !== undefined) return d;
+                } catch(e) {}
+                // 2: allorigins
+                try {
+                    const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(getUrl)}`, {signal: AbortSignal.timeout(10000)});
+                    const d = JSON.parse(await r.text());
+                    if(d && d.balance !== undefined) return d;
+                } catch(e) {}
+                // 3: thingproxy
+                try {
+                    const r = await fetch(`https://thingproxy.freeboard.io/fetch/${getUrl}`, {signal: AbortSignal.timeout(10000)});
+                    const d = JSON.parse(await r.text());
+                    if(d && d.balance !== undefined) return d;
+                } catch(e) {}
+                return null;
+            }
+
+            // Parallel yuborish — natijalar kelganda darhol yangilaymiz
+            apis.forEach(async (api, i) => {
+                const host = (() => { try { return new URL(api.url).hostname; } catch(e) { return 'API #'+(i+1); } })();
+                const el = document.getElementById(`nkBal_${i}`);
+                if(!el) return;
+                const bal = await fetchBalance(api);
+                if(bal && bal.balance !== undefined) {
+                    el.style.background = '#0d1a0d';
+                    el.style.borderColor = '#1a3a1a';
+                    el.innerHTML = `
+                        <div>
+                            <div style="font-size:12px;font-weight:900;color:var(--accent);">API #${i+1}</div>
+                            <div style="font-size:11px;color:#555;margin-top:1px;">${host}</div>
+                        </div>
+                        <div style="font-size:16px;font-weight:900;color:#00ff73;">💰 ${parseFloat(bal.balance).toFixed(4)} <span style="font-size:11px;">${bal.currency||'USD'}</span></div>`;
+                } else {
+                    el.style.background = '#1a0d0d';
+                    el.style.borderColor = '#3a1a1a';
+                    el.innerHTML = `
+                        <div>
+                            <div style="font-size:12px;font-weight:900;color:#ff6b6b;">API #${i+1}</div>
+                            <div style="font-size:11px;color:#555;margin-top:1px;">${host}</div>
+                        </div>
+                        <div style="font-size:13px;color:#ff453a;">❌ ulanmadi (CORS)</div>`;
+                }
+            });
+        }
+
+        function updateNkApiSelect(count) {
+            const sel = document.getElementById('nkAdmApiIndex');
+            if(!sel) return;
+            sel.innerHTML = '';
+            for(let i=0; i<Math.max(count,3); i++) {
+                const o = document.createElement('option');
+                o.value = i; o.textContent = `API #${i+1}`;
+                sel.appendChild(o);
+            }
+        }
+
+        async function loadNkApis() {
+            const c = document.getElementById('nkApiListAdmin');
+            if(!c) return;
+            c.innerHTML = '';
+            nkApiRowCount = 0;
+            try {
+                const data = await binGet();
+                const apis = data.nk_apis || [];
+                if(apis.length) {
+                    apis.forEach(a => addNkApiRow(a.url||'', a.key||'', a.label||''));
+                    updateNkApiSelect(apis.length);
+                    // Balanslarni ham darhol ko'rsatamiz
+                    await showNkApiBotBalances(apis);
+                } else {
+                    addNkApiRow(); // Bo'sh bitta ko'rsatamiz
+                }
+            } catch(e) { addNkApiRow(); }
+        }
+
+        async function refreshNkBotBalances() {
+            try {
+                const data = await binGet();
+                const apis = data.nk_apis || [];
+                if(!apis.length) { showToast('⚠️ Avval API kalitlarni saqlang!', 'error'); return; }
+                showToast('⏳ Balanslar tekshirilmoqda...', '');
+                await showNkApiBotBalances(apis);
+                showToast('✅ Balanslar yangilandi!', 'success');
+            } catch(e) {
+                showToast('❌ Xatolik: ' + e.message, 'error');
+            }
+        }
+
+        // SMM API dan xizmatlarni avtomatik yuklash + foiz qo'shish
+        async function loadServicesFromApi() {
+            const apiIdx = parseInt(document.getElementById('nkAdmApiIndex')?.value) || 0;
+            const markup = parseFloat(document.getElementById('nkAdmMarkup')?.value) || 0;
+            const platform = document.getElementById('nkAdmPlatform')?.value || 'telegram';
+            try {
+                const data = await binGet();
+                const apis = data.nk_apis || [];
+                const api = apis[apiIdx];
+                if(!api || !api.url || !api.key) return showToast('⚠️ Avval API ni saqlang!', 'error');
+                showToast('⏳ API dan yuklanmoqda...', '');
+                
+                let list = null;
+                const svcUrl = `${api.url}?key=${encodeURIComponent(api.key)}&action=services`;
+                // 1-usul: to'g'ridan
+                try {
+                    const fd = new FormData();
+                    fd.append('key', api.key); fd.append('action', 'services');
+                    const r = await fetch(api.url, {method:'POST', body:fd, signal: AbortSignal.timeout(6000)});
+                    list = await r.json();
+                } catch(e) {}
+                // 2-usul: allorigins
+                if(!list) try {
+                    const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(svcUrl)}`, {signal: AbortSignal.timeout(9000)});
+                    list = JSON.parse(await r.text());
+                } catch(e) {}
+                // 3-usul: thingproxy
+                if(!list) try {
+                    const r = await fetch(`https://thingproxy.freeboard.io/fetch/${svcUrl}`, {signal: AbortSignal.timeout(9000)});
+                    list = JSON.parse(await r.text());
+                } catch(e) {}
+                
+                if(!Array.isArray(list)) return showToast('❌ API dan noto\'g\'ri javob', 'error');
+
+                // Ro'yxatni ko'rsatamiz — admin tanlaydi
+                const el = document.getElementById('nkApiServicesList');
+                if(el) {
+                    el.innerHTML = `<div style="font-size:12px;color:#888;margin-bottom:8px;">API dan ${list.length} ta xizmat topildi. Keraklisini qo'shing:</div>` +
+                        list.slice(0, 50).map((s, i) => {
+                            const basePrice = parseFloat(s.rate) || 0;
+                            const markedPrice = Math.ceil(basePrice * (1 + markup/100));
+                            return `
+                            <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+                                <div style="flex:1;">
+                                    <div style="font-size:13px;font-weight:900;color:#fff;">${s.name||'Xizmat '+s.service}</div>
+                                    <div style="font-size:11px;color:#888;">ID:${s.service} • ${markedPrice.toLocaleString()} so'm (API: ${basePrice})</div>
+                                </div>
+                                <button onclick="quickAddService('${s.name?.replace(/'/g,"\\'")||"Xizmat"}', ${s.service}, ${markedPrice}, '${platform}', ${apiIdx})" style="background:#0d1f14;color:var(--accent);border:1.5px solid var(--accent);padding:7px 12px;border-radius:9px;font-weight:900;font-size:12px;flex-shrink:0;">+ Qo'sh</button>
+                            </div>`;
+                        }).join('');
+                    el.style.display = 'block';
+                }
+                showToast(`✅ ${list.length} ta xizmat topildi!`, 'success');
+            } catch(e) { showToast('❌ API xatosi: ' + e.message, 'error'); }
+        }
+
+        async function quickAddService(name, serviceId, price, platform, apiIdx) {
+            if(!price || price < 1) return showToast('⚠️ Narx noto\'g\'ri!', 'error');
+            const services = await getNakrutkaServices();
+            services.push({id: Date.now(), platform, name, price, serviceId: String(serviceId), apiIndex: apiIdx});
+            await setNakrutkaServices(services);
+            showToast(`✅ "${name}" qo'shildi!`, 'success');
+            loadNakrutkaAdminList();
+        }
+
+        // closeModal already defined above
+        function enterFullscreenLandscape() {
+            const player = document.getElementById('player');
+            const iframe = document.getElementById('tgEmbedFrame');
+
+            // 1. Telefonni yotiq holga o'tkazish
+            if(screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('landscape').catch(() => {});
+            } else if(window.screen && window.screen.lockOrientation) {
+                window.screen.lockOrientation('landscape');
+            } else if(window.screen && window.screen.mozLockOrientation) {
+                window.screen.mozLockOrientation('landscape');
+            }
+
+            // 2. Player div ni fullscreen qilish
+            const el = player;
+            const requestFS = el.requestFullscreen
+                || el.webkitRequestFullscreen
+                || el.mozRequestFullScreen
+                || el.msRequestFullscreen;
+            if(requestFS) {
+                requestFS.call(el).catch(() => {});
+            }
+
+            // 3. YouTube iframe ga ham fullscreen so'rov yuborish
+            if(iframe && iframe.style.display !== 'none' && iframe.src.includes('youtube')) {
+                try { iframe.contentWindow.postMessage('{"event":"command","func":"requestFullscreen","args":""}', '*'); } catch(e) {}
+            }
+        }
+
+        function handleOrientation() {
+            const player = document.getElementById('player');
+            const iframe = document.getElementById('tgEmbedFrame');
+            const v = document.getElementById('mainVideo');
+            const isLandscape = window.innerWidth > window.innerHeight;
+            if(player.style.display !== 'none') {
+                player.style.position = 'fixed';
+                player.style.top = '0';
+                player.style.left = '0';
+                player.style.width = '100vw';
+                player.style.height = '100vh';
+                player.style.zIndex = '3000';
+
+                if(iframe && iframe.style.display !== 'none') {
+                    if(isLandscape) {
+                        player.style.zIndex = '9999';
+                        if(player.requestFullscreen) player.requestFullscreen().catch(()=>{});
+                        else if(player.webkitRequestFullscreen) player.webkitRequestFullscreen();
+                    }
+                } else {
+                    if(isLandscape) {
+                        v.style.objectFit = 'contain';
+                        if(v.requestFullscreen) v.requestFullscreen().catch(()=>{});
+                        else if(v.webkitEnterFullscreen) v.webkitEnterFullscreen();
+                    } else {
+                        if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+                        v.style.objectFit = 'cover';
+                    }
+                }
+            }
+        }
+        window.addEventListener('resize', handleOrientation);
+        screen.orientation && screen.orientation.addEventListener('change', handleOrientation);
+
+        // ===== KONTENTNI HIMOYALASH =====
+        let contentProtectEnabled = false;
+
+        async function loadContentProtectState() {
+            try {
+                const data = await binGet();
+                contentProtectEnabled = !!data.content_protect;
+            } catch(e) { contentProtectEnabled = false; }
+            applyContentProtect(contentProtectEnabled);
+            updateContentProtectUI(contentProtectEnabled);
+            const el = document.getElementById('contentProtectStatus');
+            if(el) el.textContent = contentProtectEnabled ? '🔒 Himoya yoqilgan' : '🔓 Himoya o\'chirilgan';
+        }
+
+        async function toggleContentProtect() {
+            contentProtectEnabled = !contentProtectEnabled;
+            applyContentProtect(contentProtectEnabled);
+            updateContentProtectUI(contentProtectEnabled);
+            const el = document.getElementById('contentProtectStatus');
+            if(el) el.textContent = '⏳ Saqlanmoqda...';
+            try {
+                const data = await binGet();
+                data.content_protect = contentProtectEnabled;
+                await binSet(data);
+                if(el) el.textContent = contentProtectEnabled ? '🔒 Himoya yoqilgan' : '🔓 Himoya o\'chirilgan';
+                showToast(contentProtectEnabled ? '🔒 Himoya yoqildi!' : '🔓 Himoya o\'chirildi!', 'success');
+            } catch(e) {
+                if(el) el.textContent = '❌ Xatolik!';
+            }
+        }
+
+        function updateContentProtectUI(on) {
+            const toggle = document.getElementById('contentProtectToggle');
+            const thumb  = document.getElementById('contentProtectThumb');
+            if(!toggle || !thumb) return;
+            toggle.style.background = on ? 'var(--accent)' : '#333';
+            thumb.style.left   = on ? '24px' : '3px';
+            thumb.style.background = on ? '#000' : '#888';
+        }
+
+        function applyContentProtect(on) {
+            let cpStyle = document.getElementById('_cpStyle');
+            if(!cpStyle) {
+                cpStyle = document.createElement('style');
+                cpStyle.id = '_cpStyle';
+                document.head.appendChild(cpStyle);
+            }
+            let overlay = document.getElementById('_cpOverlay');
+            if(!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = '_cpOverlay';
+                overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:2147483647;display:none;background:#000;opacity:0;transition:opacity 0.05s;';
+                document.body.appendChild(overlay);
+            }
+
+            if(on) {
+                // 1. CSS himoya — user-select + video controls + iframe ustidan shaffof qatlam
+                cpStyle.textContent = `
+                    * { -webkit-user-select:none!important; user-select:none!important; -webkit-touch-callout:none!important; }
+                    video { pointer-events:none!important; }
+                    video::-webkit-media-controls, video::-webkit-media-controls-enclosure, video::-webkit-media-controls-panel { display:none!important; }
+                    img { -webkit-user-drag:none!important; user-drag:none!important; pointer-events:none!important; }
+                    iframe { -webkit-user-select:none!important; }
+                `;
+
+                // 2. Overlay ko'rinadi
+                overlay.style.display = 'block';
+
+                // 3. Visibility change — app background'ga o'tganda
+                document.addEventListener('visibilitychange', _onVisChange);
+
+                // 4. Barcha event bloklash
+                document.addEventListener('contextmenu', _blockCtx, true);
+                document.addEventListener('keydown', _blockKeys, true);
+                document.addEventListener('dragstart', _blockCtx, true);
+                document.addEventListener('selectstart', _blockCtx, true);
+                document.addEventListener('copy', _blockCtx, true);
+                document.addEventListener('cut', _blockCtx, true);
+
+                // 5. Video himoya
+                _protectVideos(true);
+
+                // 6. Screenshot detection
+                _startScreenshotDetection();
+
+                // 7. Telegram Kanalga saqlashni bloklash
+                try {
+                    if(window.Telegram?.WebApp) {
+                        Telegram.WebApp.enableClosingConfirmation?.();
+                        // Telegram WebApp ichida forward/save ni cheklash
+                        Telegram.WebApp.disableVerticalSwipes?.();
+                        // Telegram media download ni o'chirish
+                        if(Telegram.WebApp.isVersionAtLeast?.('6.9')) {
+                            Telegram.WebApp.lockOrientation?.();
+                        }
+                    }
+                } catch(e){}
+
+                // 8. Iframe ustiga himoya qatlami (Telegram kanal vidyosi ustida)
+                _addIframeProtectionLayer(true);
+
+                // 9. Saqlash tugmasini o'chirish (Telegram WebApp)
+                try {
+                    document.querySelectorAll('iframe').forEach(fr => {
+                        fr.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation');
+                        // Iframe kontentini saqlashni qiyinlashtirish
+                        const fakeEl = document.createElement('div');
+                        fakeEl.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none;background:transparent;';
+                        fakeEl.id = '_iframeBlocker_' + Math.random().toString(36).slice(2);
+                        fr.parentNode?.appendChild(fakeEl);
+                    });
+                } catch(e) {}
+
+            } else {
+                cpStyle.textContent = '';
+                overlay.style.display = 'none';
+                overlay.style.opacity = '0';
+                document.removeEventListener('visibilitychange', _onVisChange);
+                document.removeEventListener('contextmenu', _blockCtx, true);
+                document.removeEventListener('keydown', _blockKeys, true);
+                document.removeEventListener('dragstart', _blockCtx, true);
+                document.removeEventListener('selectstart', _blockCtx, true);
+                document.removeEventListener('copy', _blockCtx, true);
+                document.removeEventListener('cut', _blockCtx, true);
+                _protectVideos(false);
+                _stopScreenshotDetection();
+                _addIframeProtectionLayer(false);
+                // iframe blockerlarni tozalash
+                document.querySelectorAll('[id^="_iframeBlocker_"]').forEach(el => el.remove());
+            }
+        }
+
+        // Iframe ustiga shaffof himoya qatlami (Telegram kanal video saqlashni bloklaydi)
+        let _iframeProtLayer = null;
+        function _addIframeProtectionLayer(on) {
+            if(on) {
+                if(!_iframeProtLayer) {
+                    _iframeProtLayer = document.createElement('div');
+                    _iframeProtLayer.id = '_iframeProtLayer';
+                    _iframeProtLayer.style.cssText = `
+                        position:fixed;top:0;left:0;width:100%;height:100%;
+                        z-index:2999;pointer-events:none;
+                        background:transparent;
+                    `;
+                    document.body.appendChild(_iframeProtLayer);
+                }
+                _iframeProtLayer.style.display = 'block';
+            } else {
+                if(_iframeProtLayer) _iframeProtLayer.style.display = 'none';
+            }
+        }
+
+        let _ssDetectInterval = null;
+        let _lastW = window.innerWidth, _lastH = window.innerHeight;
+
+        function _startScreenshotDetection() {
+            _ssDetectInterval = setInterval(() => {
+                const w = window.innerWidth, h = window.innerHeight;
+                if(w !== _lastW || h !== _lastH) { _lastW = w; _lastH = h; _flashBlack(200); }
+            }, 150);
+            window.addEventListener('keyup', _onKeyUp);
+            // Android: screenshot paytida focus yo'qoladi
+            window.addEventListener('blur', _onWinBlur);
+        }
+
+        function _stopScreenshotDetection() {
+            clearInterval(_ssDetectInterval);
+            window.removeEventListener('keyup', _onKeyUp);
+            window.removeEventListener('blur', _onWinBlur);
+        }
+
+        let _blurTimer = null;
+        function _onWinBlur() {
+            if(!contentProtectEnabled) return;
+            // Focus yo'qoldi — screenshot yoki app switch
+            _flashBlack(600);
+        }
+
+        function _onKeyUp(e) {
+            if(e.key === 'PrintScreen' || e.keyCode === 44) _flashBlack(300);
+        }
+
+        function _onVisChange() {
+            if(!contentProtectEnabled) return;
+            if(document.hidden) {
+                _flashBlack(800);
+                const v = document.getElementById('mainVideo');
+                if(v && !v.paused) v.pause();
+            }
+        }
+
+        function _flashBlack(ms) {
+            const ov = document.getElementById('_cpOverlay');
+            if(!ov) return;
+            ov.style.opacity = '1';
+            ov.style.pointerEvents = 'all';
+            clearTimeout(_blurTimer);
+            _blurTimer = setTimeout(() => {
+                ov.style.opacity = '0';
+                ov.style.pointerEvents = 'none';
+            }, ms || 300);
+        }
+
+        function _protectVideos(on) {
+            document.querySelectorAll('video').forEach(v => {
+                if(on) {
+                    v.setAttribute('controlslist', 'nodownload noremoteplayback nofullscreen');
+                    v.setAttribute('disablepictureinpicture', '');
+                    v.setAttribute('disableremoteplayback', '');
+                    v.oncontextmenu = e => { e.preventDefault(); return false; };
+                } else {
+                    v.removeAttribute('controlslist');
+                    v.removeAttribute('disablepictureinpicture');
+                    v.removeAttribute('disableremoteplayback');
+                    v.oncontextmenu = null;
+                }
+            });
+        }
+
+        function _blockCtx(e) { e.preventDefault(); e.stopPropagation(); return false; }
+
+        function _blockKeys(e) {
+            if(e.key === 'PrintScreen' || e.keyCode === 44 ||
+               (e.ctrlKey && ['s','u','p','a','c','x'].includes(e.key.toLowerCase())) ||
+               e.key === 'F12') {
+                e.preventDefault(); e.stopPropagation();
+                _flashBlack(400);
+                return false;
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
