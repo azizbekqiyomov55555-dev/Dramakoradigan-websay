@@ -729,7 +729,7 @@
                     <span style="width:7px;height:7px;background:var(--accent);border-radius:50%;animation:blink 1.5s infinite;display:inline-block;"></span>
                     <span style="color:var(--accent); font-size:12px; font-weight:700;">Onlayn</span>
                 </div>
-                <div id="userIdDisplay" style="font-size:12px;color:#888;font-weight:700;margin-top:6px;letter-spacing:1px;cursor:pointer;" title="Bosib nusxalash"></div>
+                <div id="userIdDisplay" style="font-size:11px;color:#444;font-weight:700;margin-top:5px;letter-spacing:1px;"></div>
                 <div id="premTimer" style="font-size:12px; color:var(--accent); font-weight:900; margin-top:4px;"></div>
             </div>
         </div>
@@ -1328,82 +1328,207 @@
 
     <!-- ===== LOGIN / REGISTER MODAL ===== -->
     <div id="loginRegModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:9999;overflow-y:auto;">
-        <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 20px;box-sizing:border-box;">
+        <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 20px;box-sizing:border-box;background:radial-gradient(ellipse at 50% 0%, rgba(0,255,115,0.07) 0%, #000 60%);">
+
+            <!-- Animated background particles -->
+            <div style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden;z-index:0;">
+                <div style="position:absolute;width:2px;height:2px;background:var(--accent);border-radius:50%;top:15%;left:20%;animation:float1 6s ease-in-out infinite;box-shadow:0 0 6px var(--accent);opacity:0.6;"></div>
+                <div style="position:absolute;width:3px;height:3px;background:var(--accent);border-radius:50%;top:60%;left:80%;animation:float2 8s ease-in-out infinite;box-shadow:0 0 8px var(--accent);opacity:0.4;"></div>
+                <div style="position:absolute;width:2px;height:2px;background:var(--accent);border-radius:50%;top:80%;left:30%;animation:float1 7s ease-in-out infinite 2s;box-shadow:0 0 6px var(--accent);opacity:0.5;"></div>
+                <div style="position:absolute;width:1px;height:80px;background:linear-gradient(to bottom,transparent,rgba(0,255,115,0.15),transparent);top:10%;left:50%;animation:fall 4s linear infinite;"></div>
+                <div style="position:absolute;width:1px;height:60px;background:linear-gradient(to bottom,transparent,rgba(0,255,115,0.1),transparent);top:30%;left:70%;animation:fall 5s linear infinite 2s;"></div>
+            </div>
+
+            <style>
+                @keyframes float1 { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-20px) scale(1.3)} }
+                @keyframes float2 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(15px)} }
+                @keyframes fall { 0%{transform:translateY(-80px);opacity:0} 50%{opacity:1} 100%{transform:translateY(100vh);opacity:0} }
+                @keyframes logoGlow { 0%,100%{box-shadow:0 0 30px rgba(0,255,115,0.3),0 0 60px rgba(0,255,115,0.1)} 50%{box-shadow:0 0 50px rgba(0,255,115,0.5),0 0 100px rgba(0,255,115,0.2)} }
+                @keyframes slideUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+                .auth-input-wrap { position:relative; margin-bottom:14px; }
+                .auth-label { font-size:11px;color:#555;font-weight:800;margin-bottom:7px;letter-spacing:2px;display:flex;align-items:center;gap:7px; }
+                .auth-label-line { flex:1;height:1px;background:linear-gradient(to right,#222,transparent); }
+                .auth-input-field {
+                    width:100%;padding:16px 16px 16px 48px;
+                    background:#0a0a0a;
+                    border:1.5px solid #1a1a1a;
+                    color:#fff;border-radius:16px;
+                    font-size:15px;box-sizing:border-box;outline:none;
+                    transition:border-color 0.2s, background 0.2s, box-shadow 0.2s;
+                    font-family:inherit;
+                }
+                .auth-input-field:focus {
+                    border-color:var(--accent);
+                    background:#050f08;
+                    box-shadow:0 0 0 3px rgba(0,255,115,0.08), inset 0 0 20px rgba(0,255,115,0.03);
+                }
+                .auth-icon {
+                    position:absolute;left:15px;bottom:16px;
+                    width:20px;height:20px;display:flex;align-items:center;justify-content:center;
+                }
+                /* CSS icon - email */
+                .icon-email::before {
+                    content:'';display:block;width:18px;height:13px;
+                    border:1.5px solid #444;border-radius:3px;position:relative;
+                }
+                .icon-email::after {
+                    content:'';position:absolute;top:2px;left:2px;
+                    border-left:8px solid transparent;border-right:8px solid transparent;
+                    border-top:6px solid #444;
+                }
+                /* CSS icon - lock */
+                .icon-lock { flex-direction:column;gap:0; }
+                .icon-lock::before {
+                    content:'';width:10px;height:6px;
+                    border:1.5px solid #444;border-bottom:none;border-radius:5px 5px 0 0;
+                    position:absolute;top:-4px;left:50%;transform:translateX(-50%);
+                }
+                .icon-lock::after {
+                    content:'';width:14px;height:10px;
+                    background:#444;border-radius:2px;
+                }
+                /* CSS icon - user */
+                .icon-user::before {
+                    content:'';width:8px;height:8px;
+                    border:1.5px solid #444;border-radius:50%;
+                    position:absolute;top:0;left:50%;transform:translateX(-50%);
+                }
+                .icon-user::after {
+                    content:'';width:14px;height:7px;
+                    border:1.5px solid #444;border-radius:8px 8px 0 0;border-bottom:none;
+                    position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+                }
+            </style>
+
             <!-- Logo -->
-            <div style="text-align:center;margin-bottom:32px;">
-                <div style="font-size:52px;margin-bottom:12px;">🎬</div>
-                <div style="font-size:26px;font-weight:900;color:#fff;letter-spacing:2px;">KINO DRAMA</div>
-                <div style="font-size:12px;color:#555;margin-top:4px;letter-spacing:3px;">PREMIUM</div>
+            <div style="text-align:center;margin-bottom:40px;position:relative;z-index:1;animation:slideUp 0.6s ease both;">
+                <!-- Clapper board SVG -->
+                <div style="width:80px;height:80px;background:linear-gradient(135deg,#0a0a0a,#111);border-radius:22px;border:1.5px solid #1e1e1e;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;animation:logoGlow 3s ease-in-out infinite;">
+                    <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+                        <rect x="4" y="14" width="36" height="26" rx="3" fill="#1a1a1a" stroke="#333" stroke-width="1.5"/>
+                        <rect x="4" y="8" width="36" height="8" rx="2" fill="#222" stroke="#333" stroke-width="1.5"/>
+                        <line x1="12" y1="8" x2="9" y2="16" stroke="#00ff73" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="19" y1="8" x2="16" y2="16" stroke="#555" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="26" y1="8" x2="23" y2="16" stroke="#00ff73" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="33" y1="8" x2="30" y2="16" stroke="#555" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="22" cy="28" r="5" fill="none" stroke="#00ff73" stroke-width="1.5"/>
+                        <polygon points="20,26 20,30 25,28" fill="#00ff73"/>
+                    </svg>
+                </div>
+                <div style="font-size:24px;font-weight:900;color:#fff;letter-spacing:3px;text-transform:uppercase;">KINO DRAMA</div>
+                <div style="font-size:10px;color:#333;margin-top:5px;letter-spacing:4px;font-weight:700;">PREMIUM PLATFORMA</div>
+                <!-- Yashil chiziq -->
+                <div style="width:40px;height:2px;background:linear-gradient(to right,transparent,var(--accent),transparent);margin:12px auto 0;border-radius:2px;"></div>
             </div>
 
-            <!-- Tab tanlash -->
-            <div style="display:flex;background:#111;border-radius:14px;padding:4px;margin-bottom:24px;width:100%;max-width:340px;">
-                <button id="tabLoginBtn" onclick="switchAuthTab('login')"
-                    style="flex:1;padding:12px;border-radius:11px;border:none;font-weight:900;font-size:15px;background:var(--accent);color:#000;transition:all 0.2s;">
-                    Kirish
-                </button>
-                <button id="tabRegBtn" onclick="switchAuthTab('reg')"
-                    style="flex:1;padding:12px;border-radius:11px;border:none;font-weight:900;font-size:15px;background:transparent;color:#555;transition:all 0.2s;">
-                    Ro'yxatdan o'tish
-                </button>
+            <!-- Card -->
+            <div style="width:100%;max-width:360px;background:#080808;border:1px solid #161616;border-radius:28px;padding:28px 24px 24px;box-sizing:border-box;position:relative;z-index:1;animation:slideUp 0.7s ease 0.1s both;box-shadow:0 40px 80px rgba(0,0,0,0.8);">
+
+                <!-- Yuqori yashil chiziq -->
+                <div style="position:absolute;top:0;left:24px;right:24px;height:1px;background:linear-gradient(to right,transparent,rgba(0,255,115,0.3),transparent);border-radius:1px;"></div>
+
+                <!-- Tab -->
+                <div style="display:flex;background:#0d0d0d;border-radius:14px;padding:3px;margin-bottom:26px;border:1px solid #1a1a1a;">
+                    <button id="tabLoginBtn" onclick="switchAuthTab('login')"
+                        style="flex:1;padding:11px;border-radius:11px;border:none;font-weight:900;font-size:14px;background:linear-gradient(135deg,#00ff73,#00cc5c);color:#000;transition:all 0.25s;letter-spacing:0.5px;">
+                        KIRISH
+                    </button>
+                    <button id="tabRegBtn" onclick="switchAuthTab('reg')"
+                        style="flex:1;padding:11px;border-radius:11px;border:none;font-weight:900;font-size:14px;background:transparent;color:#333;transition:all 0.25s;letter-spacing:0.5px;">
+                        RO'YXAT
+                    </button>
+                </div>
+
+                <!-- Login forma -->
+                <div id="loginForm" style="width:100%;">
+                    <div class="auth-input-wrap">
+                        <div class="auth-label">
+                            <svg width="12" height="9" viewBox="0 0 12 9" fill="none"><rect x="0.5" y="0.5" width="11" height="8" rx="1.5" stroke="#444"/><path d="M1 1L6 5L11 1" stroke="#444" stroke-linecap="round"/></svg>
+                            EMAIL
+                            <div class="auth-label-line"></div>
+                        </div>
+                        <input id="loginEmail" type="email" placeholder="email@gmail.com" class="auth-input-field"
+                            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#1a1a1a'">
+                    </div>
+                    <div class="auth-input-wrap">
+                        <div class="auth-label">
+                            <svg width="11" height="13" viewBox="0 0 11 13" fill="none"><rect x="0.5" y="5.5" width="10" height="7" rx="1.5" stroke="#444"/><path d="M3 5V3.5C3 2.12 4.12 1 5.5 1S8 2.12 8 3.5V5" stroke="#444" stroke-linecap="round"/><circle cx="5.5" cy="9" r="1" fill="#444"/></svg>
+                            PAROL
+                            <div class="auth-label-line"></div>
+                        </div>
+                        <div style="position:relative;">
+                            <input id="loginPass" type="password" placeholder="••••••••" class="auth-input-field"
+                                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#1a1a1a'"
+                                onkeydown="if(event.key==='Enter')doLogin()">
+                            <span onclick="toggleAuthPass('loginPass')" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);cursor:pointer;">
+                                <svg width="20" height="16" viewBox="0 0 20 16" fill="none"><path d="M1 8C1 8 4 2 10 2C16 2 19 8 19 8C19 8 16 14 10 14C4 14 1 8 1 8Z" stroke="#333" stroke-width="1.5"/><circle cx="10" cy="8" r="3" stroke="#333" stroke-width="1.5"/></svg>
+                            </span>
+                        </div>
+                    </div>
+                    <div id="loginErr" style="color:#ff453a;font-size:12px;font-weight:700;text-align:center;min-height:16px;margin-bottom:12px;"></div>
+                    <button onclick="doLogin()"
+                        style="width:100%;padding:17px;background:linear-gradient(135deg,#00ff73,#00cc5c);color:#000;border:none;border-radius:14px;font-size:16px;font-weight:900;letter-spacing:1px;position:relative;overflow:hidden;transition:transform 0.1s,box-shadow 0.2s;box-shadow:0 8px 25px rgba(0,255,115,0.25);"
+                        onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform='scale(1)'">
+                        KIRISH
+                    </button>
+                    <div style="text-align:center;margin-top:16px;color:#333;font-size:13px;">
+                        Hisobingiz yo'qmi?
+                        <span onclick="switchAuthTab('reg')" style="color:var(--accent);font-weight:800;cursor:pointer;margin-left:4px;">Ro'yxatdan o'ting</span>
+                    </div>
+                </div>
+
+                <!-- Register forma -->
+                <div id="regForm" style="display:none;width:100%;">
+                    <div class="auth-input-wrap">
+                        <div class="auth-label">
+                            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="4" r="3" stroke="#444"/><path d="M1 12C1 9.79 3.46 8 6.5 8C9.54 8 12 9.79 12 12" stroke="#444" stroke-linecap="round"/></svg>
+                            ISMINGIZ
+                            <div class="auth-label-line"></div>
+                        </div>
+                        <input id="regName" type="text" placeholder="To'liq ismingiz" class="auth-input-field"
+                            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#1a1a1a'">
+                    </div>
+                    <div class="auth-input-wrap">
+                        <div class="auth-label">
+                            <svg width="12" height="9" viewBox="0 0 12 9" fill="none"><rect x="0.5" y="0.5" width="11" height="8" rx="1.5" stroke="#444"/><path d="M1 1L6 5L11 1" stroke="#444" stroke-linecap="round"/></svg>
+                            EMAIL
+                            <div class="auth-label-line"></div>
+                        </div>
+                        <input id="regEmail" type="email" placeholder="email@gmail.com" class="auth-input-field"
+                            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#1a1a1a'">
+                    </div>
+                    <div class="auth-input-wrap">
+                        <div class="auth-label">
+                            <svg width="11" height="13" viewBox="0 0 11 13" fill="none"><rect x="0.5" y="5.5" width="10" height="7" rx="1.5" stroke="#444"/><path d="M3 5V3.5C3 2.12 4.12 1 5.5 1S8 2.12 8 3.5V5" stroke="#444" stroke-linecap="round"/><circle cx="5.5" cy="9" r="1" fill="#444"/></svg>
+                            PAROL
+                            <div class="auth-label-line"></div>
+                        </div>
+                        <div style="position:relative;">
+                            <input id="regPass" type="password" placeholder="Kamida 6 ta belgi" class="auth-input-field"
+                                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#1a1a1a'">
+                            <span onclick="toggleAuthPass('regPass')" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);cursor:pointer;">
+                                <svg width="20" height="16" viewBox="0 0 20 16" fill="none"><path d="M1 8C1 8 4 2 10 2C16 2 19 8 19 8C19 8 16 14 10 14C4 14 1 8 1 8Z" stroke="#333" stroke-width="1.5"/><circle cx="10" cy="8" r="3" stroke="#333" stroke-width="1.5"/></svg>
+                            </span>
+                        </div>
+                    </div>
+                    <div id="regErr" style="color:#ff453a;font-size:12px;font-weight:700;text-align:center;min-height:16px;margin-bottom:12px;"></div>
+                    <button onclick="doRegister()"
+                        style="width:100%;padding:17px;background:linear-gradient(135deg,#00ff73,#00cc5c);color:#000;border:none;border-radius:14px;font-size:16px;font-weight:900;letter-spacing:1px;box-shadow:0 8px 25px rgba(0,255,115,0.25);"
+                        onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform='scale(1)'">
+                        RO'YXATDAN O'TISH
+                    </button>
+                    <div style="text-align:center;margin-top:16px;color:#333;font-size:13px;">
+                        Hisobingiz bormi?
+                        <span onclick="switchAuthTab('login')" style="color:var(--accent);font-weight:800;cursor:pointer;margin-left:4px;">Kiring</span>
+                    </div>
+                </div>
             </div>
 
-            <!-- Login forma -->
-            <div id="loginForm" style="width:100%;max-width:340px;">
-                <div style="margin-bottom:14px;">
-                    <div style="font-size:12px;color:#888;font-weight:700;margin-bottom:6px;letter-spacing:1px;">📧 EMAIL</div>
-                    <input id="loginEmail" type="email" placeholder="email@gmail.com"
-                        style="width:100%;padding:16px;background:#111;border:1.5px solid #222;color:#fff;border-radius:14px;font-size:16px;box-sizing:border-box;outline:none;"
-                        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#222'">
-                </div>
-                <div style="margin-bottom:20px;position:relative;">
-                    <div style="font-size:12px;color:#888;font-weight:700;margin-bottom:6px;letter-spacing:1px;">🔒 PAROL</div>
-                    <input id="loginPass" type="password" placeholder="••••••••"
-                        style="width:100%;padding:16px 50px 16px 16px;background:#111;border:1.5px solid #222;color:#fff;border-radius:14px;font-size:16px;box-sizing:border-box;outline:none;"
-                        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#222'"
-                        onkeydown="if(event.key==='Enter')doLogin()">
-                    <span onclick="toggleAuthPass('loginPass')" style="position:absolute;right:16px;bottom:16px;cursor:pointer;font-size:18px;color:#555;">👁</span>
-                </div>
-                <div id="loginErr" style="color:#ff453a;font-size:13px;font-weight:700;text-align:center;min-height:18px;margin-bottom:10px;"></div>
-                <button onclick="doLogin()"
-                    style="width:100%;padding:18px;background:linear-gradient(90deg,#00ff73,#00cc5c);color:#000;border:none;border-radius:14px;font-size:18px;font-weight:900;">
-                    KIRISH
-                </button>
-                <div style="text-align:center;margin-top:14px;">
-                    <span style="color:#555;font-size:13px;">Hisobingiz yo'qmi? </span>
-                    <span onclick="switchAuthTab('reg')" style="color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;">Ro'yxatdan o'ting</span>
-                </div>
-            </div>
-
-            <!-- Register forma -->
-            <div id="regForm" style="display:none;width:100%;max-width:340px;">
-                <div style="margin-bottom:14px;">
-                    <div style="font-size:12px;color:#888;font-weight:700;margin-bottom:6px;letter-spacing:1px;">👤 ISMINGIZ</div>
-                    <input id="regName" type="text" placeholder="Ismingizni kiriting"
-                        style="width:100%;padding:16px;background:#111;border:1.5px solid #222;color:#fff;border-radius:14px;font-size:16px;box-sizing:border-box;outline:none;"
-                        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#222'">
-                </div>
-                <div style="margin-bottom:14px;">
-                    <div style="font-size:12px;color:#888;font-weight:700;margin-bottom:6px;letter-spacing:1px;">📧 EMAIL</div>
-                    <input id="regEmail" type="email" placeholder="email@gmail.com"
-                        style="width:100%;padding:16px;background:#111;border:1.5px solid #222;color:#fff;border-radius:14px;font-size:16px;box-sizing:border-box;outline:none;"
-                        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#222'">
-                </div>
-                <div style="margin-bottom:20px;position:relative;">
-                    <div style="font-size:12px;color:#888;font-weight:700;margin-bottom:6px;letter-spacing:1px;">🔒 PAROL</div>
-                    <input id="regPass" type="password" placeholder="Kamida 6 ta belgi"
-                        style="width:100%;padding:16px 50px 16px 16px;background:#111;border:1.5px solid #222;color:#fff;border-radius:14px;font-size:16px;box-sizing:border-box;outline:none;"
-                        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#222'">
-                    <span onclick="toggleAuthPass('regPass')" style="position:absolute;right:16px;bottom:16px;cursor:pointer;font-size:18px;color:#555;">👁</span>
-                </div>
-                <div id="regErr" style="color:#ff453a;font-size:13px;font-weight:700;text-align:center;min-height:18px;margin-bottom:10px;"></div>
-                <button onclick="doRegister()"
-                    style="width:100%;padding:18px;background:linear-gradient(90deg,#00ff73,#00cc5c);color:#000;border:none;border-radius:14px;font-size:18px;font-weight:900;">
-                    RO'YXATDAN O'TISH
-                </button>
-                <div style="text-align:center;margin-top:14px;">
-                    <span style="color:#555;font-size:13px;">Hisobingiz bormi? </span>
-                    <span onclick="switchAuthTab('login')" style="color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;">Kiring</span>
+            <!-- Footer -->
+            <div style="margin-top:28px;text-align:center;z-index:1;animation:slideUp 0.8s ease 0.2s both;">
+                <div style="display:flex;align-items:center;gap:6px;justify-content:center;">
+                    <div style="width:6px;height:6px;background:var(--accent);border-radius:50%;box-shadow:0 0 8px var(--accent);animation:blink 1.5s infinite;"></div>
+                    <span style="font-size:11px;color:#2a2a2a;font-weight:700;letter-spacing:1px;">XAVFSIZ ULANISH</span>
                 </div>
             </div>
         </div>
@@ -1482,12 +1607,9 @@
 
             <!-- Avatar tanlash -->
             <div style="text-align:center;margin-bottom:22px;">
-                <div style="position:relative;display:inline-block;">
-                    <img id="profileEditAvatar" src="" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:2.5px solid var(--accent);box-shadow:0 0 18px rgba(0,255,115,0.3);display:block;">
-                    <button type="button" onclick="document.getElementById('avatarFileInput').click()"
-                        style="position:absolute;inset:0;width:100%;height:100%;border-radius:50%;background:rgba(0,0,0,0.35);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;pointer-events:auto;">
-                        <span style="font-size:22px;pointer-events:none;">📷</span>
-                    </button>
+                <div style="position:relative;display:inline-block;" onclick="document.getElementById('avatarFileInput').click()">
+                    <img id="profileEditAvatar" src="" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:2.5px solid var(--accent);box-shadow:0 0 18px rgba(0,255,115,0.3);">
+                    <div style="position:absolute;bottom:2px;right:2px;width:28px;height:28px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;">📷</div>
                 </div>
                 <input type="file" id="avatarFileInput" accept="image/*" style="display:none;" onchange="previewAvatarChange(this)">
                 <div style="font-size:12px;color:#555;margin-top:8px;">Suratni bosib o'zgartiring</div>
@@ -1503,8 +1625,8 @@
                 <button onclick="logoutUser()" style="flex:1;padding:14px;background:#1a0000;color:#ff453a;border:1.5px solid #500;border-radius:14px;font-size:13px;font-weight:700;">🚪 Chiqish</button>
             </div>
 
-            <button onclick="saveProfileEdit()" style="width:100%;padding:18px;background:linear-gradient(90deg,#00ff73,#00cc5c);color:#000;border:none;border-radius:14px;font-size:17px;font-weight:900;cursor:pointer;pointer-events:auto;">💾 SAQLASH</button>
-            <button onclick="closeProfileEdit()" style="width:100%;padding:14px;background:none;color:#555;border:1.5px solid #222;border-radius:14px;font-size:15px;font-weight:700;margin-top:10px;cursor:pointer;pointer-events:auto;">Bekor qilish</button>
+            <button onclick="saveProfileEdit()" style="width:100%;padding:18px;background:linear-gradient(90deg,#00ff73,#00cc5c);color:#000;border:none;border-radius:14px;font-size:17px;font-weight:900;">💾 SAQLASH</button>
+            <button onclick="closeProfileEdit()" style="width:100%;padding:14px;background:none;color:#555;border:1.5px solid #222;border-radius:14px;font-size:15px;font-weight:700;margin-top:10px;">Bekor qilish</button>
         </div>
     </div>
 
@@ -2015,16 +2137,13 @@ self.addEventListener('fetch', (event) => {
             if(pass.length < 6) { errEl.textContent = '⚠️ Parol kamida 6 ta belgi!'; return; }
             const users = getUsers();
             if(users[email]) { errEl.textContent = '❌ Bu email allaqachon ro\'yxatdan o\'tgan!'; return; }
-            // Ishonchli unique 9-xonali ID
-            const rawH = Math.abs(hashStr(email + pass));
-            const tsP  = Date.now() % 1000000;
-            const userId = parseInt(String(rawH).padStart(9,'0').slice(0,6) + String(tsP).padStart(3,'0').slice(0,3)) || (100000000 + (Date.now() % 899999999));
+            const userId = 100000000 + Math.floor(Math.random() * 900000000); // 9 xonali raqamli ID
             const user = {
                 id: userId,
                 name: name,
                 email: email,
                 passHash: hashStr(pass + email),
-                img: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name[0].toUpperCase()) + '&background=00ff73&color=000&size=128&bold=true',
+                img: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=00ff73&color=000&size=128&bold=true',
                 created: Date.now()
             };
             users[email] = user;
@@ -2085,7 +2204,6 @@ self.addEventListener('fetch', (event) => {
                 } catch(e) {}
             }, 800);
             loadContent();
-            setTimeout(() => { try { loadMening(); } catch(e){} }, 200);
         }
 
 
@@ -2274,34 +2392,31 @@ self.addEventListener('fetch', (event) => {
 
         async function loadUI() {
             const info = await db.profile.get('user_info');
-            const bal  = await db.profile.get('balance');
+            const bal = await db.profile.get('balance');
             if(info && info.value) {
-                const img    = info.value.img  || '';
-                const name   = info.value.name || '';
-                const userId = info.value.id   || 0;
+                const img = info.value.img || '';
+                const name = info.value.name || '';
+                const userId = info.value.id || '';
                 // Avatar
-                const avatarUrl = img
-                    ? img
-                    : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name ? name[0].toUpperCase() : '?') + '&background=00ff73&color=000&size=128&bold=true';
-                const mainAv = document.getElementById('mainAvatar');
-                const navAv  = document.getElementById('navAvatar');
-                if(mainAv) mainAv.src = avatarUrl;
-                if(navAv)  navAv.src  = avatarUrl;
-                const nameEl = document.getElementById('tgName');
-                if(nameEl) nameEl.innerText = name;
-                // ID ko'rsatish — yashil, bosib nusxalash mumkin
+                if(img) {
+                    document.getElementById('mainAvatar').src = img;
+                    document.getElementById('navAvatar').src = img;
+                } else {
+                    // Ism harfidan avatar
+                    const initials = name ? name[0].toUpperCase() : '?';
+                    const avatarUrl = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(initials) + '&background=00ff73&color=000&size=128&bold=true';
+                    document.getElementById('mainAvatar').src = avatarUrl;
+                    document.getElementById('navAvatar').src = avatarUrl;
+                }
+                document.getElementById('tgName').innerText = name;
+                // ID ko'rsatish
                 const idEl = document.getElementById('userIdDisplay');
                 if(idEl && userId) {
-                    const numId = String(Math.abs(Number(userId))).padStart(9,'0').slice(0,9);
-                    idEl.innerHTML = '🆔 <span style="color:var(--accent);letter-spacing:2px;font-weight:900;font-size:13px;background:rgba(0,255,115,0.1);padding:2px 8px;border-radius:8px;border:1px solid rgba(0,255,115,0.25);">' + numId + '</span>';
-                    idEl.style.cursor = 'pointer';
-                    idEl.onclick = () => { navigator.clipboard && navigator.clipboard.writeText(numId).then(() => showToast('🆔 ID nusxalandi: ' + numId, 'success')).catch(()=>{}); };
+                    idEl.innerHTML = '<span style="color:#2a2a2a;font-size:10px;font-weight:700;letter-spacing:2px;">ID: </span><span style="color:#444;font-size:11px;font-weight:800;letter-spacing:1.5px;">' + userId + '</span>';
                 }
             }
-            const balEl = document.getElementById('userBalance');
-            if(bal && balEl) balEl.innerText = (bal.value || 0).toLocaleString() + " so'm";
+            if(bal) document.getElementById('userBalance').innerText = (bal.value || 0).toLocaleString() + " so'm";
         }
-        window.loadUI = loadUI;
 
         // --- ADMIN FUNKSIYALARI ---
         async function saveSettings() {
@@ -2398,8 +2513,9 @@ self.addEventListener('fetch', (event) => {
 
         let cachedMovies = [];
         let moviesCacheTime = 0;
-        const MOVIES_CACHE_TTL = 60000; // 60 soniya kesh (avval 30 edi)
+        const MOVIES_CACHE_TTL = 60000;
         let _moviesPromise = null;
+        let _moviesRawCache = null; // barcha bin data saqlanadi
 
         async function moviesGet(forceRefresh = false) {
             const now = Date.now();
@@ -2409,41 +2525,22 @@ self.addEventListener('fetch', (event) => {
             if(!forceRefresh && _moviesPromise) return _moviesPromise;
             _moviesPromise = (async () => {
                 try {
-                    // Agar binCache yangi va movies bor — ishlatamiz
-                    if(!forceRefresh && _binCache && Array.isArray(_binCache.movies) && _binCache.movies.length > 0 && (now - _binCacheTime) < BIN_CACHE_TTL) {
-                        cachedMovies = _binCache.movies;
-                        moviesCacheTime = Date.now();
-                        return cachedMovies;
-                    }
-                    // To'g'ridan JSONBin dan olamiz
-                    const ctrl = new AbortController();
-                    const tid = setTimeout(() => ctrl.abort(), 15000);
-                    let resp;
-                    try {
-                        resp = await fetch(MOVIE_BIN_URL + "/latest", {
-                            method: 'GET',
-                            headers: { "X-Master-Key": MOVIE_BIN_KEY, "X-Bin-Meta": "false" },
-                            signal: ctrl.signal
-                        });
-                    } finally { clearTimeout(tid); }
-
-                    if(!resp || !resp.ok) { console.warn('moviesGet HTTP:', resp && resp.status); return cachedMovies; }
-
-                    const text = await resp.text();
-                    let data;
-                    try { data = JSON.parse(text); } catch(e) { return cachedMovies; }
-
-                    // JSONBin javob: {record:{movies:[...]}} yoki to'g'ridan {movies:[...]}
-                    const record = (data && data.record && typeof data.record === 'object') ? data.record
-                                 : (data && typeof data === 'object' && !Array.isArray(data)) ? data : {};
-
-                    cachedMovies = Array.isArray(record.movies) ? record.movies : [];
+                    const r = await fetch(MOVIE_BIN_URL + "/latest", {
+                        headers: { "X-Master-Key": MOVIE_BIN_KEY, "X-Bin-Meta": "false" }
+                    });
+                    if(!r.ok) return cachedMovies;
+                    const d = await r.json();
+                    const record = (d && d.record) ? d.record : (d && typeof d === 'object' ? d : {});
+                    _moviesRawCache = record;
+                    cachedMovies = record.movies || [];
                     moviesCacheTime = Date.now();
-
-                    if(MOVIE_BIN_ID === BIN_ID) { _binCache = record; _binCacheTime = Date.now(); }
-
+                    // binCache ga ham sync qilamiz agar tayyor bo'lsa
+                    if(typeof _binCache !== 'undefined') {
+                        _binCache = record;
+                        _binCacheTime = Date.now();
+                    }
                     return cachedMovies;
-                } catch(e) { console.warn('moviesGet err:', e.message); return cachedMovies; }
+                } catch(e) { return cachedMovies; }
                 finally { _moviesPromise = null; }
             })();
             return _moviesPromise;
@@ -2452,16 +2549,24 @@ self.addEventListener('fetch', (event) => {
         async function moviesSet(movies) {
             cachedMovies = movies;
             moviesCacheTime = Date.now();
-            // Mavjud bin ma'lumotlarini KESHDAN olamiz — ortiqcha GET yo'q
             let existingData = {};
             try {
-                // Avval keshdan, bo'lmasa binGet(false) — u o'zi keshni ishlatadi
-                existingData = _binCache ? JSON.parse(JSON.stringify(_binCache)) : await binGet();
-                if(typeof existingData !== 'object') existingData = {};
+                existingData = _moviesRawCache ? JSON.parse(JSON.stringify(_moviesRawCache)) : {};
             } catch(e) { existingData = {}; }
             existingData.movies = movies;
-            // binSet keshni ham yangilaydi
-            await binSet(existingData);
+            _moviesRawCache = existingData;
+            // binCache ga ham sync
+            if(typeof _binCache !== 'undefined') {
+                _binCache = existingData;
+                _binCacheTime = Date.now();
+            }
+            try {
+                await fetch(MOVIE_BIN_URL, {
+                    method: 'PUT',
+                    headers: { "Content-Type": "application/json", "X-Master-Key": MOVIE_BIN_KEY },
+                    body: JSON.stringify(existingData)
+                });
+            } catch(e) {}
         }
 
         function genMovieId() {
@@ -3438,7 +3543,7 @@ self.addEventListener('fetch', (event) => {
                 const card = document.createElement('div');
                 card.className = 'movie-card tap-active movie-card-anim';
                 card.style.animationDelay = delay + 'ms';
-                card.onclick = () => { playClickSound('open'); openMovie(m.id); };
+                card.onclick = () => { if(typeof playClickSound==='function') playClickSound('open'); openMovie(m.id); };
                 card.innerHTML = badge + `<img src="${img}" data-poster-id="${m.id}" onerror="reloadPoster(this,'${m.posterId||''}','${m.id}')" loading="lazy"><div style="font-weight:900;margin-top:8px;">${m.title}</div>`;
                 ((i, el) => {
                     setTimeout(() => {
@@ -3466,12 +3571,9 @@ self.addEventListener('fetch', (event) => {
                     </div>
                 </div>`;
             }
-            if(!ms.length) {
-                nL2.innerHTML = '<div style="text-align:center;padding:40px 20px;"><div style="font-size:36px;margin-bottom:12px;">🎬</div><div style="color:#444;font-size:14px;font-weight:700;">Hali kino qo\'shilmagan</div><div style="color:#333;font-size:12px;margin-top:8px;">Yoki internet aloqasi yo\'q</div><button onclick="loadContent()" style="margin-top:16px;background:#111;color:var(--accent);border:1.5px solid #333;padding:10px 20px;border-radius:12px;font-weight:900;font-size:13px;cursor:pointer;">🔄 Qayta yuklash</button></div>';
-            }
+            if(!ms.length) nL2.innerHTML = '<div style="text-align:center;color:#444;padding:40px;font-size:14px;">Hali kino qo\'shilmagan</div>';
             aL.innerHTML = aHtml;
         }
-        window.loadContent = loadContent;
 
         async function openMovie(id) {
             let m = cachedMovies.find(x => x.id === id);
@@ -5500,9 +5602,7 @@ self.addEventListener('fetch', (event) => {
             const name = info?.value?.name || '';
             const img  = info?.value?.img  || '';
             document.getElementById('profileEditName').value = name;
-            // Bo'sh bo'lsa initials avatar
-            const avatarSrc = img || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(name ? name[0].toUpperCase() : '?') + '&background=00ff73&color=000&size=256&bold=true');
-            document.getElementById('profileEditAvatar').src = avatarSrc;
+            document.getElementById('profileEditAvatar').src = img;
             _newAvatarDataUrl = null;
             const modal = document.getElementById('profileEditModal');
             modal.style.display = 'flex';
@@ -5542,32 +5642,28 @@ self.addEventListener('fetch', (event) => {
         async function saveProfileEdit() {
             const newName = document.getElementById('profileEditName').value.trim();
             if(!newName) return showToast('⚠️ Ismingizni kiriting!', 'error');
-            const btn = document.querySelector('#profileEditSheet button[onclick="saveProfileEdit()"]');
-            if(btn) { btn.disabled = true; btn.textContent = '⏳ Saqlanmoqda...'; }
-            try {
-                const info = await db.profile.get('user_info');
-                const current = info?.value || {};
-                let newImg = current.img || '';
-                if(_newAvatarDataUrl) { newImg = await resizeImageDataUrl(_newAvatarDataUrl, 256); }
-                const updated = { ...current, name: newName, img: newImg };
-                await db.profile.put({ key: 'user_info', value: updated });
-                try {
-                    const savedUser = JSON.parse(localStorage.getItem('kd_user') || '{}');
-                    savedUser.name = newName;
-                    if(_newAvatarDataUrl) savedUser.img = newImg;
-                    localStorage.setItem('kd_user', JSON.stringify(savedUser));
-                } catch(e) {}
-                const bal = await db.profile.get('balance');
-                const exp = await db.profile.get('expiry');
-                syncUserToCloud(current.id, newName, bal?.value || 0, exp?.value || 0, newImg);
-                await loadUI();
-                closeProfileEdit();
-                showToast('✅ Profil yangilandi!', 'success');
-            } catch(e) {
-                showToast('❌ Xatolik: ' + e.message, 'error');
-            } finally {
-                if(btn) { btn.disabled = false; btn.innerHTML = '💾 SAQLASH'; }
+            const info = await db.profile.get('user_info');
+            const current = info?.value || {};
+            let newImg = current.img || '';
+            if(_newAvatarDataUrl) {
+                newImg = await resizeImageDataUrl(_newAvatarDataUrl, 256);
             }
+            const updated = { ...current, name: newName, img: newImg };
+            await db.profile.put({ key: 'user_info', value: updated });
+            // localStorage yangilash
+            try {
+                const savedUser = JSON.parse(localStorage.getItem('kd_user') || '{}');
+                savedUser.name = newName;
+                if(_newAvatarDataUrl) savedUser.img = newImg;
+                localStorage.setItem('kd_user', JSON.stringify(savedUser));
+            } catch(e) {}
+            // Cloud ga sinxronlash — surat va isim bilan
+            const bal = await db.profile.get('balance');
+            const exp = await db.profile.get('expiry');
+            syncUserToCloud(current.id, newName, bal?.value || 0, exp?.value || 0, newImg);
+            loadUI();
+            closeProfileEdit();
+            showToast('✅ Profil yangilandi!', 'success');
         }
 
         function resizeImageDataUrl(dataUrl, maxSize) {
@@ -6914,132 +7010,4 @@ self.addEventListener('fetch', (event) => {
                     resultEl.style.border = '1.5px solid rgba(0,255,115,0.3)';
                     resultEl.innerHTML = `
                         <div style="font-size:52px;margin-bottom:12px;">✅</div>
-                        <div style="font-size:20px;font-weight:900;color:#00ff73;margin-bottom:8px;">Buyurtma yuborildi!</div>
-                        <div style="font-size:13px;color:#888;line-height:1.7;">
-                            Bot SMM API ga avtomatik yuboradi<br>
-                            <span style="color:#fff;font-weight:700;">${svc.name}</span><br>
-                            <span style="color:#00ff73;font-weight:900;">${qty.toLocaleString()} dona</span> → 
-                            <span style="color:#fff;">${link}</span><br><br>
-                            <span style="font-size:11px;color:#555;">${dateStr}</span>
-                        </div>`;
-                } else {
-                    resultEl.style.background = 'linear-gradient(135deg,#2a1a0d,#1f1005)';
-                    resultEl.style.border = '1.5px solid rgba(255,149,10,0.3)';
-                    resultEl.innerHTML = `
-                        <div style="font-size:52px;margin-bottom:12px;">⚠️</div>
-                        <div style="font-size:18px;font-weight:900;color:#ff9f0a;margin-bottom:8px;">Bot sozlanmagan!</div>
-                        <div style="font-size:13px;color:#888;line-height:1.7;">
-                            Bot Token yoki Admin ID kiritilmagan.<br>
-                            Admin paneldan Bot va Admin ID ni kiriting.<br><br>
-                            <span style="color:#555;font-size:11px;">Balans yechildi, admin qo'lda bajarishi kerak.</span>
-                        </div>`;
-                }
-            }
-
-            showToast(botSent ? '✅ Bot buyurtmani bajaradi!' : '⚠️ Bot sozlanmagan!', botSent ? 'success' : 'error');
-        }
-
-        // ===== NAKRUTKA XIZMATLAR (Cloud - JSONBin) =====
-        async function getNakrutkaServices() {
-            try {
-                const data = await binGet();
-                return data.nakrutka_services || [];
-            } catch(e) { return []; }
-        }
-
-        async function setNakrutkaServices(services) {
-            try {
-                const data = await binGet();
-                data.nakrutka_services = services;
-                await binSet(data);
-            } catch(e) {}
-        }
-
-        async function addNakrutkaService() {
-            const platform  = document.getElementById('nkAdmPlatform').value;
-            const name      = document.getElementById('nkAdmName').value.trim();
-            const serviceId = document.getElementById('nkAdmServiceId').value.trim();
-            const price     = parseInt(document.getElementById('nkAdmPrice').value);
-            const apiIndex  = parseInt(document.getElementById('nkAdmApiIndex').value) || 0;
-            if(!name || !price || price < 1) return showToast("⚠️ Barcha maydonlarni to'ldiring!", 'error');
-            showToast("⏳ Saqlanmoqda...", '');
-            const services = await getNakrutkaServices();
-            const newId = Date.now();
-            services.push({id: newId, platform, name, price, serviceId: serviceId || '', apiIndex});
-            await setNakrutkaServices(services);
-            document.getElementById('nkAdmName').value = '';
-            document.getElementById('nkAdmServiceId').value = '';
-            document.getElementById('nkAdmPrice').value = '';
-            showToast("✅ Xizmat qo'shildi!", 'success');
-            loadNakrutkaAdminList();
-        }
-
-        async function loadNakrutkaAdminList() {
-            const el = document.getElementById('nkAdmList');
-            if(!el) return;
-            el.innerHTML = '<div style="color:#888;font-size:13px;padding:5px 0;">⏳ Yuklanmoqda...</div>';
-            const services = await getNakrutkaServices();
-            if(!services.length) { el.innerHTML = '<div style="color:#555; font-size:13px; padding:5px 0;">Hali xizmat yo\'q</div>'; return; }
-            const platEmoji = {telegram:'✈️', instagram:'📸'};
-            el.innerHTML = services.map(s => `
-                <div style="background:#1a1a1a; border:1.5px solid #2a2a2a; border-radius:14px; padding:13px 14px; margin-bottom:8px; display:flex; align-items:center; gap:10px;">
-                    <div style="font-size:22px;">${platEmoji[s.platform]||'🌐'}</div>
-                    <div style="flex:1;">
-                        <div style="font-weight:900; font-size:15px; color:#fff;">${s.name}</div>
-                        <div style="font-size:12px; color:#888; margin-top:2px;">${s.price.toLocaleString()} so'm / dona${s.serviceId ? ' • ID:'+s.serviceId : ''}${s.apiIndex !== undefined ? ' • API#'+(s.apiIndex+1) : ''}</div>
-                    </div>
-                    <button onclick="deleteNakrutkaService(${s.id})" style="background:#2a0000; color:#ff453a; border:1px solid #500; padding:9px 13px; border-radius:10px; font-weight:900; flex-shrink:0; font-size:14px;">✕</button>
-                </div>`).join('');
-        }
-
-        async function deleteNakrutkaService(id) {
-            const doDelete = async () => {
-                showToast("⏳ O'chirilmoqda...", '');
-                const services = await getNakrutkaServices();
-                const updated = services.filter(s => s.id !== id);
-                await setNakrutkaServices(updated);
-                // Local DB dan ham o'chiramiz
-                try { await db.nakrutka_services.delete(id); } catch(e){}
-                loadNakrutkaAdminList();
-                showToast("🗑️ Xizmat o'chirildi.", '');
-            };
-            if(false) {
-                window.Telegram.WebApp.showPopup({
-                    title: "O'chirish",
-                    message: "Bu xizmatni o'chirmoqchimisiz?",
-                    buttons: [
-                        { id: 'yes', type: 'destructive', text: "Ha, o'chir" },
-                        { id: 'no', type: 'cancel', text: 'Bekor' }
-                    ]
-                }, async (btnId) => { if(btnId === 'yes') await doDelete(); });
-            } else {
-                if(confirm("Bu xizmatni o'chirmoqchimisiz?")) await doDelete();
-            }
-        }
-
-        // ===== POSTER AUTO-REFRESH (URL muddati tugaganda) =====
-        async function reloadPoster(imgEl, fileId, movieId) {
-            imgEl.onerror = null; // Cheksiz loop bo'lmasin
-            imgEl.style.background = '#1a1a1a';
-            if(!fileId) {
-                imgEl.src = '';
-                return;
-            }
-            try {
-                const token = (await db.settings.get('token'))?.value;
-                if(!token) return;
-                const r = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`);
-                const d = await r.json();
-                if(d.ok) {
-                    const newUrl = `https://api.telegram.org/file/bot${token}/${d.result.file_path}`;
-                    imgEl.src = newUrl;
-                    // Yangi URLni saqlaymiz
-                    if(movieId) {
-                        try {
-                            const movies = await moviesGet();
-                            const idx = movies.findIndex(mv => mv.id === movieId);
-                            if(idx !== -1) {
-                                movies[idx].poster = newUrl;
-                                await moviesSet(movies);
-                            }
-                
+                        <div style="font-size:20px;font-weight:900;colo
