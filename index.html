@@ -2511,6 +2511,28 @@ self.addEventListener('fetch', (event) => {
         const MOVIE_BIN_ID   = "69c7c8176860e0745bfb5550";
         const MOVIE_BIN_URL  = `https://api.jsonbin.io/v3/b/${MOVIE_BIN_ID}`;
 
+        // Agar JSONBin da kino bo'lmasa — namuna kinolar (admin o'zgartirishi mumkin)
+        const DEMO_MOVIES = [
+            {
+                id: 'demo1',
+                title: 'NAMUNA KINO 1',
+                genre: 'Drama',
+                price: 0,
+                poster: 'https://placehold.co/300x200/1a1a1a/00ff73?text=KINO+1',
+                videos: ['https://www.w3schools.com/html/mov_bbb.mp4'],
+                episodePrices: {}
+            },
+            {
+                id: 'demo2',
+                title: 'NAMUNA KINO 2',
+                genre: 'Melodrama',
+                price: 0,
+                poster: 'https://placehold.co/300x200/1a1a1a/00ff73?text=KINO+2',
+                videos: ['https://www.w3schools.com/html/mov_bbb.mp4'],
+                episodePrices: {}
+            }
+        ];
+
         let cachedMovies = [];
         let moviesCacheTime = 0;
         const MOVIES_CACHE_TTL = 60000;
@@ -2528,17 +2550,22 @@ self.addEventListener('fetch', (event) => {
                     const r = await fetch(MOVIE_BIN_URL + "/latest", {
                         headers: { "X-Master-Key": MOVIE_BIN_KEY }
                     });
-                    if(!r.ok) return cachedMovies;
+                    if(!r.ok) {
+                        // JSONBin ishlamasa — demo kinolar
+                        if(!cachedMovies.length) cachedMovies = DEMO_MOVIES;
+                        return cachedMovies;
+                    }
                     const d = await r.json();
                     const record = (d && d.record) ? d.record : (d && typeof d === 'object' ? d : {});
                     _moviesRawCache = record;
                     // movies massivini turli formatlardan olish
-                    if(Array.isArray(record.movies)) {
+                    if(Array.isArray(record.movies) && record.movies.length > 0) {
                         cachedMovies = record.movies;
-                    } else if(Array.isArray(record)) {
+                    } else if(Array.isArray(record) && record.length > 0) {
                         cachedMovies = record;
                     } else {
-                        cachedMovies = [];
+                        // JSONBin bo'sh — demo ko'rsat
+                        cachedMovies = DEMO_MOVIES;
                     }
                     moviesCacheTime = Date.now();
                     // binCache ga ham sync qilamiz agar tayyor bo'lsa
@@ -2547,7 +2574,11 @@ self.addEventListener('fetch', (event) => {
                         _binCacheTime = Date.now();
                     }
                     return cachedMovies;
-                } catch(e) { return cachedMovies; }
+                } catch(e) {
+                    // Internet xatosi — demo kinolar
+                    if(!cachedMovies.length) cachedMovies = DEMO_MOVIES;
+                    return cachedMovies;
+                }
                 finally { _moviesPromise = null; }
             })();
             return _moviesPromise;
@@ -3578,7 +3609,7 @@ self.addEventListener('fetch', (event) => {
                     </div>
                 </div>`;
             }
-            if(!ms.length) nL2.innerHTML = '<div style="text-align:center;color:#444;padding:40px;font-size:14px;">Hali kino qo\'shilmagan</div>';
+            if(!ms.length) nL2.innerHTML = '<div style="text-align:center;color:#444;padding:40px;font-size:14px;">⏳ Kinolar yuklanmoqda...<br><br><button onclick="loadContent()" style="background:#1a1a1a;color:var(--accent);border:1.5px solid var(--accent);padding:12px 24px;border-radius:12px;font-weight:900;font-size:14px;margin-top:10px;">🔄 Yangilash</button></div>';
             aL.innerHTML = aHtml;
         }
 
@@ -6971,33 +7002,4 @@ self.addEventListener('fetch', (event) => {
             const currentBal = bal ? bal.value : 0;
 
             if(currentBal < total) {
-                document.getElementById('nkOrderTotalLine').textContent = `❌ ${(total - currentBal).toLocaleString()} so'm yetishmayapti!`;
-                document.getElementById('nkOrderTotalLine').style.color = '#ff453a';
-                showToast('❌ Balans yetarli emas!', 'error');
-                return;
-            }
-
-            // Tugmani loading holatiga o'tkazish
-            const sendBtn = document.getElementById('nkSendBtn');
-            if(sendBtn) {
-                sendBtn.disabled = true;
-                sendBtn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:10px;"><span style="display:inline-block;width:18px;height:18px;border:3px solid rgba(0,0,0,0.3);border-top-color:#000;border-radius:50%;animation:spin 0.7s linear infinite;"></span> Yuborilmoqda...</span>';
-            }
-
-            // Balansdan yechish
-            await db.profile.put({key:'balance', value: currentBal - total});
-            const userInfo2 = await db.profile.get('user_info');
-            if(userInfo2?.value?.id) syncBalanceToCloud(userInfo2.value.id, currentBal - total);
-
-            const { token, adminId } = await getCloudSettings();
-            const user     = (await db.profile.get('user_info'))?.value;
-            const userName = user ? user.name : 'Foydalanuvchi';
-            const userId   = user ? user.id   : currentUserId;
-            const dateStr  = new Date().toLocaleString();
-
-            // Cloud dan API ma'lumotlarini olamiz
-            let apiUrl = '';
-            let apiKey = '';
-            try {
-                const data = await binGet();
-                const a
+                document.getElementById('nkOrderTotalLine').textContent = `❌ ${(total - currentBal).toLocaleSt
